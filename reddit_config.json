@@ -1,0 +1,49 @@
+{
+  "subreddits": [
+    "artificial",
+    "Futurology",
+    "singularity",
+    "OpenAI",
+    "ClaudeAI",
+    "ChatGPT",
+    "MachineLearning",
+    "LLM",
+    "AIBusiness",
+    "startups",
+    "coolgithubprojects"
+  ],
+  "pain_signals": [
+    "breakthrough",
+    "the future of",
+    "debate",
+    "implications of",
+    "potential of",
+    "risk of",
+    "concerned about",
+    "limitation of"
+  ],
+  "domains": [
+    "Large Language Models",
+    "LLM",
+    "Generative AI",
+    "AGI",
+    "AI Safety",
+    "Neural Networks",
+    "AI Ethics",
+    "AI Startups",
+    "Venture Capital",
+    "AI regulation",
+    "Open Source AI"
+  ],
+  "solution_intentions": [
+    "latest research",
+    "new study",
+    "analysis",
+    "perspective on",
+    "how to",
+    "ELI5",
+    "trend",
+    "deep dive",
+    "ask me anything"
+  ]
+}

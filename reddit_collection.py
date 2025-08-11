@@ -1,202 +1,307 @@
-import praw
-import sys
+# reddit_collection_new.py - v6.0 ("Enhanced Search & AI-Focused Collection")
 import os
 import json
+import sys
+import praw
+import time
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-# --- NEW: Define path for storing processed IDs ---
+# --- Configuration ---
+CONFIG_FILE = 'reddit_config.json'
+OUTPUT_DIR = "content/reddit"
 PROCESSED_IDS_FILE = 'processed_ids.json'
+COMMENTS_TO_FETCH = 20
 
-# Load environment variables from .env file
 load_dotenv()
 
-# --- NEW: Function to load processed IDs from file ---
-def load_processed_ids():
-    """Loads the set of processed submission IDs from a file."""
-    if not os.path.exists(PROCESSED_IDS_FILE):
-        return set()
-    try:
-        with open(PROCESSED_IDS_FILE, 'r', encoding='utf-8') as f:
-            return set(json.load(f))
-    except (json.JSONDecodeError, IOError):
-        print(f"Warning: Could not read or parse {PROCESSED_IDS_FILE}. Starting with an empty set.", file=sys.stderr)
-        return set()
-
-# --- NEW: Function to save processed IDs to file ---
-def save_processed_ids(processed_ids):
-    """Saves the set of processed submission IDs to a file."""
-    try:
-        with open(PROCESSED_IDS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(list(processed_ids), f, indent=4)
-    except IOError as e:
-        print(f"Error: Could not save processed IDs to {PROCESSED_IDS_FILE}: {e}", file=sys.stderr)
-
-# Initialize the Reddit API client
-print("Initializing Reddit API client...")
-try:
-    reddit = praw.Reddit(
-        client_id=os.getenv("REDDIT_CLIENT_ID"),
-        client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
-        user_agent="python:Wise_Collection:v1.0 (by /u/SpareAffectionate385)",
-        read_only=True,
-    )
-    print(f"Authenticated as: {reddit.user.me()}")
-except Exception as e:
-    print(f"Error: Failed to initialize or authenticate with Reddit API.", file=sys.stderr)
-    print(f"Details: {e}", file=sys.stderr)
-    sys.exit(1)
-
-print("Initialization successful.")
-
-# Load configuration from reddit_config.json
-print("Loading configuration from reddit_config.json...")
-try:
-    with open('reddit_config.json', 'r', encoding='utf-8') as f:
-        config = json.load(f)
-    subreddits = config['subreddits']
-    pain_signals = config['pain_signals']
-    domains = config['domains']
-    solution_intentions = config['solution_intentions']
-    print("Configuration loaded successfully.")
-except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
-    print(f"Error loading or parsing reddit_config.json: {e}", file=sys.stderr)
-    sys.exit(1)
-
-# --- MODIFIED: The core processing logic ---
-def process_and_save_submission(submission, subreddit_name, output_dir, processed_ids):
-    """
-    Checks, processes, and saves a submission if it's new or significantly updated.
-    Returns True if a file was written (new or updated), False otherwise.
-    """
-    file_path = os.path.join(output_dir, f"{submission.id}.json")
-    is_new = submission.id not in processed_ids
-    should_update = False
-
-    # If not new, check if it's worth updating
-    if not is_new:
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                old_data = json.load(f)
-            # Define update thresholds
-            if (submission.score > old_data.get('score', 0) + 50 or
-                submission.num_comments > old_data.get('num_comments', 0) + 20):
-                should_update = True
-                print(f"  -> Updating post: {submission.title[:70]}... (New Score: {submission.score}, New Comments: {submission.num_comments})")
-        except (FileNotFoundError, json.JSONDecodeError):
-            # If file is missing or corrupt, treat it as new
-            is_new = True
-
-    if not is_new and not should_update:
-        return False # Skip if already processed and not worth updating
-
-    # Filter out low-quality posts that might appear in searches
-    if submission.score < 5 or submission.num_comments < 5:
-        return False
-
-    if is_new:
-        print(f"  -> New post found: {submission.title[:70]}... (Score: {submission.score}, Comments: {submission.num_comments})")
-
-    # Fetch top 5 comments
-    submission.comments.replace_more(limit=0)
-    top_comments = []
-    for i, comment in enumerate(submission.comments.list()):
-        if i >= 5: break
-        if not hasattr(comment, 'author') or not hasattr(comment, 'body') or not comment.author or not comment.body: continue
-        top_comments.append({"author": comment.author.name, "body": comment.body, "score": comment.score})
-
-    # Structure the data
-    post_data = {
-        "id": submission.id,
-        "title": submission.title,
-        "subreddit": subreddit_name,
-        "url": submission.url,
-        "score": submission.score,
-        "num_comments": submission.num_comments,
-        "selftext": submission.selftext,
-        "comments": top_comments
-    }
-
-    # Save data to a JSON file
-    with open(file_path, 'w', encoding='utf-8') as f:
-        json.dump(post_data, f, indent=4, ensure_ascii=False)
+class EnhancedRedditCollector:
+    """增强版Reddit收集器"""
     
-    processed_ids.add(submission.id)
-    return True
-
-# --- MAIN EXECUTION ---
-total_found = 0
-output_dir = "content/reddit"
-os.makedirs(output_dir, exist_ok=True) # Ensure directory exists
-
-# --- MODIFIED: Load IDs at the start ---
-processed_ids = load_processed_ids()
-initial_id_count = len(processed_ids)
-print(f"Loaded {initial_id_count} previously processed post IDs.")
-
-print(f"Results will be saved in '{output_dir}' directory.")
-print("Applying quality filter: Score >= 5 and Comments >= 5")
-print("Update thresholds: Score +50 or Comments +20")
-print("-" * 20)
-
-try:
-    for subreddit_name in subreddits:
-        print(f"Scanning r/{subreddit_name}...")
-        subreddit = reddit.subreddit(subreddit_name)
-        found_in_subreddit = 0
-
-        # Method 1: Get Hot posts (top discussions)
-        try:
-            for submission in subreddit.hot(limit=25):
-                if process_and_save_submission(submission, subreddit_name, output_dir, processed_ids):
-                    found_in_subreddit += 1
-            print(f"    ✓ Processed 25 hot posts")
-        except Exception as e:
-            print(f"    Error getting hot posts in r/{subreddit_name}: {e}", file=sys.stderr)
-
-        # Method 2: Get Rising posts (trending discussions)
-        try:
-            for submission in subreddit.rising(limit=15):
-                if process_and_save_submission(submission, subreddit_name, output_dir, processed_ids):
-                    found_in_subreddit += 1
-            print(f"    ✓ Processed 15 rising posts")
-        except Exception as e:
-            print(f"    Error getting rising posts in r/{subreddit_name}: {e}", file=sys.stderr)
-
-        # Method 3: Scan New posts for AI keywords
-        ai_keywords = ["AI", "LLM", "artificial intelligence", "machine learning", "AGI", "ChatGPT", 
-                      "OpenAI", "neural network", "deep learning", "startup", "venture capital", 
-                      "singularity", "future", "breakthrough", "innovation", "business"]
+    def __init__(self):
+        self.config = self.load_config()
+        self.reddit = self.init_reddit()
+        self.ai_keywords = self.config.get('ai_keywords', {})
+        self.search_strategies = self.config.get('search_strategies', {})
+        self.performance_stats = {}
         
+    def load_config(self):
+        """加载配置文件"""
         try:
-            ai_hits = 0
-            for submission in subreddit.new(limit=50):
-                title_lower = submission.title.lower()
-                if any(keyword.lower() in title_lower for keyword in ai_keywords) and submission.score >= 3:
-                    if process_and_save_submission(submission, subreddit_name, output_dir, processed_ids):
-                        found_in_subreddit += 1
-                        ai_hits += 1
-            print(f"    ✓ Found {ai_hits} AI-relevant new posts")
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
         except Exception as e:
-            print(f"    Error scanning new posts in r/{subreddit_name}: {e}", file=sys.stderr)
+            print(f"FATAL: Could not load or parse '{CONFIG_FILE}'. Error: {e}", file=sys.stderr)
+            sys.exit(1)
+    
+    def init_reddit(self):
+        """初始化Reddit连接"""
+        try:
+            reddit = praw.Reddit(
+                client_id=os.getenv("REDDIT_CLIENT_ID"),
+                client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
+                user_agent="python:EnhancedAICollector:v6.0",
+                read_only=True
+            )
+            print(f"Authenticated as: {reddit.user.me()}")
+            return reddit
+        except Exception as e:
+            print(f"FATAL: Could not connect to Reddit. Error: {e}", file=sys.stderr)
+            sys.exit(1)
+    
+    def load_processed_ids(self):
+        """加载已处理的帖子ID"""
+        if not os.path.exists(PROCESSED_IDS_FILE):
+            return set()
+        try:
+            with open(PROCESSED_IDS_FILE, 'r', encoding='utf-8') as f:
+                return set(json.load(f))
+        except (json.JSONDecodeError, IOError):
+            return set()
+    
+    def save_processed_ids(self, ids):
+        """保存已处理的帖子ID"""
+        with open(PROCESSED_IDS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(list(ids), f, indent=4)
+    
+    def build_dynamic_search_query(self, keyword_categories):
+        """构建动态搜索查询"""
+        if not keyword_categories:
+            return ""
         
-        if found_in_subreddit == 0:
-            print(f"No new or updated posts found in r/{subreddit_name}.")
-        else:
-            print(f"Saved or updated {found_in_subreddit} posts from r/{subreddit_name}.")
+        all_keywords = []
+        for category in keyword_categories:
+            if category in self.ai_keywords:
+                all_keywords.extend(self.ai_keywords[category])
         
-        total_found += found_in_subreddit
-        print("-" * 20)
+        # 限制关键词数量以避免查询过长
+        if len(all_keywords) > 20:
+            # 优先选择核心关键词
+            all_keywords = all_keywords[:20]
+        
+        # 构建OR查询
+        query_parts = [f'"{keyword}"' for keyword in all_keywords]
+        return " OR ".join(query_parts)
+    
+    def pre_filter_content(self, submission):
+        """预筛选内容质量"""
+        if not self.search_strategies.get('pre_filter_enabled', True):
+            return True
+        
+        title = submission.title.lower()
+        
+        # 消极信号（直接过滤）
+        negative_signals = [
+            any(keyword in title for keyword in ["meme", "joke", "shitpost", "circlejerk"]),
+            submission.score < 1,
+            submission.num_comments == 0,
+            len(submission.title) < 10
+        ]
+        
+        if any(negative_signals):
+            return False
+        
+        # 积极信号（至少需要2个）
+        positive_signals = [
+            submission.score > 10,
+            submission.num_comments > 5,
+            len(submission.title) > 20,
+            submission.is_self,  # 文本帖子通常质量更高
+            self.has_ai_relevance(submission.title)
+        ]
+        
+        return sum(positive_signals) >= 2
+    
+    def has_ai_relevance(self, text):
+        """检查文本是否有AI相关性"""
+        text_lower = text.lower()
+        
+        # 核心AI关键词
+        core_ai_terms = [
+            "ai", "artificial intelligence", "machine learning", "deep learning",
+            "gpt", "chatgpt", "llm", "openai", "anthropic", "claude",
+            "gemini", "llama", "mistral", "neural network"
+        ]
+        
+        return any(term in text_lower for term in core_ai_terms)
+    
+    def get_submissions_by_method(self, subreddit, method, search_query=None):
+        """根据方法获取帖子"""
+        try:
+            if method == 'hot':
+                return subreddit.hot(limit=100)
+            elif method == 'new':
+                return subreddit.new(limit=100)
+            elif method == 'rising':
+                return subreddit.rising(limit=50)
+            elif method == 'controversial':
+                return subreddit.controversial('week', limit=100)
+            elif method.startswith('top_'):
+                time_range = method.split('_')[1]
+                return subreddit.top(time_range, limit=100)
+            elif method == 'search' and search_query:
+                return subreddit.search(search_query, sort='new', limit=100)
+            else:
+                return []
+        except Exception as e:
+            print(f"    Warning: Could not fetch {method} submissions: {e}", file=sys.stderr)
+            return []
+    
+    def process_and_save_submission(self, submission, sub_config, output_dir):
+        """处理并保存帖子"""
+        thresholds = sub_config['thresholds']
+        min_score = thresholds.get('min_score', 20)
+        min_comments = thresholds.get('min_comments', 20)
+        min_ratio = thresholds.get('min_ratio', 0.0)
+        
+        score = submission.score if submission.score > 0 else 1
+        if (submission.score < min_score or 
+            submission.num_comments < min_comments or 
+            (submission.num_comments / score) < min_ratio):
+            return False
+        
+        print(f"  🔥 High-Quality Post Found: '{submission.title[:60]}...' "
+              f"(Score: {submission.score}, Comments: {submission.num_comments})")
+        
+        # 获取评论
+        try:
+            submission.comment_sort = "top"
+            submission.comments.replace_more(limit=0)
+            comments_list = [
+                {"author": c.author.name, "body": c.body, "score": c.score}
+                for i, c in enumerate(submission.comments.list())
+                if i < COMMENTS_TO_FETCH and hasattr(c, 'author') and c.author
+            ]
+        except Exception as e:
+            print(f"    Warning: Could not fetch comments for {submission.id}: {e}", file=sys.stderr)
+            comments_list = []
+        
+        # 保存数据
+        post_data = {
+            "id": submission.id,
+            "title": submission.title,
+            "subreddit": sub_config['name'],
+            "url": submission.url,
+            "score": submission.score,
+            "num_comments": submission.num_comments,
+            "selftext": submission.selftext,
+            "comments": comments_list,
+            "upvote_ratio": submission.upvote_ratio,
+            "is_self": submission.is_self,
+            "created_utc": submission.created_utc,
+            "category": sub_config.get('category', 'Unknown'),
+            "collected_at": datetime.now().isoformat()
+        }
+        
+        file_path = os.path.join(output_dir, f"{submission.id}.json")
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(post_data, f, indent=4, ensure_ascii=False)
+        
+        return True
+    
+    def collect_from_subreddit(self, sub_config, processed_ids):
+        """从单个subreddit收集帖子"""
+        subreddit_name = sub_config['name']
+        category = sub_config.get('category', 'N/A')
+        methods = sub_config.get('methods', ['hot'])
+        keyword_categories = sub_config.get('keyword_categories', [])
+        
+        print(f"\n📡 Scanning r/{subreddit_name} (Category: {category})...")
+        
+        subreddit = self.reddit.subreddit(subreddit_name)
+        found_count = 0
+        
+        # 构建搜索查询
+        search_query = None
+        if 'search' in methods and keyword_categories:
+            search_query = self.build_dynamic_search_query(keyword_categories)
+            if search_query:
+                print(f"  🔍 Search query: {search_query[:100]}...")
+        
+        # 执行各种搜索方法
+        for method in methods:
+            print(f"  -> Method: '{method}'")
+            
+            submissions = self.get_submissions_by_method(subreddit, method, search_query)
+            processed_count = 0
+            
+            for submission in submissions:
+                # 检查是否已处理
+                if submission.id in processed_ids:
+                    continue
+                
+                # 预筛选
+                if not self.pre_filter_content(submission):
+                    continue
+                
+                # 处理并保存
+                if self.process_and_save_submission(submission, sub_config, OUTPUT_DIR):
+                    processed_ids.add(submission.id)
+                    found_count += 1
+                    processed_count += 1
+                
+                # 限制每次方法的处理数量
+                if processed_count >= 20:
+                    break
+            
+            print(f"     Processed {processed_count} posts from '{method}'")
+        
+        return found_count
+    
+    def run_collection(self):
+        """运行收集过程"""
+        print("--- Enhanced Reddit AI Collector v6.0 ---")
+        print(f"📅 Collection started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        # 创建输出目录
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        
+        # 加载已处理的ID
+        processed_ids = self.load_processed_ids()
+        print(f"📋 Loaded {len(processed_ids)} previously processed post IDs")
+        
+        # 统计变量
+        total_found = 0
+        subreddits_processed = 0
+        
+        # 处理每个subreddit
+        for sub_config in self.config['subreddits']:
+            try:
+                found_count = self.collect_from_subreddit(sub_config, processed_ids)
+                total_found += found_count
+                subreddits_processed += 1
+                
+                # 添加小延迟避免API限制
+                if subreddits_processed < len(self.config['subreddits']):
+                    time.sleep(1)
+                    
+            except Exception as e:
+                print(f"    ERROR processing {sub_config['name']}: {e}", file=sys.stderr)
+                continue
+        
+        # 保存处理状态
+        self.save_processed_ids(processed_ids)
+        
+        # 输出统计信息
+        print(f"\n--- Collection Complete ---")
+        print(f"📊 Statistics:")
+        print(f"  🎯 Subreddits processed: {subreddits_processed}/{len(self.config['subreddits'])}")
+        print(f"  ✨ New posts found: {total_found}")
+        print(f"  📈 Total unique posts tracked: {len(processed_ids)}")
+        print(f"⏰ Collection completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        # 如果没有找到新帖子，提供建议
+        if total_found == 0:
+            print("\n💡 No new posts found. Consider:")
+            print("  - Adjusting threshold values in config")
+            print("  - Adding more AI keywords")
+            print("  - Expanding subreddit list")
+            print("  - Running at different times")
 
-except Exception as e:
-    print(f"An error occurred while fetching posts: {e}", file=sys.stderr)
-    # --- MODIFIED: Save progress even if an error occurs ---
-    print("Attempting to save progress before exiting...")
-    save_processed_ids(processed_ids)
-    sys.exit(1)
+def main():
+    """主函数"""
+    collector = EnhancedRedditCollector()
+    collector.run_collection()
 
-# --- MODIFIED: Save IDs at the end ---
-print("\nSearch complete.")
-save_processed_ids(processed_ids)
-newly_added_count = len(processed_ids) - initial_id_count
-print(f"Total posts saved or updated in this run: {total_found}.")
-print(f"Total unique posts tracked: {len(processed_ids)} ({newly_added_count} new).")
+if __name__ == "__main__":
+    main()

@@ -1,259 +1,162 @@
-# analyze_topics.py - v1.0 ("Topic Analysis and Summarization Engine")
-import os
+# analyze_topics.py - v3.0 ("The Strategic Analyst" with Central Config)
 import json
 import re
 import shutil
-from pathlib import Path
+import sqlite3
+import sys
 from collections import defaultdict
-
-import numpy as np
-import jieba
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import DBSCAN
+from pathlib import Path
 from openai import OpenAI
-from dotenv import load_dotenv
+from sklearn.cluster import DBSCAN
+from sklearn.feature_extraction.text import TfidfVectorizer
+import config
 
 # --- Configuration ---
-load_dotenv()
-API_KEY = os.getenv("SILICONFLOW_API_KEY")
-if not API_KEY:
+if not config.SILICONFLOW_API_KEY:
     raise ValueError("Siliconflow API key not found in .env file.")
 
-client = OpenAI(api_key=API_KEY, base_url="https://api.siliconflow.cn/v1")
+client = OpenAI(api_key=config.SILICONFLOW_API_KEY, base_url=config.SILICONFLOW_BASE_URL)
 
-# --- Model Configuration ---
-# For summarization, a powerful reasoning model is recommended for higher quality analysis.
-SUMMARIZATION_MODEL = "Qwen/Qwen3-32B" 
-# For translation, a smaller, efficient model is sufficient and cost-effective.
-TRANSLATION_MODEL = "Qwen/Qwen2.5-7B-Instruct"
+# --- Prompts ---
+STRATEGIC_SUMMARY_PROMPT = """
+You are a world-class intelligence analyst specializing in AI. You have been given a cluster of Reddit posts and curation summaries about a single topic.
+Synthesize all of it into a structured strategic briefing in English. The briefing MUST contain these exact sections:
 
-INPUT_DIR = "content/reddit_english_curated"
-OUTPUT_DIR = "output/topics"
-STOPWORDS_FILE = "chinese_stopwords.txt"
+### 1. The Core Event or Idea
+(A one-paragraph summary of the central news, technology, or idea that sparked this conversation.)
 
-# DBSCAN Parameters (might need tuning)
-DBSCAN_EPS = 0.75  # Neighborhood distance
-DBSCAN_MIN_SAMPLES = 2  # Minimum number of posts to form a cluster
+### 2. The Bull Case (Arguments For)
+(Summarize the key arguments from proponents. What are the exciting possibilities? What problems does this solve? Quote or paraphrase key points.)
 
-SUMMARIZATION_PROMPT = """
-You are an expert AI news analyst. Below is a collection of Reddit post titles and contents, all discussing a similar topic.
-Your task is to synthesize all the provided information into a single, concise, and insightful summary in English.
-The summary should capture the main points, key discussions, and overall sentiment of the topic.
-Do not just list the posts. Create a coherent narrative.
+### 3. The Bear Case (Arguments Against)
+(Summarize the primary critiques, concerns, and risks raised by skeptics. What are the potential downsides or flaws? Quote or paraphrase key points.)
 
---- START OF CONTENT ---
+### 4. Key Entities & Players
+(List the main companies, products, or people at the center of this discussion. e.g., OpenAI, Nvidia, Llama 3, Jensen Huang.)
+
+### 5. The Unanswered Question
+(Conclude with a single, powerful, open-ended question that captures the core tension or what the community is waiting to see next.)
+
+--- START OF CONTENT CLUSTER ---
 {english_text_block}
---- END OF CONTENT ---
-
-Your concise summary in English:
+--- END OF CONTENT CLUSTER ---
 """
 
-TRANSLATION_PROMPT = """
-Translate the following English summary into Simplified Chinese.
-Preserve the original meaning, tone, and any technical terms accurately.
-Do not add any commentary or extra text outside of the translation.
+TRANSLATION_PROMPT = """You are a professional translator. Translate the following English text into Simplified Chinese. Preserve all Markdown formatting and structure:
 
---- ENGLISH SUMMARY ---
-{english_summary}
---- CHINESE TRANSLATION ---
-"""
+{english_text_block}
 
-# --- Helper Functions ---
+Provide only the Chinese translation, no additional text."""
 
-def load_stopwords(filepath):
-    """Loads stopwords from a file."""
+# --- Database Functions ---
+def init_db(conn):
+    """Initializes the SQLite database and table."""
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS topics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        topic_name TEXT NOT NULL,
+        topic_keywords TEXT,
+        summary_english TEXT,
+        summary_chinese TEXT,
+        source_post_ids TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    conn.commit()
+
+def log_topic_to_db(conn, topic_name, keywords, summary_en, summary_zh, post_ids):
+    """Logs a completed topic analysis to the database."""
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO topics (topic_name, topic_keywords, summary_english, summary_chinese, source_post_ids)
+    VALUES (?, ?, ?, ?, ?)
+    """, (topic_name, ", ".join(keywords), summary_en, summary_zh, json.dumps(post_ids)))
+    conn.commit()
+
+# --- LLM Function ---
+def call_llm(model, prompt_template, content):
+    messages = [{"role": "user", "content": prompt_template.format(english_text_block=content)}]
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            return set(line.strip() for line in f)
-    except FileNotFoundError:
-        print(f"Warning: Stopwords file not found at '{filepath}'. Proceeding without stopwords.")
-        return set()
-
-def get_text_from_post(post_data):
-    """Extracts combined title and selftext from post data."""
-    title = post_data.get("title", "")
-    selftext = post_data.get("selftext", "")
-    return f"{title}\n\n{selftext}".strip()
-
-def ensure_json_formatting(file_path):
-    """Ensure JSON file is properly formatted with consistent escaping."""
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        
-        # Rewrite with consistent JSON formatting
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-        
-        return True
+        chat_completion = client.chat.completions.create(model=model, messages=messages, temperature=0.3, max_tokens=3000)
+        return chat_completion.choices[0].message.content.strip()
     except Exception as e:
-        print(f"Warning: Could not reformat {file_path.name}: {e}")
-        return False
-
-def call_llm(model, prompt_template, content_dict, max_retries=2):
-    """Generic function to call the LLM with retries."""
-    prompt = prompt_template.format(**content_dict)
-    messages = [{"role": "user", "content": prompt}]
-    
-    for attempt in range(max_retries):
-        try:
-            chat_completion = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=0.2,
-                max_tokens=2048
-            )
-            response = chat_completion.choices[0].message.content.strip()
-            if response:
-                return response
-            print("  -> LLM returned empty response. Retrying...")
-        except Exception as e:
-            print(f"  -> LLM call failed (Attempt {attempt + 1}/{max_retries}): {e}")
-    return None
+        print(f"  -> LLM call failed: {e}", file=sys.stderr)
+        return None
 
 # --- Main Analysis Logic ---
-
 def main():
-    """
-    Main function to analyze curated English posts, cluster them into topics,
-    summarize and translate each topic, and organize the output.
-    """
-    print("--- Topic Analysis and Summarization Engine v1.0 ---")
-
-    # 1. Setup Paths and Load Resources
-    input_path = Path(INPUT_DIR)
-    output_path = Path(OUTPUT_DIR)
+    print("--- Strategic Analyst v3.0 ---")
     
+    # Use paths from config
+    input_path, output_path = config.CURATED_DIR, config.TOPICS_OUTPUT_DIR
     if not input_path.exists() or not any(input_path.iterdir()):
-        print(f"✅ Input directory '{INPUT_DIR}' is empty. Nothing to analyze.")
-        return
+        print(f"✅ Curated directory '{input_path}' is empty. Nothing to analyze."); return
 
-    # Clean and recreate output directory
-    if output_path.exists():
-        shutil.rmtree(output_path)
+    if output_path.exists(): shutil.rmtree(output_path)
     output_path.mkdir(parents=True)
     
-    # stopwords = load_stopwords(STOPWORDS_FILE) # Not needed for English TF-IDF
-
-    # 2. Load all curated posts
     posts = []
     for json_file in input_path.glob("*.json"):
         try:
             with open(json_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                data['file_path'] = json_file # Keep track of original path
+                data['file_path'] = json_file
                 posts.append(data)
-        except Exception as e:
-            print(f"Warning: Could not load or parse {json_file.name}: {e}")
+        except Exception as e: print(f"Warning: Could not load {json_file.name}: {e}", file=sys.stderr)
 
-    if len(posts) < DBSCAN_MIN_SAMPLES:
-        print(f"❌ Not enough posts ({len(posts)}) to form topics. Need at least {DBSCAN_MIN_SAMPLES}.")
-        # Copy all to unclassified
-        unclassified_dir = output_path / "_unclassified"
-        unclassified_dir.mkdir()
-        for post in posts:
-            dest_path = unclassified_dir / post['file_path'].name
-            shutil.copy(post['file_path'], dest_path)
-            ensure_json_formatting(dest_path)
-        return
-
-    print(f"🔎 Loaded {len(posts)} curated posts for analysis.")
-
-    # 3. Vectorize English Text
-    print("🧠 Vectorizing English content using TF-IDF...")
-    documents = [get_text_from_post(p) for p in posts]
-    vectorizer = TfidfVectorizer(max_features=2000, stop_words='english', ngram_range=(1, 2))
-    tfidf_matrix = vectorizer.fit_transform(documents)
-    feature_names = np.array(vectorizer.get_feature_names_out())
-
-    # 4. Cluster with DBSCAN
-    print("🤖 Clustering posts into topics using DBSCAN...")
-    dbscan = DBSCAN(eps=DBSCAN_EPS, min_samples=DBSCAN_MIN_SAMPLES, metric='cosine')
-    dbscan.fit(tfidf_matrix)
-    labels = dbscan.labels_
+    if len(posts) < config.DBSCAN_MIN_SAMPLES:
+        print(f"❌ Not enough posts ({len(posts)}) to form topics. Required: {config.DBSCAN_MIN_SAMPLES}."); return
     
-    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-    n_noise = list(labels).count(-1)
-    print(f"📊 Found {n_clusters} topics and {n_noise} unclassified posts.")
+    documents = [p.get('curation_metadata', {}).get('summary_blurb', p.get('title')) for p in posts]
+    vectorizer = TfidfVectorizer(max_features=1000, stop_words='english')
+    tfidf_matrix = vectorizer.fit_transform(documents)
+    feature_names = vectorizer.get_feature_names_out()
 
-    # 5. Process each cluster
+    dbscan = DBSCAN(eps=config.DBSCAN_EPS, min_samples=config.DBSCAN_MIN_SAMPLES, metric='cosine')
+    labels = dbscan.fit_predict(tfidf_matrix)
+    
+    num_topics = len(set(labels)) - (1 if -1 in labels else 0)
+    print(f"📊 Found {num_topics} topics.")
+
     clusters = defaultdict(list)
     for i, label in enumerate(labels):
         clusters[label].append(posts[i])
 
+    # Establish a single database connection
+    conn = sqlite3.connect(config.DATABASE_FILE)
+    init_db(conn)
+
     for label, cluster_posts in clusters.items():
-        if label == -1:
-            continue # Skip noise for now
-
-        print(f"\n--- Processing Topic {label+1}/{n_clusters} ---")
+        if label == -1: continue
+        print(f"\n--- Analyzing Topic {label+1} ---")
         
-        # a. Get top keywords for topic name
         cluster_indices = [i for i, l in enumerate(labels) if l == label]
-        cluster_vector = tfidf_matrix[cluster_indices].mean(axis=0)
-        top_indices = np.asarray(cluster_vector).flatten().argsort()[-5:][::-1]
-        top_keywords = [feature_names[i] for i in top_indices]
-        
-        # Sanitize keywords for folder name
+        top_keywords = feature_names[tfidf_matrix[cluster_indices].mean(axis=0).A1.argsort()[-5:][::-1]]
         topic_name = re.sub(r'[^\w-]', '_', "_".join(top_keywords))
-        topic_dir = output_path / f"topic_{label+1}_{topic_name}"
-        topic_dir.mkdir()
         print(f"  -> Topic Name: {topic_name}")
-
-        # b. Generate English Summary
-        print("  -> Generating English summary...")
-        english_text_block = "\n\n---\n\n".join([get_text_from_post(p) for p in cluster_posts])
-        english_summary = call_llm(
-            SUMMARIZATION_MODEL, 
-            SUMMARIZATION_PROMPT, 
-            {'english_text_block': english_text_block}
-        )
+        
+        english_text_block = "\n\n---\n\n".join([f"Title: {p['title']}\nBlurb: {p.get('curation_metadata', {}).get('summary_blurb', '')}" for p in cluster_posts])
+        english_summary = call_llm(config.ANALYSIS_MODEL, STRATEGIC_SUMMARY_PROMPT, english_text_block)
         
         if not english_summary:
-            print("  ❌ Failed to generate English summary. Skipping this topic.")
-            # Move original files to a failed directory
-            failed_dir = output_path / f"_failed_summary_topic_{label+1}"
-            failed_dir.mkdir()
-            for post in cluster_posts:
-                dest_path = failed_dir / post['file_path'].name
-                shutil.copy(post['file_path'], dest_path)
-                ensure_json_formatting(dest_path)
-            continue
-
-        # c. Translate Summary to Chinese
-        print("  -> Translating summary to Chinese...")
-        chinese_summary = call_llm(
-            TRANSLATION_MODEL,
-            TRANSLATION_PROMPT, 
-            {'english_summary': english_summary}
-        )
-
+            print("  ❌ Failed to generate strategic summary. Skipping."); continue
+        
+        chinese_summary = call_llm(config.TRANSLATION_MODEL, TRANSLATION_PROMPT, english_summary)
         if not chinese_summary:
-            print("  ❌ Failed to translate summary. Saving English summary instead.")
             chinese_summary = f"**TRANSLATION FAILED**\n\n---\n\n{english_summary}"
-
-        # d. Save summary and copy original files
-        summary_path = topic_dir / "_SUMMARY_zh.md"
-        with open(summary_path, 'w', encoding='utf-8') as f:
-            f.write(f"# 主题摘要: {topic_name}\n\n")
-            f.write(chinese_summary)
         
-        for post in cluster_posts:
-            dest_path = topic_dir / post['file_path'].name
-            shutil.copy(post['file_path'], dest_path)
-            ensure_json_formatting(dest_path)
+        topic_dir = output_path / f"topic_{label+1}_{topic_name}"
+        topic_dir.mkdir()
+        with open(topic_dir / "_STRATEGIC_BRIEFING_zh.md", 'w', encoding='utf-8') as f: f.write(chinese_summary)
         
-        print(f"  ✅ Saved topic summary and {len(cluster_posts)} posts to '{topic_dir.name}'")
+        post_ids = [p['id'] for p in cluster_posts]
+        for post in cluster_posts: shutil.copy(post['file_path'], topic_dir / post['file_path'].name)
+        
+        log_topic_to_db(conn, topic_name, top_keywords, english_summary, chinese_summary, post_ids)
+        print(f"  ✅ Saved briefing and logged topic to database.")
 
-    # 6. Handle unclassified (noise) posts
-    if -1 in clusters:
-        unclassified_dir = output_path / "_unclassified"
-        unclassified_dir.mkdir()
-        for post in clusters[-1]:
-            dest_path = unclassified_dir / post['file_path'].name
-            shutil.copy(post['file_path'], dest_path)
-            ensure_json_formatting(dest_path)
-        print(f"\n✅ Copied {len(clusters[-1])} unclassified posts to '{unclassified_dir.name}'")
-
+    conn.close() # Close the connection at the end
     print("\n🎉 Topic analysis complete!")
 
 if __name__ == "__main__":

@@ -29,6 +29,38 @@ def get_db_connection():
 
 conn = get_db_connection()
 
+# --- Debug Database Connection ---
+try:
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = cursor.fetchall()
+    st.write(f"数据库中的表: {tables}")
+    
+    if not any('topics' in table for table in tables):
+        st.warning("topics表不存在，正在创建...")
+        create_table_sql = """
+        CREATE TABLE IF NOT EXISTS topics (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            topic_name TEXT NOT NULL,
+            topic_keywords TEXT,
+            summary_english TEXT,
+            summary_chinese TEXT,
+            post_count INTEGER DEFAULT 0,
+            avg_score REAL DEFAULT 0.0,
+            cluster_id INTEGER,
+            file_name TEXT
+        );
+        """
+        cursor.execute(create_table_sql)
+        conn.commit()
+        st.success("topics表创建成功")
+    else:
+        st.success("topics表已存在")
+        
+except Exception as e:
+    st.error(f"数据库调试失败: {e}")
+
 # --- Data Loading Functions ---
 @st.cache_data(ttl=600) # Cache data for 10 minutes
 def load_data(query):

@@ -99,13 +99,16 @@ except Exception as e:
 
 # --- Data Loading Functions ---
 @st.cache_data(ttl=600) # Cache data for 10 minutes
-def load_data(query):
+def load_data(query, column_names=None):
     """Loads data from the database using a given query."""
     try:
         rows = execute_query(conn, query)
         if rows:
             # Convert rows to DataFrame
-            if query.startswith("SELECT"):
+            if column_names:
+                # Use provided column names
+                return pd.DataFrame(rows, columns=column_names)
+            elif query.startswith("SELECT"):
                 # Extract column names from query
                 columns = []
                 if "SELECT" in query.upper():
@@ -145,7 +148,8 @@ tab1, tab2 = st.tabs(["📅 最新主题概览", "📚 所有主题数据库"])
 
 with tab1:
     st.header("最近分析的主题")
-    recent_topics_df = load_data("SELECT created_at, topic_name, topic_keywords, summary_chinese FROM topics ORDER BY created_at DESC LIMIT 50")
+    recent_topics_df = load_data("SELECT created_at, topic_name, topic_keywords, summary_chinese FROM topics ORDER BY created_at DESC LIMIT 50", 
+                               column_names=['created_at', 'topic_name', 'topic_keywords', 'summary_chinese'])
 
     if recent_topics_df.empty:
         st.warning("数据库中还没有任何主题。请先运行分析脚本。")
@@ -159,7 +163,8 @@ with tab1:
 
 with tab2:
     st.header("主题数据库全览")
-    all_topics_df = load_data("SELECT id, created_at, topic_name, topic_keywords, summary_english, summary_chinese FROM topics ORDER BY id DESC")
+    all_topics_df = load_data("SELECT id, created_at, topic_name, topic_keywords, summary_english, summary_chinese FROM topics ORDER BY id DESC",
+                               column_names=['id', 'created_at', 'topic_name', 'topic_keywords', 'summary_english', 'summary_chinese'])
 
     if all_topics_df.empty:
         st.warning("数据库中还没有任何主题。")

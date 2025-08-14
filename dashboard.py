@@ -1,7 +1,8 @@
 # dashboard.py
 import streamlit as st
 import pandas as pd
-import libsql
+import requests
+import json
 import sys
 
 # --- Page Configuration ---
@@ -14,51 +15,84 @@ st.set_page_config(
 # --- Database Connection ---
 @st.cache_resource
 def get_db_connection():
-    """Caches the database connection."""
+    """Caches the database connection using HTTP API."""
     try:
         # These secrets are set in the Streamlit Cloud dashboard
         db_url = st.secrets["DB_URL"]
         auth_token = st.secrets["DB_AUTH_TOKEN"]
-        conn = libsql.connect(database="", sync_url=db_url, auth_token=auth_token)
-        print("✅ Database connection successful.")
-        return conn
+        
+        # Extract database name from URL
+        db_name = "wisecollection"
+        
+        # Create HTTP API URL
+        api_url = f"https://{db_url.replace('libsql://', '')}/v2/pipeline"
+        
+        return {
+            'api_url': api_url,
+            'auth_token': auth_token,
+            'db_name': db_name
+        }
     except Exception as e:
         st.error(f"❌ 数据库连接失败: {e}")
         st.error("请确保您已在 Streamlit Cloud 的 Secrets 中正确设置了 DB_URL 和 DB_AUTH_TOKEN。")
         sys.exit(1)
 
+def execute_query(conn_info, query):
+    """Execute SQL query using HTTP API"""
+    try:
+        headers = {
+            'Authorization': f'Bearer {conn_info["auth_token"]}',
+            'Content-Type': 'application/json'
+        }
+        
+        payload = {
+            'requests': [
+                {
+                    'type': 'execute',
+                    'stmt': {
+                        'sql': query
+                    }
+                }
+            ]
+        }
+        
+        response = requests.post(conn_info['api_url'], headers=headers, json=payload)
+        
+        if response.status_code == 200:
+            result = response.json()
+            if 'results' in result and len(result['results']) > 0:
+                query_result = result['results'][0]['response']['result']
+                if 'rows' in query_result:
+                    # Extract values from rows
+                    extracted_rows = []
+                    for row in query_result['rows']:
+                        extracted_row = []
+                        for cell in row:
+                            if isinstance(cell, dict) and 'value' in cell:
+                                extracted_row.append(cell['value'])
+                            else:
+                                extracted_row.append(cell)
+                        extracted_rows.append(extracted_row)
+                    return extracted_rows
+            return []
+        else:
+            st.error(f"Query failed: {response.status_code} - {response.text}")
+            return []
+    except Exception as e:
+        st.error(f"Query error: {e}")
+        return []
+
 conn = get_db_connection()
 
 # --- Database Table Check ---
 try:
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = cursor.fetchall()
-    
-    if not any('topics' in table for table in tables):
-        st.warning("topics表不存在，正在创建...")
-        create_table_sql = """
-        CREATE TABLE IF NOT EXISTS topics (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            topic_name TEXT NOT NULL,
-            topic_keywords TEXT,
-            summary_english TEXT,
-            summary_chinese TEXT,
-            post_count INTEGER DEFAULT 0,
-            avg_score REAL DEFAULT 0.0,
-            cluster_id INTEGER,
-            file_name TEXT
-        );
-        """
-        cursor.execute(create_table_sql)
-        conn.commit()
-        st.success("topics表创建成功")
+    # 首先尝试直接查询topics表
+    count_rows = execute_query(conn, "SELECT COUNT(*) FROM topics;")
+    if count_rows:
+        count = count_rows[0][0]
+        st.success(f"✅ 数据库连接成功！topics表包含 {count} 条数据")
     else:
-        # 检查topics表的数据
-        cursor.execute("SELECT COUNT(*) FROM topics;")
-        count = cursor.fetchone()[0]
-        st.success(f"topics表已存在，包含 {count} 条数据")
+        st.warning("topics表不存在或为空")
         
 except Exception as e:
     st.error(f"数据库表检查失败: {e}")
@@ -68,7 +102,32 @@ except Exception as e:
 def load_data(query):
     """Loads data from the database using a given query."""
     try:
-        return pd.read_sql_query(query, conn)
+        rows = execute_query(conn, query)
+        if rows:
+            # Convert rows to DataFrame
+            if query.startswith("SELECT"):
+                # Extract column names from query
+                columns = []
+                if "SELECT" in query.upper():
+                    # Simple column name extraction
+                    select_part = query.upper().split("SELECT")[1].split("FROM")[0].strip()
+                    columns = [col.strip() for col in select_part.split(",")]
+                
+                # Clean up column names
+                clean_columns = []
+                for col in columns:
+                    if " AS " in col.upper():
+                        clean_columns.append(col.split(" AS ")[-1].strip())
+                    elif "." in col:
+                        clean_columns.append(col.split(".")[-1].strip())
+                    else:
+                        clean_columns.append(col.strip())
+                
+                return pd.DataFrame(rows, columns=clean_columns)
+            else:
+                return pd.DataFrame(rows)
+        else:
+            return pd.DataFrame()
     except Exception as e:
         st.error(f"数据加载失败: {e}")
         return pd.DataFrame()

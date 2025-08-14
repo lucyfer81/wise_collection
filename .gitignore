@@ -5,3 +5,7 @@ output
 content
 logs
 processed_ids.json
+config.py
+topics_database.db
+improvement.md
+change.md

@@ -3,3 +3,5 @@ python-dotenv
 scikit-learn
 openai
 pandas
+rich
+libsql

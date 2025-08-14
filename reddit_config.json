@@ -49,21 +49,21 @@
             "category": "Core AI Tech",
             "name": "MachineLearning",
             "methods": ["hot", "new", "top_week", "search"],
-            "thresholds": { "min_score": 30, "min_comments": 15, "min_ratio": 0.2 },
+            "thresholds": { "min_score": 10, "min_comments": 10, "min_ratio": 0.1 },
             "keyword_categories": ["core_technical", "emerging_trends"]
         },
         {
             "category": "Core AI Tech",
             "name": "LocalLLaMA",
             "methods": ["hot", "new", "rising", "search"],
-            "thresholds": { "min_score": 25, "min_comments": 20, "min_ratio": 0.3 },
+            "thresholds": { "min_score": 15, "min_comments": 15, "min_ratio": 0.2 },
             "keyword_categories": ["core_technical", "industry_applications"]
         },
         {
             "category": "Core AI Tech",
             "name": "ChatGPT",
             "methods": ["hot", "new", "controversial", "search"],
-            "thresholds": { "min_score": 80, "min_comments": 40, "min_ratio": 0.25 },
+            "thresholds": { "min_score": 40, "min_comments": 20, "min_ratio": 0.2 },
             "keyword_categories": ["core_technical", "business_finance"]
         },
         {
@@ -198,6 +198,27 @@
             "methods": ["hot", "controversial", "search"],
             "thresholds": { "min_score": 30, "min_comments": 35, "min_ratio": 0.6 },
             "keyword_categories": ["ethics_policy", "emerging_trends"]
+        },
+        {
+            "category": "General AI",
+            "name": "artificial",
+            "methods": ["hot", "new", "search"],
+            "thresholds": { "min_score": 5, "min_comments": 5, "min_ratio": 0.1 },
+            "keyword_categories": ["core_technical", "emerging_trends"]
+        },
+        {
+            "category": "General AI",
+            "name": "OpenSourceAI",
+            "methods": ["hot", "new", "search"],
+            "thresholds": { "min_score": 8, "min_comments": 8, "min_ratio": 0.1 },
+            "keyword_categories": ["core_technical", "industry_applications"]
+        },
+        {
+            "category": "General AI",
+            "name": "MLQuestions",
+            "methods": ["hot", "new", "search"],
+            "thresholds": { "min_score": 3, "min_comments": 3, "min_ratio": 0.05 },
+            "keyword_categories": ["core_technical"]
         }
     ]
 }

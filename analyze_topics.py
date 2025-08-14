@@ -123,9 +123,23 @@ def main():
     for i, label in enumerate(labels):
         clusters[label].append(posts[i])
 
-    # Establish a single database connection
-    conn = sqlite3.connect(config.DATABASE_FILE)
-    init_db(conn)
+    # --- Database Connection ---
+    conn = None
+    try:
+        if config.TURSO_DB_URL and config.TURSO_DB_AUTH_TOKEN:
+            print("🚀 Connecting to Turso cloud database...")
+            import libsql
+            conn = libsql.connect(sync_url=config.TURSO_DB_URL, auth_token=config.TURSO_DB_AUTH_TOKEN)
+        else:
+            print("📦 Using local SQLite database...")
+            conn = sqlite3.connect(config.DATABASE_FILE)
+        
+        init_db(conn)
+        print("✅ Database connection successful.")
+    except Exception as e:
+        print(f"❌ FATAL: Could not connect to or initialize the database. Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    # --- End of Database Connection ---
 
     for label, cluster_posts in clusters.items():
         if label == -1: continue

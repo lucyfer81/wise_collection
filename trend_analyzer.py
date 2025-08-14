@@ -1,10 +1,21 @@
-# trend_analyzer.py - v2.0 (Centralized Config & DB Handling)
-import sqlite3
-import pandas as pd
-import re
-from collections import Counter
-from difflib import get_close_matches
-import config
+def get_user_input(console, prompt_text, choices=None):
+    """Get user input with enhanced error handling."""
+    try:
+        if choices:
+            # For choices, we'll handle validation ourselves
+            full_prompt = f"{prompt_text} ({'/'.join(choices)}): "
+            while True:
+                user_input = console.input(full_prompt).strip()
+                if user_input in choices:
+                    return user_input
+                else:
+                    console.print(f"[red]Invalid choice. Please select from: {', '.join(choices)}[/red]")
+        else:
+            return console.input(prompt_text)
+    except (EOFError, KeyboardInterrupt):
+        # Handle EOF (Ctrl+D) or KeyboardInterrupt (Ctrl+C) gracefully
+        console.print("\n[red]Operation cancelled by user.[/red]")
+        sys.exit(0)
 
 # --- Relevance Scoring Constants ---
 SCORE_EXACT_KEYWORD = 30
@@ -102,40 +113,40 @@ def get_recent_topics(conn, days=7):
 
 def interactive_search():
     """Interactive search interface with suggestions and related keywords."""
-    print("\n" + "="*60)
-    print("🔍 智能趋势分析工具 | Intelligent Trend Analysis Tool")
-    print("="*60)
+    console = Console() # Initialize Rich Console
     
+    console.print(Panel("[bold blue]🔍 智能趋势分析工具 | Intelligent Trend Analysis Tool[/bold blue]", expand=False))
+
     try:
         conn = sqlite3.connect(config.DATABASE_FILE)
     except sqlite3.Error as e:
-        print(f"FATAL: Could not connect to database at {config.DATABASE_FILE}. Error: {e}")
+        console.print(f"[red]FATAL: Could not connect to database at {config.DATABASE_FILE}. Error: {e}[/red]")
         return
 
     while True:
-        print("\n" + "-"*40 + "\n\nOptions:\n1. Keyword Search\n2. Browse All Keywords\n3. Recent 7 Days Topics\n4. Exit")
-        choice = input("\nPlease choose (1-4): ").strip()
-        
+        console.print("\n" + "-"*40)
+        console.print("\n[bold]Options:[/bold]\n1. Keyword Search\n2. Browse All Keywords\n3. Recent 7 Days Topics\n4. Exit")
+        choice = get_user_input(console, "\nPlease choose", choices=["1", "2", "3", "4"])
+
         if choice == "1":
-            keyword_search(conn)
+            keyword_search(conn, console)
         elif choice == "2":
-            browse_keywords(conn)
+            browse_keywords(conn, console)
         elif choice == "3":
-            show_recent_topics(conn)
+            show_recent_topics(conn, console)
         elif choice == "4":
-            print("\n👋 Thank you for using!")
+            console.print("\n[green]👋 Thank you for using![/green]")
             break
-        else:
-            print("\n❌ Invalid choice, please try again")
-    
+
     conn.close()
 
-def keyword_search(conn):
+def keyword_search(conn, console):
     """Enhanced keyword search with suggestions."""
-    print("\n" + "-"*40 + "\n🔎 Keyword Search\nTip: Support multiple keywords, separate with spaces")
+    console.print("\n" + "-"*40)
+    console.print("[bold cyan]🔎 Keyword Search[/bold cyan]\nTip: Support multiple keywords, separate with spaces")
     
     while True:
-        search_input = input("\nEnter keywords (or 'back' to return): ").strip()
+        search_input = get_user_input(console, "\nEnter keywords (or 'back' to return)").strip()
         if search_input.lower() == 'back': break
         if not search_input: continue
         
@@ -143,61 +154,90 @@ def keyword_search(conn):
         
         if len(search_terms) == 1:
             suggestions = get_keyword_suggestions(conn, search_terms[0], limit=5)
-            if suggestions: print(f"\n💡 Related suggestions: {', '.join(suggestions[:3])}")
+            if suggestions:
+                console.print(f"\n[bold yellow]💡 Related suggestions:[/bold yellow] {', '.join(suggestions[:3])}")
         
-        print(f"\n🔍 Searching for: {', '.join(search_terms)}")
+        console.print(f"\n[bold]🔍 Searching for:[/bold] {', '.join(search_terms)}")
         results = query_topics_by_keywords(conn, search_terms, min_score=15)
         
         if not results.empty:
-            print(f"\n✅ Found {len(results)} relevant topics\n" + "="*80)
-            print(results.to_markdown(index=False))
-            print("="*80)
+            console.print(f"\n[green]✅ Found {len(results)} relevant topics[/green]")
+            
+            # Create a Rich table for results
+            table = Table(show_header=True, header_style="bold magenta")
+            for col in results.columns:
+                table.add_column(col)
+            
+            for _, row in results.iterrows():
+                table.add_row(*[str(v) for v in row])
+            
+            console.print(table)
             
             if len(search_terms) == 1:
                 related = get_related_keywords(conn, search_terms[0], limit=3)
-                if related: print(f"\n🔗 Related keywords: {', '.join(related)}")
+                if related:
+                    console.print(f"\n[bold blue]🔗 Related keywords:[/bold blue] {', '.join(related)}")
         else:
-            print(f"\n❌ No relevant topics found for: {', '.join(search_terms)}")
+            console.print(f"\n[red]❌ No relevant topics found for:[/red] {', '.join(search_terms)}")
             if len(search_terms) == 1:
                 similar = get_keyword_suggestions(conn, search_terms[0], limit=3)
-                if similar: print(f"💡 Try these keywords: {', '.join(similar)}")
+                if similar:
+                    console.print(f"[bold yellow]💡 Try these keywords:[/bold yellow] {', '.join(similar)}")
 
-def browse_keywords(conn):
+def browse_keywords(conn, console):
     """Browse all keywords with pagination."""
-    print("\n" + "-"*40 + "\n📚 Browse Keywords")
+    console.print("\n" + "-"*40)
+    console.print("[bold cyan]📚 Browse Keywords[/bold cyan]")
     keywords = list_all_keywords(conn)
     if not keywords:
-        print("❌ No keywords in database"); return
+        console.print("[red]❌ No keywords in database[/red]"); return
     
     total, per_page, current_page = len(keywords), 20, 0
     total_pages = (total + per_page - 1) // per_page
     
     while True:
         start, end = current_page * per_page, min((current_page + 1) * per_page, total)
-        print(f"\n📄 Page {current_page + 1}/{total_pages}\nKeywords:")
-        for i in range(start, end): print(f"  {i+1:3d}. {keywords[i]}")
+        console.print(f"\n[bold]📄 Page {current_page + 1}/{total_pages}[/bold]\nKeywords:")
+        for i in range(start, end):
+            console.print(f"  {i+1:3d}. {keywords[i]}")
         
-        action = input("\n(n)ext, (p)revious, (s)earch, (back): ").strip().lower()
+        # Use custom input function with choices
+        action = get_user_input(console, "\n(n)ext, (p)revious, (s)earch, (back)", choices=['n', 'p', 's', 'back']).strip().lower()
         
-        if action == 'n' and current_page < total_pages - 1: current_page += 1
-        elif action == 'p' and current_page > 0: current_page -= 1
+        if action == 'n' and current_page < total_pages - 1:
+            current_page += 1
+        elif action == 'p' and current_page > 0:
+            current_page -= 1
         elif action == 's':
-            term = input("Enter search term: ").strip()
+            term = get_user_input(console, "Enter search term").strip()
             if term:
                 matches = [kw for kw in keywords if term.lower() in kw.lower()]
-                print(f"\n🔍 Matching: {', '.join(matches[:10])}" if matches else "\n❌ No matches found")
-        elif action == 'back': break
+                if matches:
+                    console.print(f"\n[bold green]🔍 Matching:[/bold green] {', '.join(matches[:10])}")
+                else:
+                    console.print("\n[red]❌ No matches found[/red]")
+        elif action == 'back':
+            break
 
-def show_recent_topics(conn):
+def show_recent_topics(conn, console):
     """Show recent topics with time filtering."""
-    print("\n" + "-"*40 + "\n📈 Recent Topics")
+    console.print("\n" + "-"*40)
+    console.print("[bold cyan]📈 Recent Topics[/bold cyan]")
     recent_topics = get_recent_topics(conn, 7)
     if not recent_topics.empty:
-        print(f"\n📅 Topics from last 7 days ({len(recent_topics)} total)\n" + "="*80)
-        print(recent_topics.to_markdown(index=False))
-        print("="*80)
+        console.print(f"\n[green]📅 Topics from last 7 days ({len(recent_topics)} total)[/green]")
+        
+        # Create a Rich table for recent topics
+        table = Table(show_header=True, header_style="bold magenta")
+        for col in recent_topics.columns:
+            table.add_column(col)
+        
+        for _, row in recent_topics.iterrows():
+            table.add_row(*[str(v) for v in row])
+        
+        console.print(table)
     else:
-        print("❌ No topics in the last 7 days")
+        console.print("[red]❌ No topics in the last 7 days[/red]")
 
 if __name__ == "__main__":
     interactive_search()

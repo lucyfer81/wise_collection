@@ -29,12 +29,11 @@ def get_db_connection():
 
 conn = get_db_connection()
 
-# --- Debug Database Connection ---
+# --- Database Table Check ---
 try:
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = cursor.fetchall()
-    st.write(f"数据库中的表: {tables}")
     
     if not any('topics' in table for table in tables):
         st.warning("topics表不存在，正在创建...")
@@ -56,10 +55,13 @@ try:
         conn.commit()
         st.success("topics表创建成功")
     else:
-        st.success("topics表已存在")
+        # 检查topics表的数据
+        cursor.execute("SELECT COUNT(*) FROM topics;")
+        count = cursor.fetchone()[0]
+        st.success(f"topics表已存在，包含 {count} 条数据")
         
 except Exception as e:
-    st.error(f"数据库调试失败: {e}")
+    st.error(f"数据库表检查失败: {e}")
 
 # --- Data Loading Functions ---
 @st.cache_data(ttl=600) # Cache data for 10 minutes

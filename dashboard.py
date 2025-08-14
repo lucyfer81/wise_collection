@@ -19,7 +19,7 @@ def get_db_connection():
         # These secrets are set in the Streamlit Cloud dashboard
         db_url = st.secrets["DB_URL"]
         auth_token = st.secrets["DB_AUTH_TOKEN"]
-        conn = libsql.connect(sync_url=db_url, auth_token=auth_token)
+        conn = libsql.connect(database="", sync_url=db_url, auth_token=auth_token)
         print("✅ Database connection successful.")
         return conn
     except Exception as e:

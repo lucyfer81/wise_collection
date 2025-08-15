@@ -1,4 +1,4 @@
-# analyze_topics.py - v3.0 ("The Strategic Analyst" with Central Config)
+# analyze_topics.py - v3.1 (Fix Turso connection & Improve Error Handling)
 import json
 import re
 import shutil
@@ -78,7 +78,12 @@ def log_topic_to_db(conn, topic_name, keywords, summary_en, summary_zh, post_ids
 def call_llm(model, prompt_template, content):
     messages = [{"role": "user", "content": prompt_template.format(english_text_block=content)}]
     try:
-        chat_completion = client.chat.completions.create(model=model, messages=messages, temperature=0.3, max_tokens=3000)
+        chat_completion = client.chat.completions.create(
+            model=model, 
+            messages=messages, 
+            temperature=0.3, 
+            max_tokens=3000
+        )
         return chat_completion.choices[0].message.content.strip()
     except Exception as e:
         print(f"  -> LLM call failed: {e}", file=sys.stderr)
@@ -86,14 +91,16 @@ def call_llm(model, prompt_template, content):
 
 # --- Main Analysis Logic ---
 def main():
-    print("--- Strategic Analyst v3.0 ---")
+    print("--- Strategic Analyst v3.1 ---")
     
     # Use paths from config
     input_path, output_path = config.CURATED_DIR, config.TOPICS_OUTPUT_DIR
     if not input_path.exists() or not any(input_path.iterdir()):
-        print(f"✅ Curated directory '{input_path}' is empty. Nothing to analyze."); return
+        print(f"✅ Curated directory '{input_path}' is empty. Nothing to analyze.")
+        return
 
-    if output_path.exists(): shutil.rmtree(output_path)
+    if output_path.exists():
+        shutil.rmtree(output_path)
     output_path.mkdir(parents=True)
     
     posts = []
@@ -103,10 +110,12 @@ def main():
                 data = json.load(f)
                 data['file_path'] = json_file
                 posts.append(data)
-        except Exception as e: print(f"Warning: Could not load {json_file.name}: {e}", file=sys.stderr)
+        except Exception as e:
+            print(f"Warning: Could not load {json_file.name}: {e}", file=sys.stderr)
 
     if len(posts) < config.DBSCAN_MIN_SAMPLES:
-        print(f"❌ Not enough posts ({len(posts)}) to form topics. Required: {config.DBSCAN_MIN_SAMPLES}."); return
+        print(f"❌ Not enough posts ({len(posts)}) to form topics. Required: {config.DBSCAN_MIN_SAMPLES}.")
+        return
     
     documents = [p.get('curation_metadata', {}).get('summary_blurb', p.get('title')) for p in posts]
     vectorizer = TfidfVectorizer(max_features=1000, stop_words='english')
@@ -128,8 +137,13 @@ def main():
     try:
         if config.TURSO_DB_URL and config.TURSO_DB_AUTH_TOKEN:
             print("🚀 Connecting to Turso cloud database...")
-            import libsql
-            conn = libsql.connect(sync_url=config.TURSO_DB_URL, auth_token=config.TURSO_DB_AUTH_TOKEN)
+            # Correct way to connect using libsql_experimental
+            import libsql_experimental as libsql
+            conn = libsql.connect(
+                database="topics_database.db",  # Local database file
+                sync_url=config.TURSO_DB_URL, 
+                auth_token=config.TURSO_DB_AUTH_TOKEN
+            )
         else:
             print("📦 Using local SQLite database...")
             conn = sqlite3.connect(config.DATABASE_FILE)
@@ -138,11 +152,14 @@ def main():
         print("✅ Database connection successful.")
     except Exception as e:
         print(f"❌ FATAL: Could not connect to or initialize the database. Error: {e}", file=sys.stderr)
-        sys.exit(1)
+        # Continue without database logging
+        conn = None
     # --- End of Database Connection ---
 
     for label, cluster_posts in clusters.items():
-        if label == -1: continue
+        if label == -1:
+            continue
+            
         print(f"\n--- Analyzing Topic {label+1} ---")
         
         cluster_indices = [i for i, l in enumerate(labels) if l == label]
@@ -150,11 +167,15 @@ def main():
         topic_name = re.sub(r'[^\w-]', '_', "_".join(top_keywords))
         print(f"  -> Topic Name: {topic_name}")
         
-        english_text_block = "\n\n---\n\n".join([f"Title: {p['title']}\nBlurb: {p.get('curation_metadata', {}).get('summary_blurb', '')}" for p in cluster_posts])
+        english_text_block = "\n\n---\n\n".join([
+            f"Title: {p['title']}\nBlurb: {p.get('curation_metadata', {}).get('summary_blurb', '')}" 
+            for p in cluster_posts
+        ])
         english_summary = call_llm(config.ANALYSIS_MODEL, STRATEGIC_SUMMARY_PROMPT, english_text_block)
         
         if not english_summary:
-            print("  ❌ Failed to generate strategic summary. Skipping."); continue
+            print("  ❌ Failed to generate strategic summary. Skipping.")
+            continue
         
         chinese_summary = call_llm(config.TRANSLATION_MODEL, TRANSLATION_PROMPT, english_summary)
         if not chinese_summary:
@@ -162,15 +183,24 @@ def main():
         
         topic_dir = output_path / f"topic_{label+1}_{topic_name}"
         topic_dir.mkdir()
-        with open(topic_dir / "_STRATEGIC_BRIEFING_zh.md", 'w', encoding='utf-8') as f: f.write(chinese_summary)
+        with open(topic_dir / "_STRATEGIC_BRIEFING_zh.md", 'w', encoding='utf-8') as f:
+            f.write(chinese_summary)
         
         post_ids = [p['id'] for p in cluster_posts]
-        for post in cluster_posts: shutil.copy(post['file_path'], topic_dir / post['file_path'].name)
+        for post in cluster_posts:
+            shutil.copy(post['file_path'], topic_dir / post['file_path'].name)
         
-        log_topic_to_db(conn, topic_name, top_keywords, english_summary, chinese_summary, post_ids)
-        print(f"  ✅ Saved briefing and logged topic to database.")
+        if conn:
+            try:
+                log_topic_to_db(conn, topic_name, top_keywords, english_summary, chinese_summary, post_ids)
+                print(f"  ✅ Saved briefing and logged topic to database.")
+            except Exception as e:
+                print(f"  ⚠️  Failed to log topic to database: {e}")
+        else:
+            print(f"  ✅ Saved briefing (database logging skipped).")
 
-    conn.close() # Close the connection at the end
+    if conn:
+        conn.close()  # Close the connection at the end
     print("\n🎉 Topic analysis complete!")
 
 if __name__ == "__main__":

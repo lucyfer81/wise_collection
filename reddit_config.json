@@ -219,6 +219,27 @@
             "methods": ["hot", "new", "search"],
             "thresholds": { "min_score": 3, "min_comments": 3, "min_ratio": 0.05 },
             "keyword_categories": ["core_technical"]
+        },
+        {
+            "category": "Emerging Sources",
+            "name": "accelerate",
+            "methods": ["hot", "new", "search"],
+            "thresholds": { "min_score": 5, "min_comments": 5, "min_ratio": 0.1 },
+            "keyword_categories": ["core_technical", "emerging_trends"]
+        },
+        {
+            "category": "Interesting Finds",
+            "name": "interestingasfuck",
+            "methods": ["hot", "new"],
+            "thresholds": { "min_score": 50, "min_comments": 10, "min_ratio": 0.2 },
+            "keyword_categories": ["core_technical", "industry_applications", "emerging_trends"]
+        },
+        {
+            "category": "Interesting Finds",
+            "name": "Oddlygenius",
+            "methods": ["hot", "new"],
+            "thresholds": { "min_score": 30, "min_comments": 5, "min_ratio": 0.15 },
+            "keyword_categories": ["core_technical", "industry_applications"]
         }
     ]
 }

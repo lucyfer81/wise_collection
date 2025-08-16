@@ -60,18 +60,19 @@ def init_db(conn):
         summary_english TEXT,
         summary_chinese TEXT,
         source_post_ids TEXT,
+        source TEXT DEFAULT 'reddit',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
     conn.commit()
 
-def log_topic_to_db(conn, topic_name, keywords, summary_en, summary_zh, post_ids):
+def log_topic_to_db(conn, topic_name, keywords, summary_en, summary_zh, post_ids, source="reddit"):
     """Logs a completed topic analysis to the database."""
     cursor = conn.cursor()
     cursor.execute("""
-    INSERT INTO topics (topic_name, topic_keywords, summary_english, summary_chinese, source_post_ids)
-    VALUES (?, ?, ?, ?, ?)
-    """, (topic_name, ", ".join(keywords), summary_en, summary_zh, json.dumps(post_ids)))
+    INSERT INTO topics (topic_name, topic_keywords, summary_english, summary_chinese, source_post_ids, source)
+    VALUES (?, ?, ?, ?, ?, ?)
+    """, (topic_name, ", ".join(keywords), summary_en, summary_zh, json.dumps(post_ids), source))
     conn.commit()
 
 # --- LLM Function ---

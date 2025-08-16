@@ -50,7 +50,8 @@ def process_and_save_submission(submission, sub_config, output_dir):
         "id": submission.id, "title": submission.title, "subreddit": sub_config['name'], "url": submission.url,
         "score": submission.score, "num_comments": submission.num_comments, "selftext": submission.selftext,
         "comments": comments_list, "upvote_ratio": submission.upvote_ratio, "is_self": submission.is_self,
-        "created_utc": submission.created_utc, "category": sub_config.get('category', 'Unknown')
+        "created_utc": submission.created_utc, "category": sub_config.get('category', 'Unknown'),
+        "source": "reddit"  # Add source identifier for database
     }
     
     # Use pathlib for path construction
@@ -84,6 +85,8 @@ def main():
         
         with open(CONFIG_FILE, 'r', encoding='utf-8') as f: sub_data = json.load(f)
         sub_configs, ai_keywords = sub_data['subreddits'], sub_data.get('ai_keywords', {})
+        search_strategies = sub_data.get('search_strategies', {})
+        fetch_limit = search_strategies.get('max_results_per_method', 100)
     except Exception as e: print(f"FATAL: Initialization failed. Error: {e}", file=sys.stderr); sys.exit(1)
 
     config.REDDIT_INBOX_DIR.mkdir(parents=True, exist_ok=True)
@@ -100,12 +103,12 @@ def main():
         for method in methods:
             try:
                 submissions = []
-                if method == 'hot': submissions = subreddit.hot(limit=50)
-                elif method == 'new': submissions = subreddit.new(limit=100)
-                elif method == 'rising': submissions = subreddit.rising(limit=30)
-                elif method == 'controversial': submissions = subreddit.controversial('week', limit=50)
-                elif method.startswith('top_'): submissions = subreddit.top(time_filter=method.split('_')[1], limit=50)
-                elif method == 'search' and query: submissions = subreddit.search(query, sort='new', limit=50)
+                if method == 'hot': submissions = subreddit.hot(limit=fetch_limit)
+                elif method == 'new': submissions = subreddit.new(limit=fetch_limit)
+                elif method == 'rising': submissions = subreddit.rising(limit=fetch_limit)
+                elif method == 'controversial': submissions = subreddit.controversial('week', limit=fetch_limit)
+                elif method.startswith('top_'): submissions = subreddit.top(time_filter=method.split('_')[1], limit=fetch_limit)
+                elif method == 'search' and query: submissions = subreddit.search(query, sort='new', limit=fetch_limit)
                 
                 for submission in submissions:
                     if submission.id in processed_ids: continue

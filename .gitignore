@@ -9,3 +9,5 @@ config.py
 topics_database.db
 improvement.md
 change.md
+*.db
+X.md

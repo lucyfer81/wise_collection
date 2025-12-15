@@ -1,0 +1,14 @@
+2025-12-14 20:48:46,995 - INFO - ==================================================
+2025-12-14 20:48:46,995 - INFO - STAGE 5: Clustering pain events
+2025-12-14 20:48:46,995 - INFO - ==================================================
+2025-12-14 20:48:46,995 - INFO - Starting clustering of up to 10 pain events
+2025-12-14 20:48:46,995 - INFO - Not enough pain events for clustering
+2025-12-14 20:48:46,995 - INFO - ✅ Stage 5 completed: Created 0 clusters
+
+============================================================
+PIPELINE RESULTS
+============================================================
+{
+  "clusters_created": 0,
+  "events_processed": 0
+}

@@ -1,0 +1,22 @@
+# Clustering Configuration for Pain Point Finder
+# 痛点事件聚类配置
+
+# Vector similarity clustering
+vector_similarity:
+  similarity_threshold: 0.8  # 提高阈值以创建更精确的聚类
+  top_k: 10  # 每个聚类最多10个事件
+
+# DBSCAN parameters
+dbscan:
+  eps: 0.3  # 降低 eps 值以创建更紧密的聚类
+  min_samples: 2  # 最少2个事件即可形成聚类
+
+# LLM validation
+llm_validation:
+  max_events_per_validation: 10  # 每次验证最多10个事件
+  confidence_threshold: 0.7  # 最低置信度阈值
+
+# Post-processing
+post_processing:
+  min_cluster_size: 2  # 最小聚类大小
+  max_cluster_size: 15  # 最大聚类大小，超过则分割

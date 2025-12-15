@@ -1,0 +1,153 @@
+# LLM Configuration for Pain Point Discovery
+# 基于SiliconFlow API的配置
+
+# API配置
+api:
+  base_url: "https://api.siliconflow.cn/v1"
+  api_key_env: "Siliconflow_KEY"  # 从环境变量读取
+
+# 模型配置
+models:
+  # 主要LLM模型 - 用于痛点抽取和机会分析
+  main:
+    name: "deepseek-ai/DeepSeek-V3.2"
+    env_name: "Siliconflow_AI_Model_Default"
+    temperature: 0.1
+    max_tokens: 2000
+    timeout: 30
+
+  # 大型模型 - 用于复杂分析和聚类
+  large:
+    name: "Qwen/Qwen3-235B-A22B-Instruct-2507"
+    env_name: "Siliconflow_AI_Model_Large"
+    temperature: 0.2
+    max_tokens: 4000
+    timeout: 60
+
+  # 中型模型 - 用于一般任务
+  medium:
+    name: "Qwen/Qwen3-Next-80B-A3B-Instruct"
+    env_name: "Siliconflow_AI_Model_Medium"
+    temperature: 0.3
+    max_tokens: 1500
+    timeout: 30
+
+  # 小型模型 - 用于快速分类
+  small:
+    name: "Qwen/Qwen3-30B-A3B-Instruct-2507"
+    env_name: "Siliconflow_AI_Model_Small"
+    temperature: 0.1
+    max_tokens: 800
+    timeout: 15
+
+  # 迷你模型 - 用于简单验证
+  mini:
+    name: "Qwen/Qwen2.5-7B-Instruct"
+    env_name: "Siliconflow_AI_Model_Tiny"
+    temperature: 0.0
+    max_tokens: 400
+    timeout: 10
+
+# 嵌入模型配置
+embedding:
+  model: "Qwen/Qwen3-Embedding-0.6B"
+  env_name: "Siliconflow_AI_Model_Embedding"
+  dimensions: 1024
+  batch_size: 32
+  max_tokens: 8192
+
+# 重排序模型配置
+reranker:
+  model: "Qwen/Qwen3-Reranker-0.6B"
+  env_name: "Siliconflow_AI_Model_Reranker"
+  top_k: 10
+  batch_size: 16
+
+# 不同任务使用的模型映射
+task_mapping:
+  # 痛点抽取 - 使用准确且经济的中型模型
+  pain_extraction:
+    model: "medium"
+    temperature: 0.1
+    max_tokens: 1500
+
+  # 聚类分析 - 使用大型模型
+  clustering:
+    model: "large"
+    temperature: 0.2
+    max_tokens: 2000
+
+  # 机会映射 - 使用主模型
+  opportunity_mapping:
+    model: "main"
+    temperature: 0.3
+    max_tokens: 2500
+
+  # 可行性评分 - 使用小型模型快速评分
+  viability_scoring:
+    model: "small"
+    temperature: 0.1
+    max_tokens: 1000
+
+  # 信号过滤验证 - 使用迷你模型
+  signal_validation:
+    model: "mini"
+    temperature: 0.0
+    max_tokens: 400
+
+# API调用配置
+api_settings:
+  # 重试配置
+  retry:
+    max_attempts: 3
+    backoff_factor: 2
+    initial_delay: 1
+
+  # 速率限制
+  rate_limit:
+    requests_per_minute: 60
+    tokens_per_minute: 30000
+
+  # 批处理配置
+  batch:
+    # 最大批处理大小
+    max_batch_size: 10
+    # 批处理超时
+    batch_timeout: 30
+
+# 成本控制
+cost_control:
+  # 每日最大tokens限制
+  daily_token_limit: 1000000
+  # 每月最大成本限制（美元）
+  monthly_cost_limit: 100
+  # 启用成本监控
+  enable_monitoring: true
+
+# 质量控制
+quality_control:
+  # 响应质量检查
+  response_validation: true
+  # JSON格式验证
+  json_validation: true
+  # 内容长度检查
+  length_validation: true
+  # 敏感内容过滤
+  content_filter: true
+
+# 缓存配置
+cache:
+  # 启用响应缓存
+  enabled: true
+  # 缓存过期时间（秒）
+  ttl: 86400  # 24小时
+  # 缓存大小限制
+  max_size: 1000
+
+# 日志配置
+logging:
+  level: "INFO"
+  log_requests: true
+  log_responses: false
+  log_errors: true
+  save_costs: true

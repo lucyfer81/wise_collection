@@ -1,0 +1,204 @@
+# Thresholds Configuration for Pain Point Discovery
+# 各种过滤和评分的阈值配置
+
+# Reddit帖子质量阈值
+reddit_quality:
+  # 基础质量阈值
+  base:
+    min_upvotes: 5
+    min_comments: 3
+    min_upvote_ratio: 0.1
+    min_post_length: 50
+    max_post_length: 5000
+
+  # 高质量阈值（更严格的筛选）
+  high_quality:
+    min_upvotes: 20
+    min_comments: 10
+    min_upvote_ratio: 0.3
+    min_post_length: 100
+    max_post_length: 3000
+
+  # 针对不同类型内容的特殊阈值
+  type_specific:
+    technical:
+      min_upvotes: 10
+      min_comments: 5
+      min_upvote_ratio: 0.2
+    business:
+      min_upvotes: 15
+      min_comments: 8
+      min_upvote_ratio: 0.25
+    discussion:
+      min_upvotes: 5
+      min_comments: 15
+      min_upvote_ratio: 0.1
+
+# 痛点信号检测阈值
+pain_signal:
+  # 关键词匹配阈值
+  keyword_match:
+    min_matches: 1
+    required_categories: 1  # 至少匹配一个痛点类别
+
+  # 情绪强度阈值
+  emotional_intensity:
+    min_score: 0.3  # 0-1范围
+    strong_emotion_threshold: 0.7
+
+  # 痛点句式匹配
+  pain_patterns:
+    # 必须包含的句式
+    required_patterns:
+      - "struggling with"
+      - "having trouble"
+      - "can't figure out"
+      - "doesn't work"
+      - "broken"
+
+    # 强化信号句式
+    strong_signals:
+      - "frustrated"
+      - "annoying"
+      - "waste of time"
+      - "inefficient"
+      - "complicated"
+
+    # 最小匹配数
+    min_pattern_matches: 1
+    min_strong_signals: 0
+
+# 痛点抽取质量阈值
+extraction_quality:
+  # LLM响应质量检查
+  response_validation:
+    min_json_completeness: 0.8  # JSON结构完整度
+    min_field_coverage: 0.7      # 字段填充率
+    max_repetitions: 0.3         # 重复内容比例
+
+  # 痛点事件质量
+  pain_event:
+    min_description_length: 20    # 最小描述长度
+    max_description_length: 500   # 最大描述长度
+    min_context_clarity: 0.6      # 上下文清晰度
+    required_fields: ["problem"]  # 必须字段
+
+  # 排除规则
+  exclusion:
+    # 排除纯情绪表达
+    emotion_only: true
+    # 排除已经解决的问题
+    solved_problems: true
+    # 排除过于宽泛的问题
+    too_generic: true
+    # 排除求助内容
+    seeking_help: false  # 求助也可能是痛点
+
+# 聚类阈值
+clustering:
+  # 向量相似度聚类
+  vector_similarity:
+    similarity_threshold: 0.7  # 余弦相似度阈值
+    cluster_size_min: 2        # 最小聚类大小
+    cluster_size_max: 50       # 最大聚类大小
+
+  # DBSCAN参数
+  dbscan:
+    eps: 0.5          # 邻域半径
+    min_samples: 3    # 最小样本数
+
+  # LLM聚类验证
+  llm_validation:
+    workflow_similarity_threshold: 0.8  # 工作流相似度阈值
+    min_confidence: 0.7                 # 最小置信度
+    max_cluster_review_size: 10         # 每次LLM审查的最大数量
+
+# 机会映射阈值
+opportunity_mapping:
+  # 机会质量评分
+  quality_score:
+    min_score: 0.6         # 最小质量分
+    opportunity_threshold: 0.75  # 机会阈值
+
+  # 商业潜力评估
+  business_potential:
+    min_market_size: 3     # 最小市场规模(1-10)
+    min_urgency: 5         # 最小紧急程度(1-10)
+    max_complexity: 8      # 最大复杂度(1-10)
+
+  # 工具可行性
+  tool_feasibility:
+    mvp_buildable: true    # MVP是否可构建
+    solo_friendly: true    # 是否适合单人开发
+    integration_complexity: 6  # 集成复杂度上限(1-10)
+
+# 可行性评分阈值
+viability_scoring:
+  # 总分阈值
+  total_score:
+    min_viable: 5.0        # 最小可行分数
+    good_opportunity: 7.0  # 好机会分数
+    excellent: 8.5         # 优秀机会分数
+
+  # 分项评分最低要求
+  component_scores:
+    pain_frequency: 4      # 痛点频率最低分
+    market_size: 5         # 市场规模最低分
+    build_complexity: 3    # 构建复杂度最低分（越低越好）
+    competition: 4         # 竞争程度最低分
+    integration: 5         # 集成难度最低分
+
+  # 风险评估
+  risk_factors:
+    max_killer_risks: 3    # 最大致命风险数量
+    min_risk_score: 3      # 最小风险评分(1-10)
+
+# 数据处理阈值
+data_processing:
+  # 批处理大小
+  batch_size:
+    extraction: 10         # 痛点抽取批大小
+    embedding: 50          # 嵌入计算批大小
+    clustering: 100        # 聚类分析批大小
+
+  # 并发限制
+  concurrency:
+    max_workers: 5         # 最大工作线程数
+    api_calls_per_second: 10  # 每秒API调用限制
+
+  # 超时设置
+  timeouts:
+    reddit_fetch: 30       # Reddit抓取超时(秒)
+    llm_call: 60           # LLM调用超时(秒)
+    embedding: 30          # 嵌入计算超时(秒)
+
+# 输出控制
+output_control:
+  # 结果数量限制
+  max_results:
+    daily_pain_events: 500     # 每日最大痛点事件数
+    clusters_per_day: 50       # 每日最大聚类数
+    opportunities_per_day: 20  # 每日最大机会数
+
+  # 质量筛选
+  quality_filter:
+    top_clusters_only: true     # 只保留高质量聚类
+    min_cluster_size: 3        # 最小聚类大小
+    diversity_threshold: 0.8   # 多样性阈值
+
+# 调试和监控
+monitoring:
+  # 日志详细程度
+  log_level: "INFO"
+
+  # 性能监控
+  performance:
+    log_processing_time: true
+    log_api_usage: true
+    log_cost_tracking: true
+
+  # 错误处理
+  error_handling:
+    max_retries: 3
+    retry_delay: 1
+    continue_on_error: true

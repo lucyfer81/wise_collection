@@ -1,0 +1,190 @@
+# =========================
+# Core: 必抓（高痛点密度）
+# =========================
+core:
+  SideProject:
+    min_upvotes: 5
+    min_comments: 3
+    notes: >
+      Solo side projects, many failure and maintenance pain posts.
+      Heavy filtering needed to remove showcases.
+
+  solopreneur:
+    min_upvotes: 3
+    min_comments: 2
+    notes: >
+      One-person businesses, strong manual workflow pain.
+      Very high signal-to-noise if filtered correctly.
+
+  SaaS:
+    min_upvotes: 5
+    min_comments: 5
+    notes: >
+      Paid-tool users. Strong signals around churn, onboarding,
+      customer support, internal ops.
+
+# =========================
+# Secondary: 补充视角
+# =========================
+secondary:
+  IndieHackers:
+    min_upvotes: 5
+    min_comments: 3
+    notes: >
+      Indie mindset, non-VC, lots of honest retrospectives.
+      Look for "regret", "unexpected", "what broke".
+
+  startups:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      Early-stage founders, ops and hiring pain.
+      Ignore high-level fundraising or pitch discussions.
+
+  Entrepreneur:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      Large volume, low average signal.
+      Only keep long-form posts with active OP replies.
+
+# =========================
+# Vertical: 
+# =========================
+verticals:
+  freelance:
+    min_upvotes: 5
+    min_comments: 3
+    notes: >
+      Invoicing, contracts, client management.
+      Small money but very stable recurring pain.
+
+  consulting:
+    min_upvotes: 5
+    min_comments: 3
+    notes: >
+      Project delivery, meeting notes, stakeholder chaos.
+      Excellent for workflow patch tools.
+
+  contentcreators:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      Creator workflows, sponsorships, publishing pipelines.
+      Emotional noise is high, extraction must be strict.
+
+# =========================
+# Experimental: 低频探索
+# =========================
+experimental:
+  devops:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      Very real pain, but solutions often require deep infra knowledge.
+      Use only if you want technical B2B tools.
+
+  marketing:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      Tool fatigue is extreme. Only focus on repeated manual workflows.
+
+# =========================
+# Pain Keywords Configuration
+# =========================
+pain_keywords:
+  frustration:
+    - frustrated
+    - annoying
+    - hate
+    - terrible
+    - awful
+    - stuck
+    - broken
+    - failed
+    - error
+    - bug
+    - issue
+    - problem
+    - waste
+    - pointless
+    - useless
+  inefficiency:
+    - too slow
+    - takes too long
+    - manual
+    - tedious
+    - time-consuming
+    - inefficient
+    - workaround
+    - hack
+    - clunky
+    - complicated
+    - difficult
+  workflow:
+    - process
+    - workflow
+    - pipeline
+    - routine
+    - daily
+    - repetitive
+    - automation
+    - streamline
+    - optimize
+  cost:
+    - expensive
+    - costly
+    - price
+    - fee
+    - charge
+    - pay
+    - afford
+    - budget
+    - money
+
+# =========================
+# Exclusion Patterns
+# =========================
+exclude_patterns:
+  showcase:
+    - "check out my"
+    - "just launched"
+    - "i made"
+    - "my project"
+    - "showcase"
+    - "demo"
+  job:
+    - "hiring"
+    - "we are looking"
+    - "job opening"
+    - "apply now"
+    - "recruiting"
+  question:
+    - "how do i"
+    - "what is the best"
+    - "any recommendations"
+    - "looking for advice"
+  off_topic:
+    - "meme"
+    - "discussion"
+    - "general"
+
+# =========================
+# Search Strategy
+# =========================
+search_strategy:
+  max_results_per_method: 100
+  time_filters: ["week", "month"]
+
+# =========================
+# Explicitly Ignored
+# =========================
+ignore:
+  - technology
+  - Futurism
+  - artificial
+  - ChatGPT
+  - OpenAI
+  - programming
+  - learnprogramming

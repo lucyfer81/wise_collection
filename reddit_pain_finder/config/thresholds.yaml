@@ -186,6 +186,55 @@ output_control:
     min_cluster_size: 3        # 最小聚类大小
     diversity_threshold: 0.8   # 多样性阈值
 
+# 过滤规则配置
+filtering_rules:
+  # 是否启用过滤规则
+  enabled: true
+
+  # 最小阈值要求
+  min_cluster_size: 8
+  min_unique_authors: 5
+  min_cross_subreddit_count: 2
+  min_avg_frequency_score: 6
+
+  # 频率评分映射
+  frequency_score_mapping:
+    daily: 10
+    每天: 10
+    day: 9
+    weekly: 8
+    每周: 8
+    week: 7
+    monthly: 6
+    每月: 6
+    month: 5
+    often: 7
+    经常: 7
+    frequently: 8
+    sometimes: 5
+    有时: 5
+    occasionally: 4
+    rarely: 3
+    很少: 3
+    seldom: 2
+    always: 9
+    总是: 9
+    constantly: 8
+    never: 1
+    从不: 1
+    default: 4
+
+  # 跳过原因模板
+  skip_reasons:
+    cluster_size: "聚类规模过小 ({actual} < {required})"
+    unique_authors: "独立作者不足 ({actual} < {required})"
+    cross_subreddit: "跨子版块覆盖不足 ({actual} < {required})"
+    frequency_score: "痛点频率不够高 ({actual:.1f} < {required})"
+
+  # 日志配置
+  log_skipped_clusters: true
+  log_detailed_metrics: false
+
 # 调试和监控
 monitoring:
   # 日志详细程度

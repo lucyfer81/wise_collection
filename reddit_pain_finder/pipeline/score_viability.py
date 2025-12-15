@@ -7,6 +7,8 @@ import logging
 import time
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+import yaml
+from pathlib import Path
 
 from utils.llm_client import llm_client
 from utils.db import db
@@ -24,8 +26,273 @@ class ViabilityScorer:
             "good_opportunities": 0,
             "excellent_opportunities": 0,
             "processing_time": 0.0,
-            "avg_total_score": 0.0
+            "avg_total_score": 0.0,
+            "skipped_clusters": 0
         }
+
+        # 加载配置
+        self.config = self._load_config()
+        self.filtering_rules = self.config.get("filtering_rules", {})
+
+        logger.info(f"ViabilityScorer initialized with filtering rules enabled: {self.filtering_rules.get('enabled', False)}")
+
+    def _load_config(self) -> Dict[str, Any]:
+        """加载配置文件"""
+        try:
+            config_path = Path(__file__).parent.parent / "config" / "thresholds.yaml"
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            logger.info(f"Configuration loaded from {config_path}")
+            return config
+        except Exception as e:
+            logger.error(f"Failed to load configuration: {e}")
+            return {"filtering_rules": {"enabled": False}}
+
+    def _calculate_unique_authors(self, pain_event_ids: List[int]) -> int:
+        """计算独立作者数量"""
+        if not pain_event_ids:
+            return 0
+
+        try:
+            with db.get_connection("pain") as conn:
+                placeholders = ','.join(['?' for _ in pain_event_ids])
+                cursor = conn.execute(f"""
+                    SELECT COUNT(DISTINCT fp.author) as unique_count
+                    FROM pain_events pe
+                    JOIN filtered_posts fp ON pe.post_id = fp.id
+                    WHERE pe.id IN ({placeholders})
+                """, pain_event_ids)
+                result = cursor.fetchone()
+                return result['unique_count'] if result else 0
+        except Exception as e:
+            logger.error(f"Failed to calculate unique authors: {e}")
+            return 0
+
+    def _calculate_cross_subreddit_count(self, pain_event_ids: List[int]) -> int:
+        """计算跨子版块数量"""
+        if not pain_event_ids:
+            return 0
+
+        try:
+            with db.get_connection("pain") as conn:
+                placeholders = ','.join(['?' for _ in pain_event_ids])
+                cursor = conn.execute(f"""
+                    SELECT COUNT(DISTINCT fp.subreddit) as subreddit_count
+                    FROM pain_events pe
+                    JOIN filtered_posts fp ON pe.post_id = fp.id
+                    WHERE pe.id IN ({placeholders})
+                """, pain_event_ids)
+                result = cursor.fetchone()
+                return result['subreddit_count'] if result else 0
+        except Exception as e:
+            logger.error(f"Failed to calculate cross-subreddit count: {e}")
+            return 0
+
+    def _calculate_avg_frequency_score(self, pain_event_ids: List[int]) -> float:
+        """计算平均频率评分"""
+        if not pain_event_ids:
+            return 0.0
+
+        try:
+            with db.get_connection("pain") as conn:
+                placeholders = ','.join(['?' for _ in pain_event_ids])
+                cursor = conn.execute(f"""
+                    SELECT pe.frequency
+                    FROM pain_events pe
+                    WHERE pe.id IN ({placeholders})
+                """, pain_event_ids)
+
+                frequencies = [row['frequency'] or '' for row in cursor.fetchall()]
+                return self._frequency_to_score(frequencies)
+        except Exception as e:
+            logger.error(f"Failed to calculate average frequency score: {e}")
+            return 0.0
+
+    def _frequency_to_score(self, frequencies: List[str]) -> float:
+        """将频率文本转换为评分"""
+        if not frequencies:
+            return 0.0
+
+        score_map = self.filtering_rules.get("frequency_score_mapping", {
+            'daily': 10, '每天': 10, 'day': 9,
+            'weekly': 8, '每周': 8, 'week': 7,
+            'monthly': 6, '每月': 6, 'month': 5,
+            'often': 7, '经常': 7, 'frequently': 8,
+            'sometimes': 5, '有时': 5, 'occasionally': 4,
+            'rarely': 3, '很少': 3, 'seldom': 2,
+            'always': 9, '总是': 9, 'constantly': 8,
+            'never': 1, '从不': 1, 'default': 4
+        })
+
+        scores = []
+        for freq in frequencies:
+            if not freq:
+                scores.append(score_map.get('default', 4))
+                continue
+
+            freq_lower = freq.lower()
+            matched = False
+            for key, score in score_map.items():
+                if key == 'default':
+                    continue
+                if key in freq_lower:
+                    scores.append(score)
+                    matched = True
+                    break
+
+            if not matched:
+                scores.append(score_map.get('default', 4))
+
+        return sum(scores) / len(scores) if scores else 0.0
+
+    def should_skip_solution_design(self, cluster_data: Dict[str, Any]) -> tuple[bool, str]:
+        """判断是否应该跳过解决方案设计"""
+        if not self.filtering_rules.get("enabled", False):
+            return False, ""
+
+        # 1. 检查聚类大小
+        cluster_size = cluster_data.get('cluster_size', 0)
+        min_cluster_size = self.filtering_rules.get("min_cluster_size", 8)
+        if cluster_size < min_cluster_size:
+            reason = self.filtering_rules.get("skip_reasons", {}).get("cluster_size",
+                    f"聚类规模过小 ({cluster_size} < {min_cluster_size})")
+            formatted_reason = reason.format(actual=cluster_size, required=min_cluster_size)
+            if self.filtering_rules.get("log_skipped_clusters", True):
+                logger.info(f"Skipping cluster due to size: {formatted_reason}")
+            return True, formatted_reason
+
+        # 2. 检查独立作者数
+        pain_event_ids = cluster_data.get('pain_event_ids', [])
+        if isinstance(pain_event_ids, str):
+            import json
+            try:
+                pain_event_ids = json.loads(pain_event_ids)
+            except:
+                pain_event_ids = []
+
+        unique_authors = self._calculate_unique_authors(pain_event_ids)
+        min_unique_authors = self.filtering_rules.get("min_unique_authors", 5)
+        if unique_authors < min_unique_authors:
+            reason = self.filtering_rules.get("skip_reasons", {}).get("unique_authors",
+                    f"独立作者不足 ({unique_authors} < {min_unique_authors})")
+            formatted_reason = reason.format(actual=unique_authors, required=min_unique_authors)
+            if self.filtering_rules.get("log_skipped_clusters", True):
+                logger.info(f"Skipping cluster due to unique authors: {formatted_reason}")
+            return True, formatted_reason
+
+        # 3. 检查跨子版块数量
+        cross_subreddit_count = self._calculate_cross_subreddit_count(pain_event_ids)
+        min_cross_subreddit_count = self.filtering_rules.get("min_cross_subreddit_count", 2)
+        if cross_subreddit_count < min_cross_subreddit_count:
+            reason = self.filtering_rules.get("skip_reasons", {}).get("cross_subreddit",
+                    f"跨子版块数量不足 ({cross_subreddit_count} < {min_cross_subreddit_count})")
+            formatted_reason = reason.format(actual=cross_subreddit_count, required=min_cross_subreddit_count)
+            if self.filtering_rules.get("log_skipped_clusters", True):
+                logger.info(f"Skipping cluster due to cross-subreddit: {formatted_reason}")
+            return True, formatted_reason
+
+        # 4. 检查平均频率评分
+        avg_frequency_score = self._calculate_avg_frequency_score(pain_event_ids)
+        min_avg_frequency_score = self.filtering_rules.get("min_avg_frequency_score", 6)
+        if avg_frequency_score < min_avg_frequency_score:
+            reason = self.filtering_rules.get("skip_reasons", {}).get("frequency_score",
+                    f"痛点频率不够高 ({avg_frequency_score:.1f} < {min_avg_frequency_score})")
+            formatted_reason = reason.format(actual=avg_frequency_score, required=min_avg_frequency_score)
+            if self.filtering_rules.get("log_skipped_clusters", True):
+                logger.info(f"Skipping cluster due to frequency score: {formatted_reason}")
+            return True, formatted_reason
+
+        if self.filtering_rules.get("log_detailed_metrics", False):
+            logger.info(f"Cluster passed filtering checks - size: {cluster_size}, "
+                       f"authors: {unique_authors}, subreddits: {cross_subreddit_count}, "
+                       f"frequency: {avg_frequency_score:.1f}")
+
+        return False, ""
+
+    def _update_opportunities_recommendation(self, cluster_id: int, recommendation: str, skip_reason: str = "") -> bool:
+        """更新聚类下所有机会的推荐状态"""
+        try:
+            with db.get_connection("clusters") as conn:
+                # 获取所有相关机会
+                cursor = conn.execute("""
+                    SELECT id FROM opportunities WHERE cluster_id = ?
+                """, (cluster_id,))
+                opportunity_ids = [row['id'] for row in cursor.fetchall()]
+
+                # 更新每个机会的推荐
+                for opp_id in opportunity_ids:
+                    full_recommendation = f"abandon - {skip_reason}" if skip_reason else recommendation
+                    conn.execute("""
+                        UPDATE opportunities
+                        SET recommendation = ?
+                        WHERE id = ?
+                    """, (full_recommendation, opp_id))
+
+                conn.commit()
+                logger.info(f"Updated {len(opportunity_ids)} opportunities with recommendation: {full_recommendation}")
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to update opportunities recommendation: {e}")
+            return False
+
+    def _apply_filtering_rules(self, opportunities: List[Dict[str, Any]], processed_clusters: set) -> List[Dict[str, Any]]:
+        """应用过滤规则"""
+        filtered_opportunities = []
+        skipped_count = 0
+
+        for opportunity in opportunities:
+            cluster_id = opportunity["cluster_id"]
+
+            # 避免重复处理同一个聚类
+            if cluster_id in processed_clusters:
+                filtered_opportunities.append(opportunity)
+                continue
+
+            # 获取聚类数据
+            try:
+                with db.get_connection("clusters") as conn:
+                    cursor = conn.execute("""
+                        SELECT * FROM clusters WHERE id = ?
+                    """, (cluster_id,))
+                    cluster_data = cursor.fetchone()
+                    cluster_data = dict(cluster_data) if cluster_data else None
+
+                if cluster_data:
+                    # 检查过滤规则
+                    should_skip, skip_reason = self.should_skip_solution_design(cluster_data)
+
+                    if should_skip:
+                        # 跳过该聚类的所有机会
+                        self._update_opportunities_recommendation(cluster_id, "abandon", skip_reason)
+                        processed_clusters.add(cluster_id)
+                        skipped_count += 1
+                        self.stats["skipped_clusters"] += 1
+
+                        # 统计跳过的机会数量
+                        with db.get_connection("clusters") as conn:
+                            cursor = conn.execute("""
+                                SELECT COUNT(*) as count FROM opportunities WHERE cluster_id = ?
+                            """, (cluster_id,))
+                            opp_count = cursor.fetchone()['count']
+                            logger.info(f"Skipped {opp_count} opportunities from cluster {cluster_id}: {skip_reason}")
+
+                        continue
+                    else:
+                        # 聚类通过过滤，保留其机会
+                        processed_clusters.add(cluster_id)
+                        filtered_opportunities.append(opportunity)
+                        logger.info(f"Cluster {cluster_id} passed filtering checks")
+                else:
+                    logger.warning(f"Cluster {cluster_id} not found, including opportunity")
+                    filtered_opportunities.append(opportunity)
+
+            except Exception as e:
+                logger.error(f"Error processing cluster {cluster_id}: {e}")
+                filtered_opportunities.append(opportunity)
+
+        logger.info(f"Filtering applied: {skipped_count} clusters skipped, {len(filtered_opportunities)} opportunities remaining")
+        return filtered_opportunities
 
     def _enhance_opportunity_data(self, opportunity_data: Dict[str, Any]) -> Dict[str, Any]:
         """增强机会数据"""
@@ -435,6 +702,12 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
                 return {"opportunities_scored": 0, "viable_opportunities": 0}
 
             logger.info(f"Found {len(opportunities)} opportunities to score")
+
+            # 如果启用了过滤规则，首先检查聚类
+            processed_clusters = set()
+            if self.filtering_rules.get("enabled", False):
+                logger.info("Filtering rules enabled, checking clusters first...")
+                opportunities = self._apply_filtering_rules(opportunities, processed_clusters)
 
             scored_opportunities = []
             viable_count = 0

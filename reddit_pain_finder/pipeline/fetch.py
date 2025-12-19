@@ -22,7 +22,7 @@ try:
 except ImportError:
     logger.warning("Could not import db utility, will use local file storage")
 
-class RedditPainFetcher:
+class RedditSourceFetcher:
     """Reddit痛点数据抓取器"""
 
     def __init__(self, config_path: str = "config/subreddits.yaml"):
@@ -394,7 +394,7 @@ class RedditPainFetcher:
             logger.error(f"Failed to fetch subreddit r/{subreddit_name}: {e}")
             return 0
 
-    def fetch_all(self, limit_subreddits: Optional[int] = None) -> Dict[str, Any]:
+    def fetch_all(self, limit_sources: Optional[int] = None) -> Dict[str, Any]:
         """抓取所有配置的子版块"""
         self.stats["start_time"] = datetime.now()
 
@@ -425,8 +425,8 @@ class RedditPainFetcher:
                         subreddits.append(subreddit_data)
 
         # 如果指定了限制，则截取列表
-        if limit_subreddits:
-            subreddits = subreddits[:limit_subreddits]
+        if limit_sources:
+            subreddits = subreddits[:limit_sources]
 
         logger.info(f"Will fetch from {len(subreddits)} subreddits")
 
@@ -470,8 +470,8 @@ def main():
     args = parser.parse_args()
 
     try:
-        fetcher = RedditPainFetcher(args.config)
-        stats = fetcher.fetch_all(limit_subreddits=args.limit)
+        fetcher = RedditSourceFetcher(args.config)
+        stats = fetcher.fetch_all(limit_sources=args.limit)
 
         # 输出JSON格式的统计信息（用于脚本集成）
         print(json.dumps(stats, indent=2))

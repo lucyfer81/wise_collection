@@ -12,7 +12,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
-class PainPointDB:
+class WiseCollectionDB:
     """Wise Collection系统数据库管理器"""
 
     def __init__(self, db_dir: str = "data", unified: bool = True):
@@ -771,7 +771,7 @@ class PainPointDB:
         """切换到统一数据库模式（需要重启应用）"""
         if not self.unified:
             logger.warning("Switch to unified database mode requires application restart")
-            logger.info("Please create a new PainPointDB(unified=True) instance")
+            logger.info("Please create a new WiseCollectionDB(unified=True) instance")
 
     def get_cross_table_stats(self) -> Dict[str, Any]:
         """获取跨表统计信息（仅在统一模式下有效）"""
@@ -817,7 +817,7 @@ class PainPointDB:
 
 
 # 全局数据库实例（使用统一数据库）
-db = PainPointDB(unified=True)
+db = WiseCollectionDB(unified=True)
 
 # 保持向后兼容的多数据库实例
-db_multi = PainPointDB(unified=False)
+db_multi = WiseCollectionDB(unified=False)

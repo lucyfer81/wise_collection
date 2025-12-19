@@ -76,14 +76,21 @@ class RedditPainFetcher:
             raise
 
     def _load_processed_posts(self):
-        """加载已处理的帖子ID"""
+        """加载已处理的帖子ID（支持新旧ID格式）"""
         try:
             # 尝试从数据库加载
             if 'db' in globals():
                 # 从数据库获取已处理的帖子ID
                 with db.get_connection("raw") as conn:
-                    cursor = conn.execute("SELECT id FROM posts")
+                    cursor = conn.execute("SELECT id, source FROM posts")
                     self.processed_posts = {row[0] for row in cursor.fetchall()}
+
+                    # 统计各种数据源
+                    source_counts = {}
+                    cursor = conn.execute("SELECT source, COUNT(*) as count FROM posts GROUP BY source")
+                    for row in cursor.fetchall():
+                        source_counts[row[0]] = row[1]
+                    logger.info(f"Loaded posts by source: {source_counts}")
             else:
                 # 从文件加载（备用方案）
                 processed_file = "data/processed_posts.json"
@@ -207,7 +214,7 @@ class RedditPainFetcher:
         return False
 
     def _extract_post_data(self, submission, subreddit_config: Dict[str, Any]) -> Dict[str, Any]:
-        """提取帖子数据"""
+        """提取帖子数据（支持多数据源schema）"""
         try:
             # 获取评论
             comments = []
@@ -227,18 +234,36 @@ class RedditPainFetcher:
             # 计算痛点分数
             pain_score = self._calculate_pain_score(submission, subreddit_config)
 
-            return {
-                "id": submission.id,
-                "title": submission.title,
-                "body": submission.selftext,
+            # Reddit特有数据存储在platform_data中
+            platform_data = {
                 "subreddit": subreddit_config["name"],
-                "category": subreddit_config["category"],
-                "url": submission.url,
-                "score": submission.score,
-                "num_comments": submission.num_comments,
                 "upvote_ratio": getattr(submission, 'upvote_ratio', 0.0),
                 "is_self": getattr(submission, 'is_self', False),
-                "created_utc": submission.created_utc,
+                "reddit_url": f"https://reddit.com{submission.permalink}",
+                "flair": getattr(submission, 'link_flair_text', None)
+            }
+
+            # 生成统一ID和标准化时间
+            reddit_source_id = submission.id
+            unified_id = f"reddit_{reddit_source_id}"
+            created_at = datetime.fromtimestamp(submission.created_utc).isoformat() + "Z"
+
+            return {
+                "id": unified_id,                           # 新的统一ID
+                "source": "reddit",                         # 数据源标识
+                "source_id": reddit_source_id,              # Reddit原始ID
+                "title": submission.title,
+                "body": submission.selftext,
+                "subreddit": subreddit_config["name"],     # 保持向后兼容
+                "category": subreddit_config["category"],
+                "url": submission.url,
+                "platform_data": platform_data,             # Reddit特有数据
+                "score": submission.score,
+                "num_comments": submission.num_comments,
+                "upvote_ratio": getattr(submission, 'upvote_ratio', 0.0),  # 向后兼容
+                "is_self": getattr(submission, 'is_self', False),          # 向后兼容
+                "created_utc": submission.created_utc,        # 向后兼容
+                "created_at": created_at,                    # 新的标准化时间
                 "author": submission.author.name if submission.author else "[deleted]",
                 "comments": comments,
                 "pain_score": pain_score,
@@ -252,8 +277,9 @@ class RedditPainFetcher:
     def _process_submission(self, submission, subreddit_config: Dict[str, Any]) -> bool:
         """处理单个帖子"""
         try:
-            # 检查是否已处理
-            if submission.id in self.processed_posts:
+            # 检查是否已处理（使用统一ID）
+            unified_id = f"reddit_{submission.id}"
+            if unified_id in self.processed_posts:
                 return False
 
             # 检查是否为痛点帖子
@@ -275,7 +301,7 @@ class RedditPainFetcher:
                 success = self._save_post_to_file(post_data)
 
             if success:
-                self.processed_posts.add(submission.id)
+                self.processed_posts.add(unified_id)  # 使用统一ID
                 self.stats["total_saved"] += 1
                 logger.info(f"Saved post: {submission.title[:60]}... (Score: {submission.score}, Pain: {post_data['pain_score']:.2f})")
                 return True

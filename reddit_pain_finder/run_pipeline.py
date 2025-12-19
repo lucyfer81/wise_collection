@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Reddit Pain Point Finder - Main Pipeline Runner
-主要的pipeline执行脚本 - 一键运行整个痛点发现流程
+Wise Collection - Main Pipeline Runner
+主要的pipeline执行脚本 - 一键运行整个数据收集流程
 """
 import os
 import sys
@@ -40,8 +40,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-class RedditPainPipeline:
-    """Reddit痛点发现Pipeline"""
+class WiseCollectionPipeline:
+    """Wise Collection数据收集Pipeline"""
 
     def __init__(self):
         """初始化pipeline"""
@@ -61,7 +61,7 @@ class RedditPainPipeline:
     def run_stage_fetch(self, limit_subreddits: Optional[int] = None) -> Dict[str, Any]:
         """阶段1: 数据抓取"""
         logger.info("=" * 50)
-        logger.info("STAGE 1: Fetching Reddit posts")
+        logger.info("STAGE 1: Wise Collection Posts Fetcher")
         logger.info("=" * 50)
 
         try:
@@ -390,7 +390,7 @@ def main():
 
     try:
         # 初始化pipeline
-        pipeline = RedditPainPipeline()
+        pipeline = WiseCollectionPipeline()
 
         if args.stage == "all":
             # 运行完整pipeline

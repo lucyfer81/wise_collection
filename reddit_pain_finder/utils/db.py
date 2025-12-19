@@ -1,5 +1,5 @@
 """
-Database utilities for Reddit Pain Point Finder
+Database utilities for Wise Collection
 SQLite数据库操作工具
 """
 import sqlite3
@@ -13,7 +13,7 @@ import os
 logger = logging.getLogger(__name__)
 
 class PainPointDB:
-    """Reddit痛点发现系统数据库管理器"""
+    """Wise Collection系统数据库管理器"""
 
     def __init__(self, db_dir: str = "data", unified: bool = True):
         """初始化数据库连接"""
@@ -23,7 +23,7 @@ class PainPointDB:
 
         if unified:
             # 使用统一数据库文件
-            self.unified_db_path = os.path.join(db_dir, "reddit_pain_finder.db")
+            self.unified_db_path = os.path.join(db_dir, "wise_collection.db")
             # 兼容性：保持原有路径变量
             self.raw_db_path = self.unified_db_path
             self.filtered_db_path = self.unified_db_path

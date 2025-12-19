@@ -88,13 +88,6 @@ class LLMClient:
         # 默认返回main模型配置
         return self.config["models"]["main"].copy()
 
-    @backoff.on_exception(
-        backoff.expo,
-        Exception,
-        max_tries=3,
-        base=1,
-        max_value=60
-    )
     def chat_completion(
         self,
         messages: List[Dict[str, str]],
@@ -104,68 +97,85 @@ class LLMClient:
         json_mode: bool = False
     ) -> Dict[str, Any]:
         """聊天补全请求"""
-        try:
-            model_config = self.get_model_config(model_type)
-            model_name = self.get_model_name(model_type)
 
-            # 参数配置
-            params = {
-                "model": model_name,
-                "messages": messages,
-                "temperature": temperature if temperature is not None else model_config.get("temperature", 0.1),
-                "max_tokens": max_tokens if max_tokens is not None else model_config.get("max_tokens", 2000),
-                "timeout": model_config.get("timeout", 30)
-            }
+        max_retries = 5
+        base_delay = 1
+        max_delay = 120
 
-            # JSON模式
-            if json_mode:
-                params["response_format"] = {"type": "json_object"}
+        for attempt in range(max_retries):
+            try:
+                model_config = self.get_model_config(model_type)
+                model_name = self.get_model_name(model_type)
 
-            # 记录请求开始时间
-            start_time = time.time()
+                # 参数配置
+                params = {
+                    "model": model_name,
+                    "messages": messages,
+                    "temperature": temperature if temperature is not None else model_config.get("temperature", 0.1),
+                    "max_tokens": max_tokens if max_tokens is not None else model_config.get("max_tokens", 2000),
+                    "timeout": model_config.get("timeout", 180)
+                }
 
-            # 发送请求
-            response = self.client.chat.completions.create(**params)
+                # JSON模式
+                if json_mode:
+                    params["response_format"] = {"type": "json_object"}
 
-            # 计算请求时间
-            request_time = time.time() - start_time
+                # 记录请求开始时间
+                start_time = time.time()
 
-            # 更新统计信息
-            self.stats["requests"] += 1
-            if hasattr(response.usage, 'total_tokens'):
-                self.stats["tokens_used"] += response.usage.total_tokens
+                logger.info(f"LLM Request {attempt + 1}/{max_retries}: model={model_name}, timeout={params['timeout']}s")
 
-            # 提取响应内容
-            content = response.choices[0].message.content
+                # 发送请求
+                response = self.client.chat.completions.create(**params)
 
-            # 如果是JSON模式，尝试解析
-            if json_mode:
-                try:
-                    content = json.loads(content)
-                except json.JSONDecodeError as e:
-                    logger.error(f"Failed to parse JSON response: {e}")
-                    logger.error(f"Raw content: {content}")
-                    # 尝试修复JSON
-                    content = self._try_fix_json(content)
+                # 计算请求时间
+                request_time = time.time() - start_time
 
-            result = {
-                "content": content,
-                "model": model_name,
-                "usage": {
-                    "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
-                    "completion_tokens": response.usage.completion_tokens if response.usage else 0,
-                    "total_tokens": response.usage.total_tokens if response.usage else 0
-                },
-                "request_time": request_time
-            }
+                # 更新统计信息
+                self.stats["requests"] += 1
+                if hasattr(response.usage, 'total_tokens'):
+                    self.stats["tokens_used"] += response.usage.total_tokens
 
-            logger.info(f"LLM request completed: {result['usage']['total_tokens']} tokens in {request_time:.2f}s")
-            return result
+                # 提取响应内容
+                content = response.choices[0].message.content
 
-        except Exception as e:
-            self.stats["errors"] += 1
-            logger.error(f"LLM request failed: {e}")
-            raise
+                # 如果是JSON模式，尝试解析
+                if json_mode:
+                    try:
+                        content = json.loads(content)
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Failed to parse JSON response: {e}")
+                        logger.error(f"Raw content: {content}")
+                        # 尝试修复JSON
+                        content = self._try_fix_json(content)
+
+                result = {
+                    "content": content,
+                    "model": model_name,
+                    "usage": {
+                        "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
+                        "completion_tokens": response.usage.completion_tokens if response.usage else 0,
+                        "total_tokens": response.usage.total_tokens if response.usage else 0
+                    },
+                    "request_time": request_time
+                }
+
+                logger.info(f"✅ LLM request {attempt + 1}/{max_retries} completed: {result['usage']['total_tokens']} tokens in {request_time:.2f}s")
+                return result
+
+            except Exception as e:
+                error_msg = f"❌ LLM request {attempt + 1}/{max_retries} failed: {e}"
+                self.stats["errors"] += 1
+
+                if attempt < max_retries - 1:
+                    # 计算退避延迟
+                    delay = min(base_delay * (2 ** attempt), max_delay)
+                    logger.warning(f"{error_msg} - Retrying in {delay:.2f}s...")
+                    time.sleep(delay)
+                    continue
+                else:
+                    logger.error(f"{error_msg} - Max retries exceeded")
+                    raise
 
     def _try_fix_json(self, content: str) -> Dict[str, Any]:
         """尝试修复损坏的JSON"""

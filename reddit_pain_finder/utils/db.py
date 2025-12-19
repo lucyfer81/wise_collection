@@ -15,16 +15,26 @@ logger = logging.getLogger(__name__)
 class PainPointDB:
     """Reddit痛点发现系统数据库管理器"""
 
-    def __init__(self, db_dir: str = "data"):
+    def __init__(self, db_dir: str = "data", unified: bool = True):
         """初始化数据库连接"""
         self.db_dir = db_dir
+        self.unified = unified  # 是否使用统一数据库
         os.makedirs(db_dir, exist_ok=True)
 
-        # 数据库文件路径
-        self.raw_db_path = os.path.join(db_dir, "raw_posts.db")
-        self.filtered_db_path = os.path.join(db_dir, "filtered_posts.db")
-        self.pain_db_path = os.path.join(db_dir, "pain_events.db")
-        self.clusters_db_path = os.path.join(db_dir, "clusters.db")
+        if unified:
+            # 使用统一数据库文件
+            self.unified_db_path = os.path.join(db_dir, "reddit_pain_finder.db")
+            # 兼容性：保持原有路径变量
+            self.raw_db_path = self.unified_db_path
+            self.filtered_db_path = self.unified_db_path
+            self.pain_db_path = self.unified_db_path
+            self.clusters_db_path = self.unified_db_path
+        else:
+            # 使用多个数据库文件（原有模式）
+            self.raw_db_path = os.path.join(db_dir, "raw_posts.db")
+            self.filtered_db_path = os.path.join(db_dir, "filtered_posts.db")
+            self.pain_db_path = os.path.join(db_dir, "pain_events.db")
+            self.clusters_db_path = os.path.join(db_dir, "clusters.db")
 
         # 初始化所有数据库
         self._init_databases()
@@ -32,19 +42,25 @@ class PainPointDB:
     @contextmanager
     def get_connection(self, db_type: str = "raw"):
         """获取数据库连接的上下文管理器"""
-        db_paths = {
-            "raw": self.raw_db_path,
-            "filtered": self.filtered_db_path,
-            "pain": self.pain_db_path,
-            "clusters": self.clusters_db_path
-        }
+        if self.unified:
+            # 统一数据库模式：所有连接都指向同一个文件
+            db_path = self.unified_db_path
+        else:
+            # 多数据库模式：根据db_type选择不同的文件
+            db_paths = {
+                "raw": self.raw_db_path,
+                "filtered": self.filtered_db_path,
+                "pain": self.pain_db_path,
+                "clusters": self.clusters_db_path
+            }
 
-        if db_type not in db_paths:
-            raise ValueError(f"Invalid db_type: {db_type}")
+            if db_type not in db_paths:
+                raise ValueError(f"Invalid db_type: {db_type}")
+            db_path = db_paths[db_type]
 
         conn = None
         try:
-            conn = sqlite3.connect(db_paths[db_type])
+            conn = sqlite3.connect(db_path)
             conn.row_factory = sqlite3.Row
             yield conn
         except Exception as e:
@@ -58,10 +74,147 @@ class PainPointDB:
 
     def _init_databases(self):
         """初始化所有数据库表结构"""
-        self._init_raw_posts_db()
-        self._init_filtered_posts_db()
-        self._init_pain_events_db()
-        self._init_clusters_db()
+        if self.unified:
+            self._init_unified_database()
+        else:
+            self._init_raw_posts_db()
+            self._init_filtered_posts_db()
+            self._init_pain_events_db()
+            self._init_clusters_db()
+
+    def _init_unified_database(self):
+        """初始化统一数据库，包含所有表"""
+        with self.get_connection("raw") as conn:
+            # 创建原始帖子表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS posts (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    body TEXT,
+                    subreddit TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    score INTEGER NOT NULL,
+                    num_comments INTEGER NOT NULL,
+                    upvote_ratio REAL NOT NULL,
+                    is_self INTEGER NOT NULL,
+                    created_utc REAL NOT NULL,
+                    author TEXT,
+                    category TEXT,
+                    collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    raw_data TEXT  -- 原始JSON数据
+                )
+            """)
+
+            # 创建过滤帖子表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS filtered_posts (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    body TEXT,
+                    subreddit TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    score INTEGER NOT NULL,
+                    num_comments INTEGER NOT NULL,
+                    upvote_ratio REAL NOT NULL,
+                    pain_score REAL NOT NULL,
+                    pain_keywords TEXT,
+                    filtered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    filter_reason TEXT
+                )
+            """)
+
+            # 创建痛点事件表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS pain_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    post_id TEXT NOT NULL,
+                    actor TEXT,
+                    context TEXT,
+                    problem TEXT NOT NULL,
+                    current_workaround TEXT,
+                    frequency TEXT,
+                    emotional_signal TEXT,
+                    mentioned_tools TEXT,
+                    extraction_confidence REAL,
+                    extracted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (post_id) REFERENCES filtered_posts(id)
+                )
+            """)
+
+            # 创建嵌入向量表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS pain_embeddings (
+                    pain_event_id INTEGER PRIMARY KEY,
+                    embedding_vector BLOB NOT NULL,
+                    embedding_model TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (pain_event_id) REFERENCES pain_events(id)
+                )
+            """)
+
+            # 创建聚类表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS clusters (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    cluster_name TEXT NOT NULL,
+                    cluster_description TEXT,
+                    pain_event_ids TEXT NOT NULL,  -- JSON数组
+                    cluster_size INTEGER NOT NULL,
+                    avg_pain_score REAL,
+                    workflow_confidence REAL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            # 创建机会表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS opportunities (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    cluster_id INTEGER NOT NULL,
+                    opportunity_name TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    current_tools TEXT,
+                    missing_capability TEXT,
+                    why_existing_fail TEXT,
+                    target_users TEXT,
+                    pain_frequency_score REAL,
+                    market_size_score REAL,
+                    mvp_complexity_score REAL,
+                    competition_risk_score REAL,
+                    integration_complexity_score REAL,
+                    total_score REAL,
+                    killer_risks TEXT,  -- JSON数组
+                    recommendation TEXT,  -- AI建议：pursue/modify/abandon with reason
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (cluster_id) REFERENCES clusters(id)
+                )
+            """)
+
+            # 创建所有索引
+            # posts表索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_subreddit ON posts(subreddit)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_score ON posts(score)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_collected_at ON posts(collected_at)")
+
+            # filtered_posts表索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_pain_score ON filtered_posts(pain_score)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_subreddit ON filtered_posts(subreddit)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_at ON filtered_posts(filtered_at)")
+
+            # pain_events表索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_pain_post_id ON pain_events(post_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_pain_problem ON pain_events(problem)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_pain_extracted_at ON pain_events(extracted_at)")
+
+            # clusters表索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_clusters_size ON clusters(cluster_size)")
+
+            # opportunities表索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_score ON opportunities(total_score)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_cluster_id ON opportunities(cluster_id)")
+
+            conn.commit()
+            logger.info("Unified database initialized successfully")
 
     def _init_raw_posts_db(self):
         """初始化原始帖子数据库"""
@@ -522,5 +675,66 @@ class PainPointDB:
 
         return stats
 
-# 全局数据库实例
-db = PainPointDB()
+# 添加一些便利方法
+    def is_unified(self) -> bool:
+        """检查是否使用统一数据库"""
+        return self.unified
+
+    def get_database_path(self) -> str:
+        """获取当前使用的数据库路径"""
+        return self.unified_db_path if self.unified else "Multiple DB files"
+
+    def switch_to_unified(self):
+        """切换到统一数据库模式（需要重启应用）"""
+        if not self.unified:
+            logger.warning("Switch to unified database mode requires application restart")
+            logger.info("Please create a new PainPointDB(unified=True) instance")
+
+    def get_cross_table_stats(self) -> Dict[str, Any]:
+        """获取跨表统计信息（仅在统一模式下有效）"""
+        if not self.unified:
+            logger.warning("Cross-table stats only available in unified mode")
+            return {}
+
+        stats = {}
+        try:
+            with self.get_connection("raw") as conn:
+                # 获取各表的记录数
+                tables = ['posts', 'filtered_posts', 'pain_events', 'clusters', 'opportunities']
+                for table in tables:
+                    cursor = conn.execute(f"SELECT COUNT(*) as count FROM {table}")
+                    stats[f"{table}_count"] = cursor.fetchone()["count"]
+
+                # 获取一些跨表的关联统计
+                # 有多少filtered_posts有对应的pain_events
+                cursor = conn.execute("""
+                    SELECT COUNT(DISTINCT p.id) as count
+                    FROM filtered_posts p
+                    JOIN pain_events pe ON p.id = pe.post_id
+                """)
+                stats["filtered_with_pain_events"] = cursor.fetchone()["count"]
+
+                # 平均每个cluster有多少opportunities
+                cursor = conn.execute("""
+                    SELECT AVG(opp_count) as avg_opportunities
+                    FROM (
+                        SELECT COUNT(o.id) as opp_count
+                        FROM clusters c
+                        LEFT JOIN opportunities o ON c.id = o.cluster_id
+                        GROUP BY c.id
+                    )
+                """)
+                result = cursor.fetchone()
+                stats["avg_opportunities_per_cluster"] = result["avg_opportunities"] or 0
+
+        except Exception as e:
+            logger.error(f"Failed to get cross-table stats: {e}")
+
+        return stats
+
+
+# 全局数据库实例（使用统一数据库）
+db = PainPointDB(unified=True)
+
+# 保持向后兼容的多数据库实例
+db_multi = PainPointDB(unified=False)

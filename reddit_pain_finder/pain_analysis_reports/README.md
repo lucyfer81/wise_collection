@@ -1,6 +1,6 @@
 # 痛点机会分析报告索引
 
-> **生成时间**: 2025-12-15 13:48:33
+> **生成时间**: 2025-12-16 13:18:23
 > **分析数量**: 15
 
 ---
@@ -15,6 +15,7 @@
 
 - [Apple_Search_Ads_Budget_Optimization_for_Small_Budgets_opportunity_analysis.md](pain_analysis_reports/Apple_Search_Ads_Budget_Optimization_for_Small_Budgets_opportunity_analysis.md)
 - [Hardware_Spec_Verification_on_Untrusted_Tools_opportunity_analysis.md](pain_analysis_reports/Hardware_Spec_Verification_on_Untrusted_Tools_opportunity_analysis.md)
+- [Unreliable_Infrastructure_Monitoring_and_Maintenance_opportunity_analysis.md](pain_analysis_reports/Unreliable_Infrastructure_Monitoring_and_Maintenance_opportunity_analysis.md)
 - [Fetching_Comprehensive_Nutrition_Data_via_APIs_opportunity_analysis.md](pain_analysis_reports/Fetching_Comprehensive_Nutrition_Data_via_APIs_opportunity_analysis.md)
 - [Indie_Hacker_Build_Learn_Loop_opportunity_analysis.md](pain_analysis_reports/Indie_Hacker_Build_Learn_Loop_opportunity_analysis.md)
 - [Employee_Offboarding_Device_Recovery_and_Sanitization_opportunity_analysis.md](pain_analysis_reports/Employee_Offboarding_Device_Recovery_and_Sanitization_opportunity_analysis.md)
@@ -26,8 +27,7 @@
 - [Indie_Hacker_Build_Learn_Loop_opportunity_analysis.md](pain_analysis_reports/Indie_Hacker_Build_Learn_Loop_opportunity_analysis.md)
 - [Detecting_and_Mitigating_Ad_Fraud_in_Digital_Campaigns_opportunity_analysis.md](pain_analysis_reports/Detecting_and_Mitigating_Ad_Fraud_in_Digital_Campaigns_opportunity_analysis.md)
 - [Career_Specialization_Pivot_opportunity_analysis.md](pain_analysis_reports/Career_Specialization_Pivot_opportunity_analysis.md)
-- [Handing_Off_Technical_Systems_Without_Proper_Documentation_opportunity_analysis.md](pain_analysis_reports/Handing_Off_Technical_Systems_Without_Proper_Documentation_opportunity_analysis.md)
-- [Initial_Document_Drafting_in_Domain_Specific_Contexts_opportunity_analysis.md](pain_analysis_reports/Initial_Document_Drafting_in_Domain_Specific_Contexts_opportunity_analysis.md)
+- [Business_Idea_Validation_and_Launch_opportunity_analysis.md](pain_analysis_reports/Business_Idea_Validation_and_Launch_opportunity_analysis.md)
 
 ---
 

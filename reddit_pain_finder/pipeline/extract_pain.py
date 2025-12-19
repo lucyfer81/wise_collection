@@ -26,8 +26,9 @@ class PainPointExtractor:
             "processing_time": 0.0
         }
 
-    def _extract_from_single_post(self, post_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _extract_from_single_post(self, post_data: Dict[str, Any], retry_count: int = 0) -> List[Dict[str, Any]]:
         """从单个帖子抽取痛点事件"""
+        max_retries = 2
         try:
             title = post_data.get("title", "")
             body = post_data.get("body", "")
@@ -64,9 +65,17 @@ class PainPointExtractor:
             return pain_events
 
         except Exception as e:
-            logger.error(f"Failed to extract pain from post {post_data.get('id')}: {e}")
-            self.stats["extraction_errors"] += 1
-            return []
+            error_msg = f"Failed to extract pain from post {post_data.get('id')}: {e}"
+
+            # 如果是超时错误且还有重试机会
+            if "timeout" in str(e).lower() and retry_count < max_retries:
+                logger.warning(f"{error_msg} (retry {retry_count + 1}/{max_retries})")
+                time.sleep(5)  # 等待5秒后重试
+                return self._extract_from_single_post(post_data, retry_count + 1)
+            else:
+                logger.error(error_msg)
+                self.stats["extraction_errors"] += 1
+                return []
 
     def _validate_pain_event(self, pain_event: Dict[str, Any]) -> bool:
         """验证痛点事件的质量"""
@@ -212,7 +221,7 @@ class PainPointExtractor:
                     all_pain_events.append(enhanced_event)
 
             # 添加延迟避免API限制
-            time.sleep(0.5)
+            time.sleep(2.0)  # 增加到2秒间隔
 
         # 更新统计信息
         processing_time = time.time() - start_time
@@ -273,17 +282,52 @@ class PainPointExtractor:
 
             logger.info(f"Found {len(unextracted_posts)} posts to extract from")
 
-            # 抽取痛点事件
-            pain_events = self.extract_from_posts_batch(unextracted_posts)
+            # 记录失败的帖子ID，用于后续跳过
+            failed_posts = []
 
-            # 保存到数据库
+            # 抽取痛点事件（带失败恢复）
+            pain_events = []
+            for i, post in enumerate(unextracted_posts):
+                if i % 10 == 0:
+                    logger.info(f"Processed {i}/{len(unextracted_posts)} posts")
+
+                try:
+                    # 尝试抽取单个帖子
+                    post_events = self._extract_from_single_post(post)
+
+                    # 验证和增强每个痛点事件
+                    for event in post_events:
+                        if self._validate_pain_event(event):
+                            enhanced_event = self._enhance_pain_event(event, post)
+                            pain_events.append(enhanced_event)
+
+                    logger.debug(f"Successfully processed post {post.get('id')}")
+
+                except Exception as e:
+                    logger.error(f"Failed to process post {post.get('id')}: {e}")
+                    failed_posts.append(post.get('id'))
+                    self.stats["extraction_errors"] += 1
+                    continue
+
+                # 添加延迟避免API限制，使用动态延迟
+                delay = 3.0 + (i % 5)  # 3-7秒动态延迟
+                logger.debug(f"Waiting {delay:.1f}s before next post...")
+                time.sleep(delay)
+
+            # 保存成功处理的痛点事件
             saved_count = self.save_pain_events(pain_events)
 
+            # 记录失败统计
+            if failed_posts:
+                logger.warning(f"Failed to process {len(failed_posts)} posts: {failed_posts}")
+
             return {
-                "processed": len(unextracted_posts),
+                "processed": len(unextracted_posts) - len(failed_posts),
+                "failed": len(failed_posts),
                 "pain_events_extracted": len(pain_events),
                 "pain_events_saved": saved_count,
-                "extraction_stats": self.get_statistics()
+                "extraction_stats": self.get_statistics(),
+                "failed_posts": failed_posts
             }
 
         except Exception as e:

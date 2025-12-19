@@ -1,0 +1,1253 @@
+
+============================================================
+PIPELINE RESULTS
+============================================================
+{
+  "pipeline_completed": true,
+  "stages_completed": 7,
+  "stages_failed": 0,
+  "total_runtime_minutes": 46.16,
+  "database_statistics": {
+    "raw_posts_count": 602,
+    "filtered_posts_count": 182,
+    "avg_pain_score": 0.5073675537905669,
+    "pain_events_count": 260,
+    "clusters_count": 64,
+    "opportunities_count": 155
+  },
+  "top_opportunities": [
+    {
+      "opportunity_name": "Workflow Validator",
+      "total_score": 1.0,
+      "recommendation": "",
+      "cluster_name": "Career Specialization Pivot"
+    },
+    {
+      "opportunity_name": "Screenshot Sensei",
+      "total_score": 1.0,
+      "recommendation": "",
+      "cluster_name": "Business Idea Validation and Launch"
+    },
+    {
+      "opportunity_name": "Daily Task Unifier",
+      "total_score": 1.0,
+      "recommendation": "",
+      "cluster_name": "Non-technical Decision-Making in Technical Workflows"
+    },
+    {
+      "opportunity_name": "DraftSpark",
+      "total_score": 1.0,
+      "recommendation": "",
+      "cluster_name": "Initial Document Drafting in Domain-Specific Contexts"
+    },
+    {
+      "opportunity_name": "QuickFileRenamer",
+      "total_score": 1.0,
+      "recommendation": "",
+      "cluster_name": "Employee Offboarding Asset Recovery"
+    },
+    {
+      "opportunity_name": "DraftSpark",
+      "total_score": 1.0,
+      "recommendation": "",
+      "cluster_name": "Initial Document Drafting in Domain-Specific Contexts"
+    },
+    {
+      "opportunity_name": "BranchSync for PostgreSQL",
+      "total_score": 1.0,
+      "recommendation": "",
+      "cluster_name": "Improving Search Engine Indexing and Domain Credibility"
+    },
+    {
+      "opportunity_name": "FileSense Renamer",
+      "total_score": 1.0,
+      "recommendation": "",
+      "cluster_name": "Employee Offboarding Device Recovery and Security"
+    },
+    {
+      "opportunity_name": "DraftSync",
+      "total_score": 1.0,
+      "recommendation": "",
+      "cluster_name": "Initial Document Drafting in Domain-Specific Contexts"
+    },
+    {
+      "opportunity_name": "ContextBridge",
+      "total_score": 1.0,
+      "recommendation": "",
+      "cluster_name": "Detecting and Mitigating Ad Fraud in Digital Campaigns"
+    }
+  ],
+  "pipeline_efficiency": {
+    "posts_per_minute": 1.4949231084222903,
+    "pain_events_per_hour": 24.0,
+    "opportunities_per_hour": 50.0
+  }
+}
+ts are tough. But they can easily be... (Score: 13, Pain: 0.85)
+2025-12-17 10:32:51,751 - INFO - Saved post: Turned a “nights & weekends” side project into 1.3K MRR in 6... (Score: 14, Pain: 1.00)
+2025-12-17 10:32:52,524 - INFO - Saved post: What are you planning to ship in 2026?... (Score: 27, Pain: 0.80)
+2025-12-17 10:32:52,914 - INFO - Saved post: I built an offline text compare tool (find differences insta... (Score: 6, Pain: 0.90)
+2025-12-17 10:32:52,914 - INFO - Method hot: found 16 posts in r/SideProject
+2025-12-17 10:32:55,820 - INFO - Method new: found 0 posts in r/SideProject
+2025-12-17 10:32:59,704 - INFO - Saved post: i built a real-time ASCII camera in the browser (60 FPS, Can... (Score: 11, Pain: 0.80)
+2025-12-17 10:33:00,085 - INFO - Saved post: I built the cheapest budgeting app on the market FamilyPilot... (Score: 8, Pain: 1.00)
+2025-12-17 10:33:00,085 - INFO - Method top_week: found 2 posts in r/SideProject
+2025-12-17 10:33:01,086 - INFO - Processing subreddit 2/11
+2025-12-17 10:33:01,086 - INFO - Fetching from r/solopreneur (Category: core)
+2025-12-17 10:33:03,574 - INFO - Method hot: found 0 posts in r/solopreneur
+2025-12-17 10:33:06,904 - INFO - Method new: found 0 posts in r/solopreneur
+2025-12-17 10:33:10,148 - INFO - Method top_week: found 0 posts in r/solopreneur
+2025-12-17 10:33:11,150 - INFO - Processing subreddit 3/11
+2025-12-17 10:33:11,150 - INFO - Fetching from r/SaaS (Category: core)
+2025-12-17 10:33:13,107 - INFO - Saved post: Past MVP and now everything behind the scenes sucks... (Score: 133, Pain: 0.90)
+2025-12-17 10:33:13,501 - INFO - Saved post: Talked to a bunch of SaaS founders this year. Almost all of ... (Score: 4, Pain: 0.80)
+2025-12-17 10:33:14,018 - INFO - Saved post: Tracked 75 early-stage SaaS companies from $0 to first $10K ... (Score: 34, Pain: 1.00)
+2025-12-17 10:33:14,366 - INFO - Saved post: Bootstrapping a saas Agency, need budget vps advice... (Score: 16, Pain: 1.00)
+2025-12-17 10:33:14,827 - INFO - Saved post: Made a SaaS that helps you validate your SaaS idea... (Score: 12, Pain: 0.70)
+2025-12-17 10:33:15,216 - INFO - Saved post: Ahrefs credit system is driving me insane... (Score: 52, Pain: 1.00)
+2025-12-17 10:33:15,595 - INFO - Saved post: I didn’t realize how much clarity I was faking until users i... (Score: 5, Pain: 1.00)
+2025-12-17 10:33:16,048 - INFO - Saved post: Technical solo founders: How did you force yourself to stop ... (Score: 32, Pain: 0.90)
+2025-12-17 10:33:16,425 - INFO - Saved post: Signups almost killed our MVP — retention exposed the real p... (Score: 6, Pain: 0.90)
+2025-12-17 10:33:16,426 - INFO - Method hot: found 9 posts in r/SaaS
+2025-12-17 10:33:19,170 - INFO - Method new: found 0 posts in r/SaaS
+2025-12-17 10:33:22,637 - INFO - Saved post: Our training SOPs are a complete mess... (Score: 30, Pain: 1.00)
+2025-12-17 10:33:23,032 - INFO - Saved post: First-Time SaaS Founders Looking for Launch advice and sugge... (Score: 10, Pain: 0.80)
+2025-12-17 10:33:23,399 - INFO - Saved post: Ops hiring vs executive support after Series C raise... (Score: 8, Pain: 0.70)
+2025-12-17 10:33:23,925 - INFO - Saved post: Most products don’t fail because of marketing... (Score: 6, Pain: 0.90)
+2025-12-17 10:33:24,315 - INFO - Saved post: burned $28k on global IT equipment logistics mistakes in our... (Score: 5, Pain: 1.00)
+2025-12-17 10:33:24,315 - INFO - Method top_week: found 5 posts in r/SaaS
+2025-12-17 10:33:25,316 - INFO - Processing subreddit 4/11
+2025-12-17 10:33:25,317 - INFO - Fetching from r/IndieHackers (Category: secondary)
+2025-12-17 10:33:28,320 - INFO - Saved post: 📣✅New Human Verification System for our subreddit!... (Score: 5, Pain: 1.00)
+2025-12-17 10:33:28,692 - INFO - Saved post: Just landed my second partnership for TraceKit - feeling lik... (Score: 7, Pain: 0.80)
+2025-12-17 10:33:29,064 - INFO - Saved post: Moderator bot is LIVE... (Score: 10, Pain: 0.80)
+2025-12-17 10:33:29,504 - INFO - Saved post: I thought I was doing content marketing. Turns out I was jus... (Score: 5, Pain: 0.90)
+2025-12-17 10:33:29,906 - INFO - Saved post: Can I post my app here?... (Score: 8, Pain: 0.70)
+2025-12-17 10:33:30,258 - INFO - Saved post: Something interesting a founder friend did instead of “marke... (Score: 14, Pain: 0.80)
+2025-12-17 10:33:30,640 - INFO - Saved post: The Top SaaS Ideas for 2026... (Score: 5, Pain: 1.00)
+2025-12-17 10:33:30,640 - INFO - Method hot: found 7 posts in r/IndieHackers
+2025-12-17 10:33:34,073 - INFO - Method new: found 0 posts in r/IndieHackers
+2025-12-17 10:33:37,853 - INFO - Saved post: Anyone else building early-stage and feeling busy but direct... (Score: 6, Pain: 0.80)
+2025-12-17 10:33:38,243 - INFO - Saved post: I killed my sign-up form and my usage went up 400%... (Score: 4, Pain: 0.60)
+2025-12-17 10:33:38,243 - INFO - Method top_week: found 2 posts in r/IndieHackers
+2025-12-17 10:33:39,244 - INFO - Processing subreddit 5/11
+2025-12-17 10:33:39,244 - INFO - Fetching from r/startups (Category: secondary)
+2025-12-17 10:33:41,174 - INFO - Saved post: Design thinking might be the most underrated skill to learn ... (Score: 104, Pain: 0.90)
+2025-12-17 10:33:41,821 - INFO - Saved post: Non-technical founders: How do you know what your dev team i... (Score: 16, Pain: 0.95)
+2025-12-17 10:33:42,185 - INFO - Saved post: I inspected how ChatGPT actually turns a prompt into web sea... (Score: 9, Pain: 1.00)
+2025-12-17 10:33:42,633 - INFO - Saved post: Got 6 users in two weeks after launch but no one answer my e... (Score: 23, Pain: 0.90)
+2025-12-17 10:33:42,633 - INFO - Method hot: found 4 posts in r/startups
+2025-12-17 10:33:45,435 - INFO - Method new: found 0 posts in r/startups
+2025-12-17 10:33:47,834 - INFO - Method top_week: found 0 posts in r/startups
+2025-12-17 10:33:48,835 - INFO - Processing subreddit 6/11
+2025-12-17 10:33:48,835 - INFO - Fetching from r/Entrepreneur (Category: secondary)
+2025-12-17 10:33:51,185 - INFO - Saved post: How tf do i find a fractional CFO without getting scammed lo... (Score: 64, Pain: 0.70)
+2025-12-17 10:33:51,790 - INFO - Saved post: got an idea, paralyzed by fear... (Score: 16, Pain: 1.00)
+2025-12-17 10:33:52,540 - INFO - Saved post: The hardest lesson I learned after failing 5 times to build ... (Score: 60, Pain: 1.00)
+2025-12-17 10:33:53,398 - INFO - Saved post: Being an entrepreneur has taken a serious toll on my mental ... (Score: 27, Pain: 0.80)
+2025-12-17 10:33:53,794 - INFO - Saved post: Getting the first paying customer is way harder than people ... (Score: 38, Pain: 1.00)
+2025-12-17 10:33:54,258 - INFO - Saved post: What has worked exceptionally well for you this year?... (Score: 33, Pain: 0.70)
+2025-12-17 10:33:54,658 - INFO - Saved post: started an llc this spring, my take on finding the best inco... (Score: 17, Pain: 1.00)
+2025-12-17 10:33:55,133 - INFO - Saved post: It's (almost) impossible... (Score: 15, Pain: 0.70)
+2025-12-17 10:33:55,134 - INFO - Method hot: found 8 posts in r/Entrepreneur
+2025-12-17 10:33:57,778 - INFO - Method new: found 0 posts in r/Entrepreneur
+2025-12-17 10:34:00,626 - INFO - Method top_week: found 0 posts in r/Entrepreneur
+2025-12-17 10:34:01,627 - INFO - Processing subreddit 7/11
+2025-12-17 10:34:01,627 - INFO - Fetching from r/freelance (Category: verticals)
+2025-12-17 10:34:03,913 - INFO - Saved post: Everyone says this year sucked for freelancing, but I did we... (Score: 16, Pain: 0.70)
+2025-12-17 10:34:03,915 - INFO - Method hot: found 1 posts in r/freelance
+2025-12-17 10:34:07,240 - INFO - Method new: found 0 posts in r/freelance
+2025-12-17 10:34:08,596 - INFO - Method top_week: found 0 posts in r/freelance
+2025-12-17 10:34:09,596 - INFO - Processing subreddit 8/11
+2025-12-17 10:34:09,596 - INFO - Fetching from r/consulting (Category: verticals)
+2025-12-17 10:34:11,027 - INFO - Method hot: found 0 posts in r/consulting
+2025-12-17 10:34:13,625 - INFO - Method new: found 0 posts in r/consulting
+2025-12-17 10:34:15,037 - INFO - Method top_week: found 0 posts in r/consulting
+2025-12-17 10:34:16,038 - INFO - Processing subreddit 9/11
+2025-12-17 10:34:16,038 - INFO - Fetching from r/contentcreators (Category: verticals)
+2025-12-17 10:34:17,899 - INFO - Saved post: Hit 100k views after finally understanding these patterns... (Score: 15, Pain: 1.00)
+2025-12-17 10:34:17,899 - INFO - Method hot: found 1 posts in r/contentcreators
+2025-12-17 10:34:20,849 - INFO - Method new: found 0 posts in r/contentcreators
+2025-12-17 10:34:24,170 - INFO - Saved post: Any legit AI tools for business you’ve actually stuck with?... (Score: 13, Pain: 0.90)
+2025-12-17 10:34:24,600 - INFO - Saved post: Which AI Video Tool Is Actually Worth Using? I Tested 7 of T... (Score: 9, Pain: 0.80)
+2025-12-17 10:34:24,600 - INFO - Method top_week: found 2 posts in r/contentcreators
+2025-12-17 10:34:25,601 - INFO - Processing subreddit 10/11
+2025-12-17 10:34:25,601 - INFO - Fetching from r/devops (Category: experimental)
+2025-12-17 10:34:29,017 - INFO - Saved post: Github Actions introducing a per-minute fee for self-hosted ... (Score: 550, Pain: 0.70)
+2025-12-17 10:34:29,507 - INFO - Saved post: Pricing changes for GitHub Actions... (Score: 116, Pain: 0.90)
+2025-12-17 10:34:30,290 - INFO - Saved post: What's your note-taking system for tech learning?... (Score: 27, Pain: 0.90)
+2025-12-17 10:34:30,664 - INFO - Saved post: How are you handling integrations between SaaS, internal sys... (Score: 15, Pain: 0.90)
+2025-12-17 10:34:31,030 - INFO - Saved post: Sources to stay ahead of trends... (Score: 14, Pain: 0.80)
+2025-12-17 10:34:31,452 - INFO - Saved post: Has anyone actually found cloud cost visibility tools that d... (Score: 32, Pain: 1.00)
+2025-12-17 10:34:31,837 - INFO - Saved post: are we teaching juniors how to build, or just how to use ai?... (Score: 10, Pain: 1.00)
+2025-12-17 10:34:31,838 - INFO - Method hot: found 7 posts in r/devops
+2025-12-17 10:34:35,371 - INFO - Method new: found 0 posts in r/devops
+2025-12-17 10:34:38,596 - INFO - Method top_week: found 0 posts in r/devops
+2025-12-17 10:34:39,598 - INFO - Processing subreddit 11/11
+2025-12-17 10:34:39,598 - INFO - Fetching from r/marketing (Category: experimental)
+2025-12-17 10:34:41,767 - INFO - Saved post: Observed a pay ceiling in marketing — curious what actually ... (Score: 86, Pain: 0.80)
+2025-12-17 10:34:42,166 - INFO - Saved post: Great marketing tactics, isn't?... (Score: 15, Pain: 0.70)
+2025-12-17 10:34:43,179 - INFO - Saved post: My CEO thinks AI can replace our entire marketing team. Am I... (Score: 123, Pain: 1.00)
+2025-12-17 10:34:43,583 - INFO - Saved post: I started a freelance agency and mixed my personal/business ... (Score: 18, Pain: 0.95)
+2025-12-17 10:34:44,057 - INFO - Saved post: Career shift: I just can't do marketing anymore. If you swit... (Score: 99, Pain: 0.95)
+2025-12-17 10:34:44,058 - INFO - Method hot: found 5 posts in r/marketing
+2025-12-17 10:34:46,723 - INFO - Method new: found 0 posts in r/marketing
+2025-12-17 10:34:48,593 - INFO - Method top_week: found 0 posts in r/marketing
+2025-12-17 10:34:49,594 - INFO - 
+=== Fetch Summary ===
+Total subreddits processed: 11
+Total posts found: 69
+Total posts saved: 69
+Posts filtered out: 2236
+Errors encountered: 0
+Runtime: 0:02:07.257293
+Posts per minute: 32.5
+
+2025-12-17 10:34:49,594 - INFO - ✅ Stage 1 completed: Found 69 posts
+2025-12-17 10:34:49,594 - INFO - ==================================================
+2025-12-17 10:34:49,594 - INFO - STAGE 2: Filtering pain signals
+2025-12-17 10:34:49,594 - INFO - ==================================================
+2025-12-17 10:34:49,621 - INFO - Filtering 442 posts
+2025-12-17 10:34:49,621 - INFO - Filtering 442 posts through pain signal detector
+2025-12-17 10:34:49,621 - INFO - Processed 0/442 posts
+2025-12-17 10:34:49,632 - INFO - Processed 100/442 posts
+2025-12-17 10:34:49,644 - INFO - Processed 200/442 posts
+2025-12-17 10:34:49,655 - INFO - Processed 300/442 posts
+2025-12-17 10:34:49,663 - INFO - Processed 400/442 posts
+2025-12-17 10:34:49,667 - INFO - Filter complete: 22/442 posts passed
+2025-12-17 10:34:49,809 - INFO - ✅ Stage 2 completed: Filtered 22 posts
+2025-12-17 10:34:49,810 - INFO - ==================================================
+2025-12-17 10:34:49,810 - INFO - STAGE 3: Extracting pain points
+2025-12-17 10:34:49,810 - INFO - ==================================================
+2025-12-17 10:34:49,810 - INFO - Processing up to 100 unextracted posts
+2025-12-17 10:34:49,814 - INFO - Found 69 posts to extract from
+2025-12-17 10:34:49,814 - INFO - Processed 0/69 posts
+2025-12-17 10:34:49,814 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:34:56,841 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:34:56,848 - INFO - ✅ LLM request 1/5 completed: 613 tokens in 7.03s
+2025-12-17 10:34:59,849 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:35:05,174 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:35:05,176 - INFO - ✅ LLM request 1/5 completed: 506 tokens in 5.33s
+2025-12-17 10:35:09,177 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:35:16,157 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:35:16,159 - INFO - ✅ LLM request 1/5 completed: 705 tokens in 6.98s
+2025-12-17 10:35:21,159 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:35:59,173 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:35:59,174 - INFO - ✅ LLM request 1/5 completed: 1022 tokens in 38.01s
+2025-12-17 10:36:05,174 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:36:20,163 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:36:20,165 - INFO - ✅ LLM request 1/5 completed: 761 tokens in 14.99s
+2025-12-17 10:36:27,166 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:36:32,783 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:36:32,785 - INFO - ✅ LLM request 1/5 completed: 621 tokens in 5.62s
+2025-12-17 10:36:35,785 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:36:42,122 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:36:42,123 - INFO - ✅ LLM request 1/5 completed: 827 tokens in 6.34s
+2025-12-17 10:36:46,124 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:36:52,520 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:36:52,522 - INFO - ✅ LLM request 1/5 completed: 1016 tokens in 6.40s
+2025-12-17 10:36:57,522 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:37:03,607 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:37:03,608 - INFO - ✅ LLM request 1/5 completed: 1226 tokens in 6.09s
+2025-12-17 10:37:09,609 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:37:23,349 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:37:23,351 - INFO - ✅ LLM request 1/5 completed: 707 tokens in 13.74s
+2025-12-17 10:37:30,351 - INFO - Processed 10/69 posts
+2025-12-17 10:37:30,352 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:37:35,558 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:37:35,559 - INFO - ✅ LLM request 1/5 completed: 677 tokens in 5.21s
+2025-12-17 10:37:38,560 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:38:04,204 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:38:04,206 - INFO - ✅ LLM request 1/5 completed: 1518 tokens in 25.65s
+2025-12-17 10:38:08,207 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:38:14,595 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:38:14,597 - INFO - ✅ LLM request 1/5 completed: 745 tokens in 6.39s
+2025-12-17 10:38:19,598 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:38:25,301 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:38:25,302 - INFO - ✅ LLM request 1/5 completed: 563 tokens in 5.70s
+2025-12-17 10:38:31,303 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:38:36,545 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:38:36,547 - INFO - ✅ LLM request 1/5 completed: 1115 tokens in 5.24s
+2025-12-17 10:38:43,548 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:38:51,196 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:38:51,197 - INFO - ✅ LLM request 1/5 completed: 841 tokens in 7.65s
+2025-12-17 10:38:54,198 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:38:59,048 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:38:59,049 - INFO - ✅ LLM request 1/5 completed: 565 tokens in 4.85s
+2025-12-17 10:39:03,050 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:39:43,622 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:39:43,624 - INFO - ✅ LLM request 1/5 completed: 1373 tokens in 40.57s
+2025-12-17 10:39:48,625 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:40:12,091 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:40:12,093 - INFO - ✅ LLM request 1/5 completed: 857 tokens in 23.47s
+2025-12-17 10:40:18,094 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:40:23,874 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:40:23,876 - INFO - ✅ LLM request 1/5 completed: 614 tokens in 5.78s
+2025-12-17 10:40:30,877 - INFO - Processed 20/69 posts
+2025-12-17 10:40:30,877 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:40:36,516 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:40:36,517 - INFO - ✅ LLM request 1/5 completed: 609 tokens in 5.64s
+2025-12-17 10:40:39,518 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:40:43,668 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:40:43,669 - INFO - ✅ LLM request 1/5 completed: 671 tokens in 4.15s
+2025-12-17 10:40:47,669 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:40:52,394 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:40:52,396 - INFO - ✅ LLM request 1/5 completed: 560 tokens in 4.73s
+2025-12-17 10:40:57,397 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:41:02,712 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:41:02,714 - INFO - ✅ LLM request 1/5 completed: 604 tokens in 5.32s
+2025-12-17 10:41:08,714 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:41:13,512 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:41:13,514 - INFO - ✅ LLM request 1/5 completed: 777 tokens in 4.80s
+2025-12-17 10:41:20,515 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:41:25,825 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:41:25,826 - INFO - ✅ LLM request 1/5 completed: 687 tokens in 5.31s
+2025-12-17 10:41:28,827 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:42:08,259 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:42:08,260 - INFO - ✅ LLM request 1/5 completed: 892 tokens in 39.43s
+2025-12-17 10:42:12,261 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:42:25,006 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:42:25,007 - INFO - ✅ LLM request 1/5 completed: 683 tokens in 12.75s
+2025-12-17 10:42:30,008 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:42:36,487 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:42:36,489 - INFO - ✅ LLM request 1/5 completed: 832 tokens in 6.48s
+2025-12-17 10:42:42,489 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:42:48,674 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:42:48,675 - INFO - ✅ LLM request 1/5 completed: 847 tokens in 6.19s
+2025-12-17 10:42:55,676 - INFO - Processed 30/69 posts
+2025-12-17 10:42:55,676 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:43:02,354 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:43:02,356 - INFO - ✅ LLM request 1/5 completed: 636 tokens in 6.68s
+2025-12-17 10:43:05,357 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:43:10,168 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:43:10,170 - INFO - ✅ LLM request 1/5 completed: 811 tokens in 4.81s
+2025-12-17 10:43:14,171 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:43:19,197 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:43:19,198 - INFO - ✅ LLM request 1/5 completed: 633 tokens in 5.03s
+2025-12-17 10:43:24,199 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:43:30,175 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:43:30,177 - INFO - ✅ LLM request 1/5 completed: 574 tokens in 5.98s
+2025-12-17 10:43:36,177 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:43:41,731 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:43:41,733 - INFO - ✅ LLM request 1/5 completed: 499 tokens in 5.56s
+2025-12-17 10:43:48,733 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:43:55,976 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:43:55,977 - INFO - ✅ LLM request 1/5 completed: 855 tokens in 7.24s
+2025-12-17 10:43:58,978 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:44:07,203 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:44:07,204 - INFO - ✅ LLM request 1/5 completed: 668 tokens in 8.23s
+2025-12-17 10:44:11,205 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:44:21,210 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:44:21,212 - INFO - ✅ LLM request 1/5 completed: 684 tokens in 10.01s
+2025-12-17 10:44:26,212 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:44:48,542 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:44:48,544 - INFO - ✅ LLM request 1/5 completed: 778 tokens in 22.33s
+2025-12-17 10:44:54,545 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:45:01,625 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:45:01,627 - INFO - ✅ LLM request 1/5 completed: 616 tokens in 7.08s
+2025-12-17 10:45:08,628 - INFO - Processed 40/69 posts
+2025-12-17 10:45:08,628 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:45:14,334 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:45:14,336 - INFO - ✅ LLM request 1/5 completed: 771 tokens in 5.71s
+2025-12-17 10:45:17,336 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:45:22,180 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:45:22,182 - INFO - ✅ LLM request 1/5 completed: 566 tokens in 4.85s
+2025-12-17 10:45:26,182 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:45:32,154 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:45:32,155 - INFO - ✅ LLM request 1/5 completed: 497 tokens in 5.97s
+2025-12-17 10:45:37,156 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:45:41,809 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:45:41,811 - INFO - ✅ LLM request 1/5 completed: 626 tokens in 4.66s
+2025-12-17 10:45:47,812 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:46:16,398 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:46:16,400 - INFO - ✅ LLM request 1/5 completed: 912 tokens in 28.59s
+2025-12-17 10:46:23,400 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:46:28,990 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:46:28,991 - INFO - ✅ LLM request 1/5 completed: 781 tokens in 5.59s
+2025-12-17 10:46:31,992 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:46:37,326 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:46:37,328 - INFO - ✅ LLM request 1/5 completed: 542 tokens in 5.34s
+2025-12-17 10:46:41,328 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:46:45,797 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:46:45,799 - INFO - ✅ LLM request 1/5 completed: 790 tokens in 4.47s
+2025-12-17 10:46:50,799 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:47:13,803 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:47:13,804 - INFO - ✅ LLM request 1/5 completed: 792 tokens in 23.00s
+2025-12-17 10:47:19,805 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:47:33,453 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:47:33,454 - INFO - ✅ LLM request 1/5 completed: 650 tokens in 13.65s
+2025-12-17 10:47:40,455 - INFO - Processed 50/69 posts
+2025-12-17 10:47:40,455 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:47:45,295 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:47:45,296 - INFO - ✅ LLM request 1/5 completed: 575 tokens in 4.84s
+2025-12-17 10:47:48,297 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:47:52,594 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:47:52,596 - INFO - ✅ LLM request 1/5 completed: 527 tokens in 4.30s
+2025-12-17 10:47:56,596 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:48:02,167 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:48:02,169 - INFO - ✅ LLM request 1/5 completed: 574 tokens in 5.57s
+2025-12-17 10:48:07,170 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:48:11,876 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:48:11,878 - INFO - ✅ LLM request 1/5 completed: 652 tokens in 4.71s
+2025-12-17 10:48:17,878 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:48:24,545 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:48:24,547 - INFO - ✅ LLM request 1/5 completed: 630 tokens in 6.67s
+2025-12-17 10:48:31,547 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:48:36,518 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:48:36,519 - INFO - ✅ LLM request 1/5 completed: 663 tokens in 4.97s
+2025-12-17 10:48:39,520 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:48:44,563 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:48:44,564 - INFO - ✅ LLM request 1/5 completed: 612 tokens in 5.04s
+2025-12-17 10:48:48,565 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:49:09,802 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:49:09,804 - INFO - ✅ LLM request 1/5 completed: 651 tokens in 21.24s
+2025-12-17 10:49:14,805 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:49:19,817 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:49:19,819 - INFO - ✅ LLM request 1/5 completed: 528 tokens in 5.01s
+2025-12-17 10:49:25,819 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:49:31,654 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:49:31,655 - INFO - ✅ LLM request 1/5 completed: 632 tokens in 5.84s
+2025-12-17 10:49:38,655 - INFO - Processed 60/69 posts
+2025-12-17 10:49:38,656 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:49:43,731 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:49:43,732 - INFO - ✅ LLM request 1/5 completed: 590 tokens in 5.08s
+2025-12-17 10:49:46,733 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:49:53,080 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:49:53,081 - INFO - ✅ LLM request 1/5 completed: 512 tokens in 6.35s
+2025-12-17 10:49:57,082 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:50:03,886 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:50:03,888 - INFO - ✅ LLM request 1/5 completed: 612 tokens in 6.81s
+2025-12-17 10:50:08,889 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:50:13,382 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:50:13,383 - INFO - ✅ LLM request 1/5 completed: 490 tokens in 4.49s
+2025-12-17 10:50:19,384 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:50:25,111 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:50:25,113 - INFO - ✅ LLM request 1/5 completed: 547 tokens in 5.73s
+2025-12-17 10:50:32,113 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:50:42,051 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:50:42,053 - INFO - ✅ LLM request 1/5 completed: 511 tokens in 9.94s
+2025-12-17 10:50:45,053 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:50:50,496 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:50:50,497 - INFO - ✅ LLM request 1/5 completed: 620 tokens in 5.44s
+2025-12-17 10:50:54,498 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:50:59,453 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:50:59,455 - INFO - ✅ LLM request 1/5 completed: 575 tokens in 4.96s
+2025-12-17 10:51:04,456 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=180s
+2025-12-17 10:51:10,534 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:51:10,536 - INFO - ✅ LLM request 1/5 completed: 776 tokens in 6.08s
+2025-12-17 10:51:16,709 - INFO - Saved 24/24 pain events to database
+2025-12-17 10:51:16,709 - INFO - ✅ Stage 3 completed: Extracted 24 pain events
+2025-12-17 10:51:16,709 - INFO - ==================================================
+2025-12-17 10:51:16,709 - INFO - STAGE 4: Creating embeddings
+2025-12-17 10:51:16,709 - INFO - ==================================================
+2025-12-17 10:51:16,710 - INFO - Processing up to 200 pain events without embeddings
+2025-12-17 10:51:16,711 - INFO - Found 24 pain events to embed
+2025-12-17 10:51:16,712 - INFO - Creating embeddings for 24 pain events
+2025-12-17 10:51:16,712 - INFO - Processed 0/24 pain events
+2025-12-17 10:51:16,841 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:16,846 - INFO - Created embedding for text length 242: 1024 dimensions
+2025-12-17 10:51:16,940 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:16,941 - INFO - Created embedding for text length 226: 1024 dimensions
+2025-12-17 10:51:17,023 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:17,025 - INFO - Created embedding for text length 141: 1024 dimensions
+2025-12-17 10:51:17,094 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:17,096 - INFO - Created embedding for text length 158: 1024 dimensions
+2025-12-17 10:51:17,180 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:17,181 - INFO - Created embedding for text length 185: 1024 dimensions
+2025-12-17 10:51:17,281 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:17,283 - INFO - Created embedding for text length 271: 1024 dimensions
+2025-12-17 10:51:17,380 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:17,382 - INFO - Created embedding for text length 214: 1024 dimensions
+2025-12-17 10:51:17,467 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:17,470 - INFO - Created embedding for text length 226: 1024 dimensions
+2025-12-17 10:51:17,542 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:17,544 - INFO - Created embedding for text length 176: 1024 dimensions
+2025-12-17 10:51:17,632 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:17,633 - INFO - Created embedding for text length 250: 1024 dimensions
+2025-12-17 10:51:17,642 - INFO - Processed 10/24 pain events
+2025-12-17 10:51:17,717 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:17,719 - INFO - Created embedding for text length 347: 1024 dimensions
+2025-12-17 10:51:17,816 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:17,817 - INFO - Created embedding for text length 234: 1024 dimensions
+2025-12-17 10:51:17,923 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:17,925 - INFO - Created embedding for text length 159: 1024 dimensions
+2025-12-17 10:51:18,029 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:18,031 - INFO - Created embedding for text length 288: 1024 dimensions
+2025-12-17 10:51:18,116 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:18,118 - INFO - Created embedding for text length 220: 1024 dimensions
+2025-12-17 10:51:18,208 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:18,210 - INFO - Created embedding for text length 270: 1024 dimensions
+2025-12-17 10:51:18,285 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:18,287 - INFO - Created embedding for text length 199: 1024 dimensions
+2025-12-17 10:51:18,378 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:18,379 - INFO - Created embedding for text length 283: 1024 dimensions
+2025-12-17 10:51:18,447 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:18,449 - INFO - Created embedding for text length 224: 1024 dimensions
+2025-12-17 10:51:18,532 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:18,534 - INFO - Created embedding for text length 301: 1024 dimensions
+2025-12-17 10:51:18,543 - INFO - Processed 20/24 pain events
+2025-12-17 10:51:18,606 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:18,608 - INFO - Created embedding for text length 152: 1024 dimensions
+2025-12-17 10:51:19,694 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:19,696 - INFO - Created embedding for text length 184: 1024 dimensions
+2025-12-17 10:51:19,788 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:19,790 - INFO - Created embedding for text length 191: 1024 dimensions
+2025-12-17 10:51:19,886 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:19,888 - INFO - Created embedding for text length 172: 1024 dimensions
+2025-12-17 10:51:19,897 - INFO - Embedding complete: 24/24 embeddings saved
+2025-12-17 10:51:19,897 - INFO - Processing time: 3.19s
+2025-12-17 10:51:19,897 - INFO - ✅ Stage 4 completed: Created 24 embeddings
+2025-12-17 10:51:19,898 - INFO - ==================================================
+2025-12-17 10:51:19,898 - INFO - STAGE 5: Clustering pain events
+2025-12-17 10:51:19,898 - INFO - ==================================================
+2025-12-17 10:51:19,898 - INFO - Starting clustering of up to 200 pain events
+2025-12-17 10:51:19,937 - INFO - Processing 200 pain events for clustering
+2025-12-17 10:51:19,938 - INFO - Clustering 200 pain events
+2025-12-17 10:51:19,938 - INFO - Creating embeddings for pain events...
+2025-12-17 10:51:20,014 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,015 - INFO - Created embedding for text length 265: 1024 dimensions
+2025-12-17 10:51:20,088 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,090 - INFO - Created embedding for text length 321: 1024 dimensions
+2025-12-17 10:51:20,170 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,172 - INFO - Created embedding for text length 260: 1024 dimensions
+2025-12-17 10:51:20,249 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,250 - INFO - Created embedding for text length 156: 1024 dimensions
+2025-12-17 10:51:20,336 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,338 - INFO - Created embedding for text length 112: 1024 dimensions
+2025-12-17 10:51:20,466 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,468 - INFO - Created embedding for text length 178: 1024 dimensions
+2025-12-17 10:51:20,545 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,547 - INFO - Created embedding for text length 489: 1024 dimensions
+2025-12-17 10:51:20,612 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,613 - INFO - Created embedding for text length 203: 1024 dimensions
+2025-12-17 10:51:20,690 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,691 - INFO - Created embedding for text length 229: 1024 dimensions
+2025-12-17 10:51:20,766 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,767 - INFO - Created embedding for text length 191: 1024 dimensions
+2025-12-17 10:51:20,838 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,840 - INFO - Created embedding for text length 207: 1024 dimensions
+2025-12-17 10:51:20,902 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,903 - INFO - Created embedding for text length 253: 1024 dimensions
+2025-12-17 10:51:20,973 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:20,974 - INFO - Created embedding for text length 375: 1024 dimensions
+2025-12-17 10:51:21,043 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,045 - INFO - Created embedding for text length 305: 1024 dimensions
+2025-12-17 10:51:21,118 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,120 - INFO - Created embedding for text length 143: 1024 dimensions
+2025-12-17 10:51:21,194 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,204 - INFO - Created embedding for text length 180: 1024 dimensions
+2025-12-17 10:51:21,276 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,278 - INFO - Created embedding for text length 234: 1024 dimensions
+2025-12-17 10:51:21,384 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,386 - INFO - Created embedding for text length 309: 1024 dimensions
+2025-12-17 10:51:21,468 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,469 - INFO - Created embedding for text length 165: 1024 dimensions
+2025-12-17 10:51:21,526 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,528 - INFO - Created embedding for text length 197: 1024 dimensions
+2025-12-17 10:51:21,603 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,605 - INFO - Created embedding for text length 243: 1024 dimensions
+2025-12-17 10:51:21,680 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,682 - INFO - Created embedding for text length 334: 1024 dimensions
+2025-12-17 10:51:21,743 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,745 - INFO - Created embedding for text length 240: 1024 dimensions
+2025-12-17 10:51:21,817 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,819 - INFO - Created embedding for text length 140: 1024 dimensions
+2025-12-17 10:51:21,898 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,899 - INFO - Created embedding for text length 184: 1024 dimensions
+2025-12-17 10:51:21,975 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:21,976 - INFO - Created embedding for text length 266: 1024 dimensions
+2025-12-17 10:51:22,054 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,055 - INFO - Created embedding for text length 330: 1024 dimensions
+2025-12-17 10:51:22,125 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,126 - INFO - Created embedding for text length 336: 1024 dimensions
+2025-12-17 10:51:22,190 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,192 - INFO - Created embedding for text length 229: 1024 dimensions
+2025-12-17 10:51:22,257 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,258 - INFO - Created embedding for text length 253: 1024 dimensions
+2025-12-17 10:51:22,319 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,321 - INFO - Created embedding for text length 155: 1024 dimensions
+2025-12-17 10:51:22,411 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,413 - INFO - Created embedding for text length 206: 1024 dimensions
+2025-12-17 10:51:22,499 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,501 - INFO - Created embedding for text length 192: 1024 dimensions
+2025-12-17 10:51:22,582 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,583 - INFO - Created embedding for text length 228: 1024 dimensions
+2025-12-17 10:51:22,656 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,658 - INFO - Created embedding for text length 230: 1024 dimensions
+2025-12-17 10:51:22,729 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,731 - INFO - Created embedding for text length 193: 1024 dimensions
+2025-12-17 10:51:22,801 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,803 - INFO - Created embedding for text length 156: 1024 dimensions
+2025-12-17 10:51:22,877 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,878 - INFO - Created embedding for text length 261: 1024 dimensions
+2025-12-17 10:51:22,951 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:22,953 - INFO - Created embedding for text length 266: 1024 dimensions
+2025-12-17 10:51:23,037 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,038 - INFO - Created embedding for text length 253: 1024 dimensions
+2025-12-17 10:51:23,110 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,112 - INFO - Created embedding for text length 232: 1024 dimensions
+2025-12-17 10:51:23,184 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,185 - INFO - Created embedding for text length 224: 1024 dimensions
+2025-12-17 10:51:23,245 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,247 - INFO - Created embedding for text length 216: 1024 dimensions
+2025-12-17 10:51:23,329 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,330 - INFO - Created embedding for text length 204: 1024 dimensions
+2025-12-17 10:51:23,406 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,408 - INFO - Created embedding for text length 425: 1024 dimensions
+2025-12-17 10:51:23,475 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,476 - INFO - Created embedding for text length 168: 1024 dimensions
+2025-12-17 10:51:23,540 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,541 - INFO - Created embedding for text length 252: 1024 dimensions
+2025-12-17 10:51:23,629 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,631 - INFO - Created embedding for text length 230: 1024 dimensions
+2025-12-17 10:51:23,689 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,690 - INFO - Created embedding for text length 222: 1024 dimensions
+2025-12-17 10:51:23,751 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,753 - INFO - Created embedding for text length 261: 1024 dimensions
+2025-12-17 10:51:23,823 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,825 - INFO - Created embedding for text length 306: 1024 dimensions
+2025-12-17 10:51:23,895 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,897 - INFO - Created embedding for text length 180: 1024 dimensions
+2025-12-17 10:51:23,968 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:23,969 - INFO - Created embedding for text length 250: 1024 dimensions
+2025-12-17 10:51:24,028 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,031 - INFO - Created embedding for text length 216: 1024 dimensions
+2025-12-17 10:51:24,105 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,107 - INFO - Created embedding for text length 236: 1024 dimensions
+2025-12-17 10:51:24,168 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,170 - INFO - Created embedding for text length 259: 1024 dimensions
+2025-12-17 10:51:24,258 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,260 - INFO - Created embedding for text length 292: 1024 dimensions
+2025-12-17 10:51:24,339 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,340 - INFO - Created embedding for text length 357: 1024 dimensions
+2025-12-17 10:51:24,407 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,408 - INFO - Created embedding for text length 374: 1024 dimensions
+2025-12-17 10:51:24,465 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,466 - INFO - Created embedding for text length 227: 1024 dimensions
+2025-12-17 10:51:24,540 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,542 - INFO - Created embedding for text length 286: 1024 dimensions
+2025-12-17 10:51:24,599 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,601 - INFO - Created embedding for text length 183: 1024 dimensions
+2025-12-17 10:51:24,660 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,662 - INFO - Created embedding for text length 134: 1024 dimensions
+2025-12-17 10:51:24,724 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,726 - INFO - Created embedding for text length 124: 1024 dimensions
+2025-12-17 10:51:24,790 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,792 - INFO - Created embedding for text length 158: 1024 dimensions
+2025-12-17 10:51:24,866 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,868 - INFO - Created embedding for text length 191: 1024 dimensions
+2025-12-17 10:51:24,930 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:24,932 - INFO - Created embedding for text length 214: 1024 dimensions
+2025-12-17 10:51:25,005 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,006 - INFO - Created embedding for text length 185: 1024 dimensions
+2025-12-17 10:51:25,075 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,077 - INFO - Created embedding for text length 231: 1024 dimensions
+2025-12-17 10:51:25,162 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,164 - INFO - Created embedding for text length 147: 1024 dimensions
+2025-12-17 10:51:25,236 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,237 - INFO - Created embedding for text length 222: 1024 dimensions
+2025-12-17 10:51:25,326 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,328 - INFO - Created embedding for text length 244: 1024 dimensions
+2025-12-17 10:51:25,389 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,391 - INFO - Created embedding for text length 231: 1024 dimensions
+2025-12-17 10:51:25,468 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,470 - INFO - Created embedding for text length 258: 1024 dimensions
+2025-12-17 10:51:25,527 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,529 - INFO - Created embedding for text length 159: 1024 dimensions
+2025-12-17 10:51:25,587 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,589 - INFO - Created embedding for text length 196: 1024 dimensions
+2025-12-17 10:51:25,722 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,723 - INFO - Created embedding for text length 188: 1024 dimensions
+2025-12-17 10:51:25,809 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,810 - INFO - Created embedding for text length 201: 1024 dimensions
+2025-12-17 10:51:25,882 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,884 - INFO - Created embedding for text length 231: 1024 dimensions
+2025-12-17 10:51:25,959 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:25,960 - INFO - Created embedding for text length 276: 1024 dimensions
+2025-12-17 10:51:26,029 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,030 - INFO - Created embedding for text length 226: 1024 dimensions
+2025-12-17 10:51:26,088 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,090 - INFO - Created embedding for text length 212: 1024 dimensions
+2025-12-17 10:51:26,162 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,164 - INFO - Created embedding for text length 143: 1024 dimensions
+2025-12-17 10:51:26,250 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,251 - INFO - Created embedding for text length 247: 1024 dimensions
+2025-12-17 10:51:26,317 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,319 - INFO - Created embedding for text length 233: 1024 dimensions
+2025-12-17 10:51:26,392 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,394 - INFO - Created embedding for text length 357: 1024 dimensions
+2025-12-17 10:51:26,470 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,472 - INFO - Created embedding for text length 295: 1024 dimensions
+2025-12-17 10:51:26,568 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,570 - INFO - Created embedding for text length 332: 1024 dimensions
+2025-12-17 10:51:26,644 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,645 - INFO - Created embedding for text length 344: 1024 dimensions
+2025-12-17 10:51:26,709 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,711 - INFO - Created embedding for text length 225: 1024 dimensions
+2025-12-17 10:51:26,770 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,772 - INFO - Created embedding for text length 221: 1024 dimensions
+2025-12-17 10:51:26,840 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,842 - INFO - Created embedding for text length 343: 1024 dimensions
+2025-12-17 10:51:26,967 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:26,970 - INFO - Created embedding for text length 257: 1024 dimensions
+2025-12-17 10:51:27,038 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,039 - INFO - Created embedding for text length 206: 1024 dimensions
+2025-12-17 10:51:27,117 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,119 - INFO - Created embedding for text length 169: 1024 dimensions
+2025-12-17 10:51:27,187 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,189 - INFO - Created embedding for text length 267: 1024 dimensions
+2025-12-17 10:51:27,255 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,257 - INFO - Created embedding for text length 205: 1024 dimensions
+2025-12-17 10:51:27,327 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,329 - INFO - Created embedding for text length 207: 1024 dimensions
+2025-12-17 10:51:27,404 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,405 - INFO - Created embedding for text length 262: 1024 dimensions
+2025-12-17 10:51:27,485 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,486 - INFO - Created embedding for text length 184: 1024 dimensions
+2025-12-17 10:51:27,548 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,550 - INFO - Created embedding for text length 193: 1024 dimensions
+2025-12-17 10:51:27,616 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,617 - INFO - Created embedding for text length 230: 1024 dimensions
+2025-12-17 10:51:27,699 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,700 - INFO - Created embedding for text length 191: 1024 dimensions
+2025-12-17 10:51:27,771 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,773 - INFO - Created embedding for text length 200: 1024 dimensions
+2025-12-17 10:51:27,849 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,851 - INFO - Created embedding for text length 199: 1024 dimensions
+2025-12-17 10:51:27,922 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,924 - INFO - Created embedding for text length 220: 1024 dimensions
+2025-12-17 10:51:27,981 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:27,984 - INFO - Created embedding for text length 224: 1024 dimensions
+2025-12-17 10:51:28,051 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,053 - INFO - Created embedding for text length 335: 1024 dimensions
+2025-12-17 10:51:28,114 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,116 - INFO - Created embedding for text length 156: 1024 dimensions
+2025-12-17 10:51:28,175 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,177 - INFO - Created embedding for text length 140: 1024 dimensions
+2025-12-17 10:51:28,240 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,241 - INFO - Created embedding for text length 167: 1024 dimensions
+2025-12-17 10:51:28,321 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,323 - INFO - Created embedding for text length 147: 1024 dimensions
+2025-12-17 10:51:28,403 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,405 - INFO - Created embedding for text length 246: 1024 dimensions
+2025-12-17 10:51:28,479 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,481 - INFO - Created embedding for text length 239: 1024 dimensions
+2025-12-17 10:51:28,569 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,571 - INFO - Created embedding for text length 224: 1024 dimensions
+2025-12-17 10:51:28,640 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,642 - INFO - Created embedding for text length 174: 1024 dimensions
+2025-12-17 10:51:28,719 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,721 - INFO - Created embedding for text length 208: 1024 dimensions
+2025-12-17 10:51:28,779 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,781 - INFO - Created embedding for text length 227: 1024 dimensions
+2025-12-17 10:51:28,856 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,858 - INFO - Created embedding for text length 302: 1024 dimensions
+2025-12-17 10:51:28,949 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:28,950 - INFO - Created embedding for text length 187: 1024 dimensions
+2025-12-17 10:51:29,024 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,026 - INFO - Created embedding for text length 182: 1024 dimensions
+2025-12-17 10:51:29,093 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,095 - INFO - Created embedding for text length 200: 1024 dimensions
+2025-12-17 10:51:29,167 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,168 - INFO - Created embedding for text length 219: 1024 dimensions
+2025-12-17 10:51:29,237 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,239 - INFO - Created embedding for text length 190: 1024 dimensions
+2025-12-17 10:51:29,315 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,317 - INFO - Created embedding for text length 228: 1024 dimensions
+2025-12-17 10:51:29,383 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,385 - INFO - Created embedding for text length 208: 1024 dimensions
+2025-12-17 10:51:29,446 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,448 - INFO - Created embedding for text length 197: 1024 dimensions
+2025-12-17 10:51:29,508 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,510 - INFO - Created embedding for text length 281: 1024 dimensions
+2025-12-17 10:51:29,581 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,583 - INFO - Created embedding for text length 218: 1024 dimensions
+2025-12-17 10:51:29,645 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,647 - INFO - Created embedding for text length 218: 1024 dimensions
+2025-12-17 10:51:29,708 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,710 - INFO - Created embedding for text length 161: 1024 dimensions
+2025-12-17 10:51:29,795 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,796 - INFO - Created embedding for text length 234: 1024 dimensions
+2025-12-17 10:51:29,871 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,873 - INFO - Created embedding for text length 304: 1024 dimensions
+2025-12-17 10:51:29,932 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:29,934 - INFO - Created embedding for text length 279: 1024 dimensions
+2025-12-17 10:51:30,007 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,008 - INFO - Created embedding for text length 314: 1024 dimensions
+2025-12-17 10:51:30,071 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,073 - INFO - Created embedding for text length 250: 1024 dimensions
+2025-12-17 10:51:30,149 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,150 - INFO - Created embedding for text length 204: 1024 dimensions
+2025-12-17 10:51:30,209 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,211 - INFO - Created embedding for text length 202: 1024 dimensions
+2025-12-17 10:51:30,300 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,302 - INFO - Created embedding for text length 236: 1024 dimensions
+2025-12-17 10:51:30,377 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,379 - INFO - Created embedding for text length 288: 1024 dimensions
+2025-12-17 10:51:30,453 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,455 - INFO - Created embedding for text length 154: 1024 dimensions
+2025-12-17 10:51:30,550 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,552 - INFO - Created embedding for text length 155: 1024 dimensions
+2025-12-17 10:51:30,634 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,636 - INFO - Created embedding for text length 194: 1024 dimensions
+2025-12-17 10:51:30,708 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,709 - INFO - Created embedding for text length 263: 1024 dimensions
+2025-12-17 10:51:30,769 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,771 - INFO - Created embedding for text length 158: 1024 dimensions
+2025-12-17 10:51:30,860 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,862 - INFO - Created embedding for text length 282: 1024 dimensions
+2025-12-17 10:51:30,940 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:30,941 - INFO - Created embedding for text length 258: 1024 dimensions
+2025-12-17 10:51:31,004 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,006 - INFO - Created embedding for text length 305: 1024 dimensions
+2025-12-17 10:51:31,079 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,081 - INFO - Created embedding for text length 254: 1024 dimensions
+2025-12-17 10:51:31,158 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,160 - INFO - Created embedding for text length 225: 1024 dimensions
+2025-12-17 10:51:31,231 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,232 - INFO - Created embedding for text length 226: 1024 dimensions
+2025-12-17 10:51:31,292 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,293 - INFO - Created embedding for text length 227: 1024 dimensions
+2025-12-17 10:51:31,358 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,361 - INFO - Created embedding for text length 250: 1024 dimensions
+2025-12-17 10:51:31,429 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,431 - INFO - Created embedding for text length 287: 1024 dimensions
+2025-12-17 10:51:31,520 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,522 - INFO - Created embedding for text length 261: 1024 dimensions
+2025-12-17 10:51:31,599 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,600 - INFO - Created embedding for text length 230: 1024 dimensions
+2025-12-17 10:51:31,681 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,682 - INFO - Created embedding for text length 258: 1024 dimensions
+2025-12-17 10:51:31,759 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,761 - INFO - Created embedding for text length 220: 1024 dimensions
+2025-12-17 10:51:31,830 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,831 - INFO - Created embedding for text length 248: 1024 dimensions
+2025-12-17 10:51:31,912 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:31,914 - INFO - Created embedding for text length 205: 1024 dimensions
+2025-12-17 10:51:32,005 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,007 - INFO - Created embedding for text length 237: 1024 dimensions
+2025-12-17 10:51:32,066 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,067 - INFO - Created embedding for text length 185: 1024 dimensions
+2025-12-17 10:51:32,137 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,138 - INFO - Created embedding for text length 189: 1024 dimensions
+2025-12-17 10:51:32,219 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,220 - INFO - Created embedding for text length 208: 1024 dimensions
+2025-12-17 10:51:32,294 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,296 - INFO - Created embedding for text length 234: 1024 dimensions
+2025-12-17 10:51:32,381 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,383 - INFO - Created embedding for text length 198: 1024 dimensions
+2025-12-17 10:51:32,460 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,462 - INFO - Created embedding for text length 174: 1024 dimensions
+2025-12-17 10:51:32,529 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,530 - INFO - Created embedding for text length 202: 1024 dimensions
+2025-12-17 10:51:32,593 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,594 - INFO - Created embedding for text length 251: 1024 dimensions
+2025-12-17 10:51:32,658 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,659 - INFO - Created embedding for text length 108: 1024 dimensions
+2025-12-17 10:51:32,767 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,768 - INFO - Created embedding for text length 194: 1024 dimensions
+2025-12-17 10:51:32,829 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,830 - INFO - Created embedding for text length 266: 1024 dimensions
+2025-12-17 10:51:32,903 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,906 - INFO - Created embedding for text length 225: 1024 dimensions
+2025-12-17 10:51:32,978 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:32,980 - INFO - Created embedding for text length 196: 1024 dimensions
+2025-12-17 10:51:33,044 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:33,045 - INFO - Created embedding for text length 238: 1024 dimensions
+2025-12-17 10:51:33,129 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/embeddings "HTTP/1.1 200 OK"
+2025-12-17 10:51:33,131 - INFO - Created embedding for text length 211: 1024 dimensions
+2025-12-17 10:51:33,131 - INFO - Performing vector similarity clustering...
+2025-12-17 10:51:33,149 - INFO - Found 19 clusters
+2025-12-17 10:51:33,232 - INFO - Successfully created 19 clusters
+2025-12-17 10:51:33,232 - INFO - Found 19 vector clusters
+2025-12-17 10:51:33,232 - INFO - Validating cluster 1/19 (size: 95)
+2025-12-17 10:51:33,232 - INFO - Sampling first 20 events from large cluster of 95 for validation
+2025-12-17 10:51:33,232 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:51:45,452 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:51:45,453 - INFO - ✅ LLM request 1/5 completed: 1316 tokens in 12.22s
+2025-12-17 10:51:45,453 - WARNING - Cluster 1 rejected by LLM: The pain events span multiple distinct workflows across different domains (e.g., customer acquisition, pricing, learning, product feedback, content creation, project management, marketing, idea generation). While some events share thematic similarities (e.g., difficulty getting user engagement in Events 1, 5, 6, 19, 20), others relate to internal learning processes (Events 3, 4, 9), team misalignment (Events 10, 11, 12), or content visibility (Events 7, 8). The root causes and contexts vary significantly—some involve solo learning struggles, others involve team dynamics, product-market fit, or platform moderation. No single repeated workflow with consistent failure modes across users is evident. Clustering them would obscure meaningful differences in context and causality.
+2025-12-17 10:51:46,454 - INFO - Validating cluster 2/19 (size: 6)
+2025-12-17 10:51:46,454 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:51:58,084 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:51:58,086 - INFO - ✅ LLM request 1/5 completed: 643 tokens in 11.63s
+2025-12-17 10:51:58,095 - INFO - Saved cluster: Unreliable Client Infrastructure Monitoring and Maintenance (6 events)
+2025-12-17 10:51:59,095 - INFO - Validating cluster 3/19 (size: 4)
+2025-12-17 10:51:59,096 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:52:09,790 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:52:09,792 - INFO - ✅ LLM request 1/5 completed: 527 tokens in 10.70s
+2025-12-17 10:52:09,792 - WARNING - Cluster 3 rejected by LLM: Events 1, 2, and 3 all relate to a shared workflow of making high-stakes product development decisions in isolation, with a common workaround involving structured self-review through multiple lenses. These show a consistent pattern of decision-making under uncertainty without external input. However, Event 4, while also involving strategic decision-making, occurs in a different context (startup pivot decisions) and uses a different workaround (seeking advice from peers). The root cause and workflow differ: Events 1–3 center on internal validation due to lack of feedback, while Event 4 involves external consultation to resolve strategic ambiguity. The contexts and mechanisms are similar enough to be related, but not sufficiently aligned to represent the same repeated workflow with similar root causes across users.
+2025-12-17 10:52:10,793 - INFO - Validating cluster 4/19 (size: 4)
+2025-12-17 10:52:10,793 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:52:27,216 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:52:27,218 - INFO - ✅ LLM request 1/5 completed: 638 tokens in 16.42s
+2025-12-17 10:52:27,226 - INFO - Saved cluster: Indie Hacker Build-Learn Loop (4 events)
+2025-12-17 10:52:28,227 - INFO - Validating cluster 5/19 (size: 3)
+2025-12-17 10:52:28,227 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:52:41,304 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:52:41,306 - INFO - ✅ LLM request 1/5 completed: 515 tokens in 13.08s
+2025-12-17 10:52:41,332 - INFO - Saved cluster: Setting up SMS marketing for small business (3 events)
+2025-12-17 10:52:42,332 - INFO - Validating cluster 6/19 (size: 3)
+2025-12-17 10:52:42,333 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:52:55,805 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:52:55,807 - INFO - ✅ LLM request 1/5 completed: 557 tokens in 13.47s
+2025-12-17 10:52:55,833 - INFO - Saved cluster: Migrating from ingress-nginx to a New Ingress Controller (3 events)
+2025-12-17 10:52:56,834 - INFO - Validating cluster 7/19 (size: 3)
+2025-12-17 10:52:56,834 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:53:10,948 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:53:10,950 - INFO - ✅ LLM request 1/5 completed: 516 tokens in 14.12s
+2025-12-17 10:53:10,959 - INFO - Saved cluster: Detecting and Mitigating Ad Fraud in Digital Campaigns (3 events)
+2025-12-17 10:53:11,960 - INFO - Validating cluster 8/19 (size: 3)
+2025-12-17 10:53:11,960 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:53:22,344 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:53:22,347 - INFO - ✅ LLM request 1/5 completed: 438 tokens in 10.39s
+2025-12-17 10:53:22,374 - INFO - Saved cluster: Participating in Zoom video calls (3 events)
+2025-12-17 10:53:23,374 - INFO - Validating cluster 9/19 (size: 2)
+2025-12-17 10:53:23,375 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:53:33,244 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:53:33,246 - INFO - ✅ LLM request 1/5 completed: 417 tokens in 9.87s
+2025-12-17 10:53:33,246 - WARNING - Cluster 9 rejected by LLM: The two pain events involve subscription management but represent distinct underlying workflows. Event 1 is about failing to deprovision unused tools, leading to wasted spend—rooted in poor usage monitoring or offboarding processes. Event 2 involves payment failures due to expired billing cards, which is a payment method maintenance issue. The root causes and failure modes differ: one is about tool lifecycle management, the other about payment credential freshness. While both relate to subscription operations, they are not the same repeated activity with similar failure patterns across users.
+2025-12-17 10:53:34,246 - INFO - Validating cluster 10/19 (size: 2)
+2025-12-17 10:53:34,247 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:53:44,055 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:53:44,056 - INFO - ✅ LLM request 1/5 completed: 418 tokens in 9.81s
+2025-12-17 10:53:44,066 - INFO - Saved cluster: Infrastructure-as-Code Tool Evaluation and Adoption (2 events)
+2025-12-17 10:53:45,067 - INFO - Validating cluster 11/19 (size: 2)
+2025-12-17 10:53:45,067 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:53:53,641 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:53:53,642 - INFO - ✅ LLM request 1/5 completed: 456 tokens in 8.58s
+2025-12-17 10:53:53,642 - WARNING - Cluster 11 rejected by LLM: While both events involve understanding partner needs and preventing conflict, they stem from different underlying causes and workflows. Event 1 is about coordinating timing and preferences in planning shared activities (a communication and scheduling issue), while Event 2 relates to biological cycles affecting mood and behavior (a physiological awareness issue). The root causes, triggers, and required interventions differ significantly—synchronization of availability vs. understanding hormonal influences—making them distinct workflows.
+2025-12-17 10:53:54,643 - INFO - Validating cluster 12/19 (size: 2)
+2025-12-17 10:53:54,643 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:54:08,079 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:54:08,081 - INFO - ✅ LLM request 1/5 completed: 482 tokens in 13.44s
+2025-12-17 10:54:08,107 - INFO - Saved cluster: Career Specialization Pivot (2 events)
+2025-12-17 10:54:09,108 - INFO - Validating cluster 13/19 (size: 2)
+2025-12-17 10:54:09,108 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:54:21,171 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:54:21,172 - INFO - ✅ LLM request 1/5 completed: 467 tokens in 12.06s
+2025-12-17 10:54:21,183 - INFO - Saved cluster: Business Idea Validation and Launch (2 events)
+2025-12-17 10:54:22,183 - INFO - Validating cluster 14/19 (size: 2)
+2025-12-17 10:54:22,184 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:54:34,521 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:54:34,522 - INFO - ✅ LLM request 1/5 completed: 457 tokens in 12.34s
+2025-12-17 10:54:34,532 - INFO - Saved cluster: Employee Offboarding Device Recovery and Security (2 events)
+2025-12-17 10:54:35,533 - INFO - Validating cluster 15/19 (size: 2)
+2025-12-17 10:54:35,533 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:54:48,162 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:54:48,163 - INFO - ✅ LLM request 1/5 completed: 471 tokens in 12.63s
+2025-12-17 10:54:48,190 - INFO - Saved cluster: Improving Search Engine Indexing and Domain Credibility (2 events)
+2025-12-17 10:54:49,191 - INFO - Validating cluster 16/19 (size: 2)
+2025-12-17 10:54:49,191 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:55:00,330 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:55:00,331 - INFO - ✅ LLM request 1/5 completed: 453 tokens in 11.14s
+2025-12-17 10:55:00,341 - INFO - Saved cluster: Handing Off Technical Systems Without Proper Documentation (2 events)
+2025-12-17 10:55:01,341 - INFO - Validating cluster 17/19 (size: 2)
+2025-12-17 10:55:01,342 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:55:13,319 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:55:13,320 - INFO - ✅ LLM request 1/5 completed: 452 tokens in 11.98s
+2025-12-17 10:55:13,354 - INFO - Saved cluster: Non-technical Decision-Making in Technical Workflows (2 events)
+2025-12-17 10:55:14,355 - INFO - Validating cluster 18/19 (size: 2)
+2025-12-17 10:55:14,355 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:55:26,541 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:55:26,543 - INFO - ✅ LLM request 1/5 completed: 449 tokens in 12.19s
+2025-12-17 10:55:26,569 - INFO - Saved cluster: Initial Document Drafting in Domain-Specific Contexts (2 events)
+2025-12-17 10:55:27,569 - INFO - Validating cluster 19/19 (size: 2)
+2025-12-17 10:55:27,570 - INFO - LLM Request 1/5: model=Qwen/Qwen3-235B-A22B-Instruct-2507, timeout=60s
+2025-12-17 10:55:40,314 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:55:40,315 - INFO - ✅ LLM request 1/5 completed: 474 tokens in 12.75s
+2025-12-17 10:55:40,323 - INFO - Saved cluster: Marketing Career Re-entry and Stability (2 events)
+2025-12-17 10:55:41,323 - INFO - 
+=== Clustering Summary ===
+Pain events processed: 200
+Vector clusters found: 19
+Validated clusters created: 15
+Average cluster size: 2.7
+Processing time: 261.43s
+
+2025-12-17 10:55:41,326 - INFO - ✅ Stage 5 completed: Created 15 clusters
+2025-12-17 10:55:41,326 - INFO - ==================================================
+2025-12-17 10:55:41,326 - INFO - STAGE 6: Mapping opportunities
+2025-12-17 10:55:41,327 - INFO - ==================================================
+2025-12-17 10:55:41,327 - INFO - Mapping opportunities for up to 50 clusters
+2025-12-17 10:55:41,327 - INFO - Processing 50 clusters for opportunity mapping
+2025-12-17 10:55:41,327 - INFO - Processing cluster 1/50: Unreliable Infrastructure Monitoring and Maintenance
+2025-12-17 10:55:41,332 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 10:56:07,126 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:56:07,127 - INFO - ✅ LLM request 1/5 completed: 3718 tokens in 25.80s
+2025-12-17 10:56:07,153 - INFO - Created opportunity: Screenshot Sorter (Score: 1.00)
+2025-12-17 10:56:09,154 - INFO - Processing cluster 2/50: Unreliable Client Infrastructure Monitoring and Maintenance
+2025-12-17 10:56:09,161 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 10:56:33,839 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:56:33,841 - INFO - ✅ LLM request 1/5 completed: 3673 tokens in 24.68s
+2025-12-17 10:56:33,849 - INFO - Created opportunity: ContextSnap (Score: 0.90)
+2025-12-17 10:56:35,850 - INFO - Processing cluster 3/50: Unreliable Client Infrastructure Monitoring and Maintenance
+2025-12-17 10:56:35,856 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 10:57:04,044 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:57:04,045 - INFO - ✅ LLM request 1/5 completed: 3716 tokens in 28.19s
+2025-12-17 10:57:04,053 - INFO - Created opportunity: AutoTag Organizer (Score: 1.00)
+2025-12-17 10:57:06,054 - INFO - Processing cluster 4/50: Unreliable Infrastructure Monitoring and Maintenance
+2025-12-17 10:57:06,061 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 10:57:29,046 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:57:29,048 - INFO - ✅ LLM request 1/5 completed: 3685 tokens in 22.99s
+2025-12-17 10:57:29,057 - INFO - Created opportunity: LectureSorter (Score: 1.00)
+2025-12-17 10:57:31,057 - INFO - Processing cluster 5/50: Fetching Comprehensive Nutrition Data via APIs
+2025-12-17 10:57:31,064 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 10:57:52,231 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:57:52,233 - INFO - ✅ LLM request 1/5 completed: 3319 tokens in 21.17s
+2025-12-17 10:57:52,258 - INFO - Created opportunity: BranchSnap (Score: 1.00)
+2025-12-17 10:57:54,258 - INFO - Processing cluster 6/50: Fetching Comprehensive Nutrition Data via APIs
+2025-12-17 10:57:54,270 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 10:58:14,735 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:58:14,737 - INFO - ✅ LLM request 1/5 completed: 3325 tokens in 20.47s
+2025-12-17 10:58:14,746 - INFO - Created opportunity: BranchSync for PostgreSQL (Score: 0.90)
+2025-12-17 10:58:16,747 - INFO - Processing cluster 7/50: Fetching Comprehensive Nutrition Data via APIs
+2025-12-17 10:58:16,753 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 10:58:34,134 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:58:34,137 - INFO - ✅ LLM request 1/5 completed: 3281 tokens in 17.38s
+2025-12-17 10:58:34,146 - INFO - Created opportunity: GitSwitch DB (Score: 0.90)
+2025-12-17 10:58:36,147 - INFO - Processing cluster 8/50: Indie Hacker Build-Learn Loop
+2025-12-17 10:58:36,164 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 10:59:01,290 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:59:01,292 - INFO - ✅ LLM request 1/5 completed: 3544 tokens in 25.13s
+2025-12-17 10:59:01,318 - INFO - Created opportunity: Build-Learn Validator (Score: 1.00)
+2025-12-17 10:59:03,319 - INFO - Processing cluster 9/50: Indie Hacker Build-Learn Loop
+2025-12-17 10:59:03,326 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 10:59:27,353 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:59:27,355 - INFO - ✅ LLM request 1/5 completed: 3508 tokens in 24.03s
+2025-12-17 10:59:27,411 - INFO - Created opportunity: BuildLog (Score: 0.80)
+2025-12-17 10:59:29,412 - INFO - Processing cluster 10/50: Indie Hacker Build-Learn Loop
+2025-12-17 10:59:29,419 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 10:59:56,167 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 10:59:56,169 - INFO - ✅ LLM request 1/5 completed: 3542 tokens in 26.75s
+2025-12-17 10:59:56,194 - INFO - Created opportunity: Outcome Validator (Score: 1.00)
+2025-12-17 10:59:58,195 - INFO - Processing cluster 11/50: Indie Hacker Build-Learn Loop
+2025-12-17 10:59:58,202 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:00:25,132 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:00:25,134 - INFO - ✅ LLM request 1/5 completed: 3551 tokens in 26.93s
+2025-12-17 11:00:25,159 - INFO - Created opportunity: Assumption Tracker (Score: 1.00)
+2025-12-17 11:00:27,160 - INFO - Processing cluster 12/50: Detecting and Mitigating Ad Fraud in Digital Campaigns
+2025-12-17 11:00:27,166 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:00:48,833 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:00:48,835 - INFO - ✅ LLM request 1/5 completed: 3168 tokens in 21.67s
+2025-12-17 11:00:48,844 - INFO - Created opportunity: BotBlocker Lite (Score: 0.90)
+2025-12-17 11:00:50,845 - INFO - Processing cluster 13/50: Migrating from ingress-nginx to a New Ingress Controller
+2025-12-17 11:00:50,851 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:01:15,147 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:01:15,149 - INFO - ✅ LLM request 1/5 completed: 3014 tokens in 24.30s
+2025-12-17 11:01:15,157 - INFO - Created opportunity: ContextSnap (Score: 1.00)
+2025-12-17 11:01:17,158 - INFO - Processing cluster 14/50: Setting up SMS marketing for small business
+2025-12-17 11:01:17,163 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:01:40,496 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:01:40,497 - INFO - ✅ LLM request 1/5 completed: 2960 tokens in 23.33s
+2025-12-17 11:01:40,506 - INFO - Created opportunity: Meeting2Tasks (Score: 0.90)
+2025-12-17 11:01:42,506 - INFO - Processing cluster 15/50: Apple Search Ads Budget Optimization for Small Budgets
+2025-12-17 11:01:42,513 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:02:11,572 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:02:11,573 - INFO - ✅ LLM request 1/5 completed: 2565 tokens in 29.06s
+2025-12-17 11:02:11,581 - INFO - Created opportunity: DailyTaskSync (Score: 0.90)
+2025-12-17 11:02:13,581 - INFO - Processing cluster 16/50: Web-Based Hardware Performance Testing
+2025-12-17 11:02:13,586 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:02:35,764 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:02:35,765 - INFO - ✅ LLM request 1/5 completed: 2154 tokens in 22.18s
+2025-12-17 11:02:35,792 - INFO - Created opportunity: MeetingSync (Score: 0.90)
+2025-12-17 11:02:37,792 - INFO - Processing cluster 17/50: Apple Search Ads Budget Optimization for Small Budgets
+2025-12-17 11:02:37,799 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:03:03,769 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:03:03,771 - INFO - ✅ LLM request 1/5 completed: 2544 tokens in 25.97s
+2025-12-17 11:03:03,797 - INFO - Created opportunity: DailyTaskSync (Score: 0.73)
+2025-12-17 11:03:05,798 - INFO - Processing cluster 18/50: Web-Based Hardware Performance Testing
+2025-12-17 11:03:05,804 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:03:30,758 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:03:30,759 - INFO - ✅ LLM request 1/5 completed: 2186 tokens in 24.95s
+2025-12-17 11:03:30,785 - INFO - Created opportunity: MeetSync (Score: 0.83)
+2025-12-17 11:03:32,785 - INFO - Processing cluster 19/50: Apple Search Ads Budget Optimization for Small Budgets
+2025-12-17 11:03:32,789 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:03:55,442 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:03:55,444 - INFO - ✅ LLM request 1/5 completed: 2483 tokens in 22.66s
+2025-12-17 11:03:55,470 - INFO - Created opportunity: Apple Ads Budget Guard (Score: 1.00)
+2025-12-17 11:03:57,470 - INFO - Processing cluster 20/50: Participating in Zoom video calls
+2025-12-17 11:03:57,476 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:04:19,118 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:04:19,120 - INFO - ✅ LLM request 1/5 completed: 2482 tokens in 21.64s
+2025-12-17 11:04:19,128 - INFO - Created opportunity: BranchSync for PostgreSQL (Score: 1.00)
+2025-12-17 11:04:21,128 - INFO - Processing cluster 21/50: Setting up SMS marketing for small business
+2025-12-17 11:04:21,137 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:04:46,883 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:04:46,885 - INFO - ✅ LLM request 1/5 completed: 2994 tokens in 25.75s
+2025-12-17 11:04:46,910 - INFO - Created opportunity: Meeting2Tasks (Score: 0.90)
+2025-12-17 11:04:48,911 - INFO - Processing cluster 22/50: Detecting and Mitigating Ad Fraud in Digital Campaigns
+2025-12-17 11:04:48,917 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:05:18,838 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:05:18,840 - INFO - ✅ LLM request 1/5 completed: 3230 tokens in 29.92s
+2025-12-17 11:05:18,850 - INFO - Created opportunity: ContextSnap (Score: 1.00)
+2025-12-17 11:05:20,850 - INFO - Processing cluster 23/50: Detecting and Mitigating Ad Fraud in Digital Campaigns
+2025-12-17 11:05:20,856 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:05:45,668 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:05:45,669 - INFO - ✅ LLM request 1/5 completed: 3191 tokens in 24.81s
+2025-12-17 11:05:45,679 - INFO - Created opportunity: ContextBridge (Score: 1.00)
+2025-12-17 11:05:47,679 - INFO - Processing cluster 24/50: Detecting and Mitigating Ad Fraud in Digital Campaigns
+2025-12-17 11:05:47,688 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:06:10,766 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:06:10,767 - INFO - ✅ LLM request 1/5 completed: 3164 tokens in 23.08s
+2025-12-17 11:06:10,794 - INFO - Created opportunity: Ad Fraud Sniffer (Score: 0.90)
+2025-12-17 11:06:12,794 - INFO - Processing cluster 25/50: Initial Document Drafting in Domain-Specific Contexts
+2025-12-17 11:06:12,800 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:06:36,849 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:06:36,851 - INFO - ✅ LLM request 1/5 completed: 2202 tokens in 24.05s
+2025-12-17 11:06:36,877 - INFO - Created opportunity: DraftSync (Score: 1.00)
+2025-12-17 11:06:38,877 - INFO - Processing cluster 26/50: Improving Search Engine Indexing and Domain Credibility
+2025-12-17 11:06:38,884 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:07:05,292 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:07:05,293 - INFO - ✅ LLM request 1/5 completed: 2496 tokens in 26.41s
+2025-12-17 11:07:05,319 - INFO - Created opportunity: ContextSwitch (Score: 0.83)
+2025-12-17 11:07:07,320 - INFO - Processing cluster 27/50: Employee Offboarding Device Recovery and Security
+2025-12-17 11:07:07,324 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:07:35,695 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:07:35,696 - INFO - ✅ LLM request 1/5 completed: 2164 tokens in 28.37s
+2025-12-17 11:07:35,722 - INFO - Created opportunity: FileSense Renamer (Score: 1.00)
+2025-12-17 11:07:37,722 - INFO - Processing cluster 28/50: Initial Document Drafting in Domain-Specific Contexts
+2025-12-17 11:07:37,728 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:08:01,747 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:08:01,749 - INFO - ✅ LLM request 1/5 completed: 2216 tokens in 24.02s
+2025-12-17 11:08:01,775 - INFO - Created opportunity: DraftSync (Score: 0.73)
+2025-12-17 11:08:03,775 - INFO - Processing cluster 29/50: Improving Search Engine Indexing and Domain Credibility
+2025-12-17 11:08:03,781 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:08:25,884 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:08:25,885 - INFO - ✅ LLM request 1/5 completed: 2462 tokens in 22.10s
+2025-12-17 11:08:25,912 - INFO - Created opportunity: BranchSync for PostgreSQL (Score: 1.00)
+2025-12-17 11:08:27,913 - INFO - Processing cluster 30/50: Employee Offboarding - Device Recovery and Security
+2025-12-17 11:08:27,919 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:08:53,532 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:08:53,533 - INFO - ✅ LLM request 1/5 completed: 2133 tokens in 25.61s
+2025-12-17 11:08:53,556 - INFO - Created opportunity: ContextUnify (Score: 0.90)
+2025-12-17 11:08:55,557 - INFO - Processing cluster 31/50: Career Specialization Pivot
+2025-12-17 11:08:55,561 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:09:20,435 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:09:20,436 - INFO - ✅ LLM request 1/5 completed: 2223 tokens in 24.88s
+2025-12-17 11:09:20,446 - INFO - Created opportunity: FlowSync Dashboard (Score: 0.90)
+2025-12-17 11:09:22,447 - INFO - Processing cluster 32/50: Personal Card Used for Client Cloud Billing Transition
+2025-12-17 11:09:22,452 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:09:47,523 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:09:47,523 - INFO - ✅ LLM request 1/5 completed: 1714 tokens in 25.07s
+2025-12-17 11:09:47,548 - INFO - Created opportunity: SnapshotSync (Score: 0.90)
+2025-12-17 11:09:49,549 - INFO - Processing cluster 33/50: Initial Document Drafting in Domain-Specific Contexts
+2025-12-17 11:09:49,554 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:10:12,265 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:10:12,266 - INFO - ✅ LLM request 1/5 completed: 2199 tokens in 22.71s
+2025-12-17 11:10:12,277 - INFO - Created opportunity: DraftSpark (Score: 1.00)
+2025-12-17 11:10:14,277 - INFO - Processing cluster 34/50: Employee Offboarding Asset Recovery
+2025-12-17 11:10:14,283 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:10:37,536 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:10:37,537 - INFO - ✅ LLM request 1/5 completed: 2096 tokens in 23.25s
+2025-12-17 11:10:37,563 - INFO - Created opportunity: QuickFileRenamer (Score: 1.00)
+2025-12-17 11:10:39,564 - INFO - Processing cluster 35/50: Personal Card Used for Client Cloud Billing
+2025-12-17 11:10:39,569 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:11:05,843 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:11:05,845 - INFO - ✅ LLM request 1/5 completed: 1746 tokens in 26.28s
+2025-12-17 11:11:05,870 - INFO - Created opportunity: SnapshotShare (Score: 0.80)
+2025-12-17 11:11:07,871 - INFO - Processing cluster 36/50: Initial Document Drafting in Domain-Specific Contexts
+2025-12-17 11:11:07,876 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:11:30,425 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:11:30,427 - INFO - ✅ LLM request 1/5 completed: 2190 tokens in 22.55s
+2025-12-17 11:11:30,453 - INFO - Created opportunity: DraftSpark (Score: 1.00)
+2025-12-17 11:11:32,453 - INFO - Processing cluster 37/50: Employee Offboarding - Device Recovery and Sanitization
+2025-12-17 11:11:32,459 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:11:56,768 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:11:56,769 - INFO - ✅ LLM request 1/5 completed: 2113 tokens in 24.31s
+2025-12-17 11:11:56,775 - INFO - Created opportunity: TabFuse (Score: 0.90)
+2025-12-17 11:11:58,776 - INFO - Processing cluster 38/50: Non-technical Decision-Making in Technical Workflows
+2025-12-17 11:11:58,778 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:12:22,658 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:12:22,659 - INFO - ✅ LLM request 1/5 completed: 2082 tokens in 23.88s
+2025-12-17 11:12:22,685 - INFO - Created opportunity: Daily Task Unifier (Score: 1.00)
+2025-12-17 11:12:24,686 - INFO - Processing cluster 39/50: Handing Off Technical Systems Without Proper Documentation
+2025-12-17 11:12:24,693 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:12:51,145 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:12:51,146 - INFO - ✅ LLM request 1/5 completed: 2463 tokens in 26.45s
+2025-12-17 11:12:51,172 - INFO - Created opportunity: DevContext Snapshot (Score: 0.90)
+2025-12-17 11:12:53,172 - INFO - Processing cluster 40/50: Business Idea Validation and Launch
+2025-12-17 11:12:53,178 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:13:18,848 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:13:18,849 - INFO - ✅ LLM request 1/5 completed: 2336 tokens in 25.67s
+2025-12-17 11:13:18,857 - INFO - Created opportunity: Screenshot Sensei (Score: 1.00)
+2025-12-17 11:13:20,858 - INFO - Processing cluster 41/50: Career Specialization Pivot
+2025-12-17 11:13:20,861 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:13:46,154 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:13:46,156 - INFO - ✅ LLM request 1/5 completed: 2263 tokens in 25.29s
+2025-12-17 11:13:46,165 - INFO - Created opportunity: Workflow Validator (Score: 1.00)
+2025-12-17 11:13:48,166 - INFO - Processing cluster 42/50: Infrastructure-as-Code Tool Evaluation and Adoption
+2025-12-17 11:13:48,171 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:14:08,192 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:14:08,193 - INFO - ✅ LLM request 1/5 completed: 2206 tokens in 20.02s
+2025-12-17 11:14:08,220 - INFO - Created opportunity: MeetingScribe (Score: 0.90)
+2025-12-17 11:14:10,220 - INFO - Processing cluster 43/50: Maintaining coool.cafe platform with limited technical foundation
+2025-12-17 11:14:10,226 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:14:37,086 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:14:37,087 - INFO - ✅ LLM request 1/5 completed: 1898 tokens in 26.86s
+2025-12-17 11:14:37,113 - INFO - Created opportunity: Snapshot Sync (Score: 0.80)
+2025-12-17 11:14:39,114 - INFO - Processing cluster 44/50: Non-technical Decision-Making in Technical Projects
+2025-12-17 11:14:39,119 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:15:09,142 - INFO - Retrying request to /chat/completions in 0.474906 seconds
+2025-12-17 11:15:39,708 - INFO - Retrying request to /chat/completions in 0.870617 seconds
+2025-12-17 11:16:06,571 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:16:06,573 - INFO - ✅ LLM request 1/5 completed: 2097 tokens in 87.45s
+2025-12-17 11:16:06,599 - INFO - Created opportunity: DailyTaskUnify (Score: 0.90)
+2025-12-17 11:16:08,600 - INFO - Processing cluster 45/50: Knowledge Transfer During System Ownership Transition
+2025-12-17 11:16:08,606 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:16:35,993 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:16:35,995 - INFO - ✅ LLM request 1/5 completed: 2465 tokens in 27.39s
+2025-12-17 11:16:36,004 - INFO - Created opportunity: ContextSnap (Score: 0.70)
+2025-12-17 11:16:38,005 - INFO - Processing cluster 46/50: Business Idea Validation and Launch
+2025-12-17 11:16:38,009 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:17:01,219 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:17:01,221 - INFO - ✅ LLM request 1/5 completed: 2297 tokens in 23.21s
+2025-12-17 11:17:01,230 - INFO - Created opportunity: ContextSnap (Score: 0.90)
+2025-12-17 11:17:03,231 - INFO - Processing cluster 47/50: Infrastructure-as-Code Tool Evaluation and Adoption
+2025-12-17 11:17:03,237 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:17:26,017 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:17:26,019 - INFO - ✅ LLM request 1/5 completed: 2234 tokens in 22.78s
+2025-12-17 11:17:26,043 - INFO - Created opportunity: ContextSnap (Score: 0.90)
+2025-12-17 11:17:28,044 - INFO - Processing cluster 48/50: Database State Management in Development
+2025-12-17 11:17:28,048 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:17:51,554 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:17:51,555 - INFO - ✅ LLM request 1/5 completed: 1454 tokens in 23.51s
+2025-12-17 11:17:51,582 - INFO - Created opportunity: BranchSnap (Score: 0.90)
+2025-12-17 11:17:53,583 - INFO - Processing cluster 49/50: Maintaining coool.cafe platform with limited development experience
+2025-12-17 11:17:53,588 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:18:18,384 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:18:18,385 - INFO - ✅ LLM request 1/5 completed: 1849 tokens in 24.80s
+2025-12-17 11:18:18,412 - INFO - Created opportunity: SnapshotSync (Score: 0.80)
+2025-12-17 11:18:20,413 - INFO - Processing cluster 50/50: Handing Off Technical Systems Without Proper Documentation
+2025-12-17 11:18:20,419 - INFO - LLM Request 1/5: model=deepseek-ai/DeepSeek-V3.2, timeout=30s
+2025-12-17 11:18:48,187 - INFO - HTTP Request: POST https://api.siliconflow.cn/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 11:18:48,188 - INFO - ✅ LLM request 1/5 completed: 2474 tokens in 27.77s
+2025-12-17 11:18:48,215 - INFO - Created opportunity: Code Context Snapshot (Score: 0.90)
+2025-12-17 11:18:50,216 - INFO - 
+=== Opportunity Mapping Summary ===
+Clusters processed: 50
+Opportunities identified: 50
+Viable opportunities: 50
+Average opportunity score: 0.92
+Processing time: 1388.89s
+
+2025-12-17 11:18:50,216 - INFO - ✅ Stage 6 completed: Mapped 50 opportunities
+2025-12-17 11:18:50,216 - INFO - ==================================================
+2025-12-17 11:18:50,216 - INFO - STAGE 7: Scoring viability
+2025-12-17 11:18:50,216 - INFO - ==================================================
+2025-12-17 11:18:50,231 - INFO - Configuration loaded from /home/ubuntu/PyProjects/wise_collection/reddit_pain_finder/config/thresholds.yaml
+2025-12-17 11:18:50,231 - INFO - ViabilityScorer initialized with filtering rules enabled: True
+2025-12-17 11:18:50,231 - INFO - Scoring up to 100 opportunities
+2025-12-17 11:18:50,231 - INFO - No unscored opportunities found
+2025-12-17 11:18:50,231 - INFO - ✅ Stage 7 completed: Scored 0 opportunities
+2025-12-17 11:18:50,231 - INFO - ==================================================
+2025-12-17 11:18:50,232 - INFO - GENERATING FINAL REPORT
+2025-12-17 11:18:50,232 - INFO - ==================================================
+2025-12-17 11:18:50,233 - INFO - 🎉 PIPELINE COMPLETED SUCCESSFULLY!
+2025-12-17 11:18:50,233 - INFO - 📊 Final Summary:
+2025-12-17 11:18:50,233 - INFO -    • Runtime: 46.16 minutes
+2025-12-17 11:18:50,233 - INFO -    • Stages completed: 7/7
+2025-12-17 11:18:50,233 - INFO -    • Raw posts collected: 602
+2025-12-17 11:18:50,233 - INFO -    • Pain events extracted: 260
+2025-12-17 11:18:50,233 - INFO -    • Clusters created: 64
+2025-12-17 11:18:50,233 - INFO -    • Opportunities identified: 155
+2025-12-17 11:18:50,233 - INFO -    • Top opportunity: Workflow Validator (Score: 1.0)

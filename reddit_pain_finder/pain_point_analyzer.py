@@ -21,6 +21,13 @@ from pathlib import Path
 import logging
 import sys
 
+# 导入统一数据库管理器
+try:
+    from utils.db import PainPointDB
+except ImportError as e:
+    print(f"❌ 无法导入数据库管理器: {e}")
+    sys.exit(1)
+
 # 加载.env文件
 def load_env():
     """加载.env文件"""
@@ -52,9 +59,19 @@ logger.info("环境变量加载完成")
 
 
 class PainPointAnalyzer:
-    def __init__(self):
+    def __init__(self, unified_db: bool = True):
         """初始化分析器"""
         logger.info("初始化 PainPointAnalyzer...")
+
+        # 初始化统一数据库管理器
+        logger.info("初始化数据库管理器...")
+        self.db = PainPointDB(unified=unified_db)
+        self.unified_db = unified_db
+
+        if unified_db:
+            logger.info(f"使用统一数据库模式: {self.db.get_database_path()}")
+        else:
+            logger.info("使用多数据库模式")
 
         self.base_url = os.getenv('Siliconflow_Base_URL', 'https://api.siliconflow.cn/v1')
         self.api_key = os.getenv('Siliconflow_KEY')
@@ -73,25 +90,16 @@ class PainPointAnalyzer:
         logger.info(f"输出目录已创建: {self.output_dir}")
 
         print(f"🔧 初始化分析器")
+        print(f"   • 数据库模式: {'统一数据库' if unified_db else '多数据库文件'}")
+        if unified_db:
+            print(f"   • 数据库路径: {self.db.get_database_path()}")
         print(f"   • API模型: {self.model}")
         print(f"   • 输出目录: {self.output_dir}")
 
-    def get_db_connection(self, db_file: str) -> sqlite3.Connection:
-        """获取数据库连接"""
-        logger.debug(f"尝试连接数据库: {db_file}")
-
-        if not os.path.exists(db_file):
-            logger.error(f"数据库文件不存在: {db_file}")
-            raise FileNotFoundError(f"数据库文件不存在: {db_file}")
-
-        try:
-            conn = sqlite3.connect(db_file)
-            conn.row_factory = sqlite3.Row
-            logger.debug(f"数据库连接成功: {db_file}")
-            return conn
-        except Exception as e:
-            logger.error(f"连接数据库失败: {db_file}, 错误: {e}")
-            raise
+    def get_db_connection(self, db_type: str = "clusters"):
+        """获取数据库连接 - 使用统一数据库管理器"""
+        logger.debug(f"获取数据库连接，类型: {db_type}")
+        return self.db.get_connection(db_type)
 
     def call_llm(self, prompt: str, temperature: float = 0.3, max_retries: int = 3) -> str:
         """调用LLM"""
@@ -174,86 +182,85 @@ class PainPointAnalyzer:
                 return f"LLM调用失败: {str(e)}"
 
     def get_top_clusters(self, min_score: float = 0.8, limit: int = 10) -> List[Dict]:
-        """获取高分聚类"""
+        """获取高分聚类 - 使用统一数据库"""
         logger.info(f"获取高分聚类: min_score={min_score}, limit={limit}")
         clusters = []
 
         try:
-            conn = self.get_db_connection('data/clusters.db')
-            cursor = conn.cursor()
+            with self.get_db_connection("clusters") as conn:
+                cursor = conn.cursor()
 
-            logger.debug("执行聚类查询SQL...")
+                logger.debug("执行聚类查询SQL...")
 
-            cursor.execute("""
-                SELECT c.id, c.cluster_name, c.cluster_description, c.avg_pain_score,
-                       c.cluster_size, c.pain_event_ids,
-                       COUNT(o.id) as opportunity_count,
-                       MAX(o.total_score) as max_opportunity_score,
-                       GROUP_CONCAT(o.opportunity_name, ' | ') as opportunity_names
-                FROM clusters c
-                LEFT JOIN opportunities o ON c.id = o.cluster_id
-                GROUP BY c.id
-                HAVING opportunity_count > 0 AND max_opportunity_score >= ?
-                ORDER BY max_opportunity_score DESC, c.avg_pain_score DESC
-                LIMIT ?
-            """, (min_score, limit))
-
-            logger.debug(f"查询执行完成，开始处理结果...")
-            rows = cursor.fetchall()
-            logger.info(f"查询到 {len(rows)} 个聚类")
-
-            for i, row in enumerate(rows, 1):
-                logger.debug(f"处理第 {i}/{len(rows)} 个聚类: {row['cluster_name'][:50]}...")
-                # 获取该聚类的所有机会
-                logger.debug(f"获取聚类 {row['id']} 的机会数据...")
                 cursor.execute("""
-                    SELECT opportunity_name, description, total_score, recommendation,
-                           current_tools, missing_capability, why_existing_fail,
-                           target_users, killer_risks
-                    FROM opportunities
-                    WHERE cluster_id = ?
-                    ORDER BY total_score DESC
-                """, (row['id'],))
+                    SELECT c.id, c.cluster_name, c.cluster_description, c.avg_pain_score,
+                           c.cluster_size, c.pain_event_ids,
+                           COUNT(o.id) as opportunity_count,
+                           MAX(o.total_score) as max_opportunity_score,
+                           GROUP_CONCAT(o.opportunity_name, ' | ') as opportunity_names
+                    FROM clusters c
+                    LEFT JOIN opportunities o ON c.id = o.cluster_id
+                    GROUP BY c.id
+                    HAVING opportunity_count > 0 AND max_opportunity_score >= ?
+                    ORDER BY max_opportunity_score DESC, c.avg_pain_score DESC
+                    LIMIT ?
+                """, (min_score, limit))
 
-                opportunities = []
-                opp_rows = cursor.fetchall()
-                logger.debug(f"聚类 {row['id']} 有 {len(opp_rows)} 个机会")
+                logger.debug(f"查询执行完成，开始处理结果...")
+                rows = cursor.fetchall()
+                logger.info(f"查询到 {len(rows)} 个聚类")
 
-                for opp_row in opp_rows:
-                    opportunities.append({
-                        'name': opp_row['opportunity_name'],
-                        'description': opp_row['description'],
-                        'score': opp_row['total_score'],
-                        'recommendation': opp_row['recommendation'],
-                        'current_tools': opp_row['current_tools'],
-                        'missing_capability': opp_row['missing_capability'],
-                        'why_existing_fail': opp_row['why_existing_fail'],
-                        'target_users': opp_row['target_users'],
-                        'killer_risks': json.loads(opp_row['killer_risks']) if opp_row['killer_risks'] else []
+                for i, row in enumerate(rows, 1):
+                    logger.debug(f"处理第 {i}/{len(rows)} 个聚类: {row['cluster_name'][:50]}...")
+                    # 获取该聚类的所有机会
+                    logger.debug(f"获取聚类 {row['id']} 的机会数据...")
+                    cursor.execute("""
+                        SELECT opportunity_name, description, total_score, recommendation,
+                               current_tools, missing_capability, why_existing_fail,
+                               target_users, killer_risks
+                        FROM opportunities
+                        WHERE cluster_id = ?
+                        ORDER BY total_score DESC
+                    """, (row['id'],))
+
+                    opportunities = []
+                    opp_rows = cursor.fetchall()
+                    logger.debug(f"聚类 {row['id']} 有 {len(opp_rows)} 个机会")
+
+                    for opp_row in opp_rows:
+                        opportunities.append({
+                            'name': opp_row['opportunity_name'],
+                            'description': opp_row['description'],
+                            'score': opp_row['total_score'],
+                            'recommendation': opp_row['recommendation'],
+                            'current_tools': opp_row['current_tools'],
+                            'missing_capability': opp_row['missing_capability'],
+                            'why_existing_fail': opp_row['why_existing_fail'],
+                            'target_users': opp_row['target_users'],
+                            'killer_risks': json.loads(opp_row['killer_risks']) if opp_row['killer_risks'] else []
+                        })
+
+                    # 获取痛点事件样本
+                    try:
+                        pain_event_ids = json.loads(row['pain_event_ids'])
+                        logger.debug(f"聚类 {row['id']} 痛点事件IDs: {len(pain_event_ids)} 个")
+                        sample_pains = self.get_sample_pain_events(pain_event_ids[:5])
+                    except json.JSONDecodeError as e:
+                        logger.warning(f"聚类 {row['id']} pain_event_ids JSON解析失败: {e}")
+                        sample_pains = []
+
+                    clusters.append({
+                        'id': row['id'],
+                        'name': row['cluster_name'],
+                        'description': row['cluster_description'],
+                        'avg_pain_score': row['avg_pain_score'],
+                        'cluster_size': row['cluster_size'],
+                        'opportunity_count': row['opportunity_count'],
+                        'max_opportunity_score': row['max_opportunity_score'],
+                        'opportunities': opportunities,
+                        'sample_pains': sample_pains
                     })
 
-                # 获取痛点事件样本
-                try:
-                    pain_event_ids = json.loads(row['pain_event_ids'])
-                    logger.debug(f"聚类 {row['id']} 痛点事件IDs: {len(pain_event_ids)} 个")
-                    sample_pains = self.get_sample_pain_events(pain_event_ids[:5])
-                except json.JSONDecodeError as e:
-                    logger.warning(f"聚类 {row['id']} pain_event_ids JSON解析失败: {e}")
-                    sample_pains = []
-
-                clusters.append({
-                    'id': row['id'],
-                    'name': row['cluster_name'],
-                    'description': row['cluster_description'],
-                    'avg_pain_score': row['avg_pain_score'],
-                    'cluster_size': row['cluster_size'],
-                    'opportunity_count': row['opportunity_count'],
-                    'max_opportunity_score': row['max_opportunity_score'],
-                    'opportunities': opportunities,
-                    'sample_pains': sample_pains
-                })
-
-            conn.close()
             logger.info(f"成功获取 {len(clusters)} 个聚类数据")
             return clusters
 
@@ -264,7 +271,7 @@ class PainPointAnalyzer:
             return []
 
     def get_sample_pain_events(self, pain_event_ids: List[int]) -> List[Dict]:
-        """获取痛点事件样本"""
+        """获取痛点事件样本 - 使用统一数据库"""
         logger.debug(f"获取 {len(pain_event_ids)} 个痛点事件样本: {pain_event_ids}")
         pains = []
 
@@ -273,31 +280,30 @@ class PainPointAnalyzer:
             return []
 
         try:
-            conn = self.get_db_connection('data/pain_events.db')
-            cursor = conn.cursor()
+            with self.get_db_connection("pain") as conn:
+                cursor = conn.cursor()
 
-            placeholders = ','.join(['?' for _ in pain_event_ids])
-            logger.debug(f"执行痛点事件查询，IDs: {pain_event_ids}")
+                placeholders = ','.join(['?' for _ in pain_event_ids])
+                logger.debug(f"执行痛点事件查询，IDs: {pain_event_ids}")
 
-            cursor.execute(f"""
-                SELECT problem, current_workaround, frequency, emotional_signal, mentioned_tools
-                FROM pain_events
-                WHERE id IN ({placeholders})
-            """, pain_event_ids)
+                cursor.execute(f"""
+                    SELECT problem, current_workaround, frequency, emotional_signal, mentioned_tools
+                    FROM pain_events
+                    WHERE id IN ({placeholders})
+                """, pain_event_ids)
 
-            rows = cursor.fetchall()
-            logger.debug(f"查询到 {len(rows)} 个痛点事件")
+                rows = cursor.fetchall()
+                logger.debug(f"查询到 {len(rows)} 个痛点事件")
 
-            for row in rows:
-                pains.append({
-                    'problem': row['problem'],
-                    'workaround': row['current_workaround'],
-                    'frequency': row['frequency'],
-                    'emotion': row['emotional_signal'],
-                    'tools': row['mentioned_tools']
-                })
+                for row in rows:
+                    pains.append({
+                        'problem': row['problem'],
+                        'workaround': row['current_workaround'],
+                        'frequency': row['frequency'],
+                        'emotion': row['emotional_signal'],
+                        'tools': row['mentioned_tools']
+                    })
 
-            conn.close()
             logger.debug(f"成功获取 {len(pains)} 个痛点事件")
             return pains
 
@@ -627,15 +633,40 @@ class PainPointAnalyzer:
 
 def main():
     """主函数"""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Reddit痛点机会分析器")
+    parser.add_argument("--min-score", type=float, default=0.8, help="最低机会评分")
+    parser.add_argument("--limit", type=int, default=15, help="最大分析数量")
+    parser.add_argument("--legacy-db", action="store_true", help="使用旧的多数据库模式")
+    parser.add_argument("--dry-run", action="store_true", help="试运行模式（仅获取数据，不生成报告）")
+
+    args = parser.parse_args()
+
     logger.info("=" * 50)
     logger.info("痛点分析器开始运行")
+    logger.info(f"数据库模式: {'多数据库文件' if args.legacy_db else '统一数据库'}")
+    logger.info(f"最低评分: {args.min_score}, 最大数量: {args.limit}")
     logger.info("=" * 50)
 
     try:
         logger.info("初始化 PainPointAnalyzer...")
-        analyzer = PainPointAnalyzer()
+        analyzer = PainPointAnalyzer(unified_db=not args.legacy_db)
+
+        if args.dry_run:
+            # 试运行：仅获取数据并显示
+            logger.info("试运行模式：获取聚类数据...")
+            clusters = analyzer.get_top_clusters(min_score=args.min_score, limit=args.limit)
+            logger.info(f"找到 {len(clusters)} 个聚类")
+
+            print(f"\n📊 试运行结果：")
+            print(f"找到 {len(clusters)} 个符合条件的聚类：")
+            for i, cluster in enumerate(clusters, 1):
+                print(f"  {i}. {cluster['name']} (评分: {cluster['max_opportunity_score']:.2f}, 机会数: {cluster['opportunity_count']})")
+            return
+
         logger.info("开始运行分析...")
-        analyzer.run_analysis(min_score=0.8, limit=15)
+        analyzer.run_analysis(min_score=args.min_score, limit=args.limit)
         logger.info("程序执行完成")
     except Exception as e:
         logger.error(f"程序执行失败: {e}")

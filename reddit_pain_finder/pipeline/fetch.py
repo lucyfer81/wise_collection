@@ -398,7 +398,7 @@ class RedditPainFetcher:
         """抓取所有配置的子版块"""
         self.stats["start_time"] = datetime.now()
 
-        logger.info("Starting Reddit pain point fetching...")
+        logger.info("Starting Wise Collection posts fetching...")
 
         # 加载已处理的帖子
         self._load_processed_posts()

@@ -23,7 +23,7 @@ import sys
 
 # 导入统一数据库管理器
 try:
-    from utils.db import PainPointDB
+    from utils.db import WiseCollectionDB
 except ImportError as e:
     print(f"❌ 无法导入数据库管理器: {e}")
     sys.exit(1)
@@ -65,7 +65,7 @@ class PainPointAnalyzer:
 
         # 初始化统一数据库管理器
         logger.info("初始化数据库管理器...")
-        self.db = PainPointDB(unified=unified_db)
+        self.db = WiseCollectionDB(unified=unified_db)
         self.unified_db = unified_db
 
         if unified_db:

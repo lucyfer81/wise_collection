@@ -1,5 +1,5 @@
 """
-Database utilities for Reddit Pain Point Finder
+Database utilities for Wise Collection
 SQLite数据库操作工具
 """
 import sqlite3
@@ -12,8 +12,8 @@ import os
 
 logger = logging.getLogger(__name__)
 
-class PainPointDB:
-    """Reddit痛点发现系统数据库管理器"""
+class WiseCollectionDB:
+    """Wise Collection系统数据库管理器"""
 
     def __init__(self, db_dir: str = "data", unified: bool = True):
         """初始化数据库连接"""
@@ -23,7 +23,7 @@ class PainPointDB:
 
         if unified:
             # 使用统一数据库文件
-            self.unified_db_path = os.path.join(db_dir, "reddit_pain_finder.db")
+            self.unified_db_path = os.path.join(db_dir, "wise_collection.db")
             # 兼容性：保持原有路径变量
             self.raw_db_path = self.unified_db_path
             self.filtered_db_path = self.unified_db_path
@@ -85,23 +85,28 @@ class PainPointDB:
     def _init_unified_database(self):
         """初始化统一数据库，包含所有表"""
         with self.get_connection("raw") as conn:
-            # 创建原始帖子表
+            # 创建原始帖子表（升级版 - 支持多数据源）
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS posts (
                     id TEXT PRIMARY KEY,
                     title TEXT NOT NULL,
                     body TEXT,
-                    subreddit TEXT NOT NULL,
+                    subreddit TEXT,
                     url TEXT NOT NULL,
+                    source TEXT NOT NULL DEFAULT 'reddit',
+                    source_id TEXT NOT NULL,
+                    platform_data TEXT,
                     score INTEGER NOT NULL,
                     num_comments INTEGER NOT NULL,
-                    upvote_ratio REAL NOT NULL,
-                    is_self INTEGER NOT NULL,
+                    upvote_ratio REAL,
+                    is_self INTEGER,
                     created_utc REAL NOT NULL,
+                    created_at TIMESTAMP NOT NULL,
                     author TEXT,
                     category TEXT,
                     collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    raw_data TEXT  -- 原始JSON数据
+                    raw_data TEXT,  -- 原始JSON数据
+                    UNIQUE(source, source_id)
                 )
             """)
 
@@ -196,6 +201,19 @@ class PainPointDB:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_score ON posts(score)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_collected_at ON posts(collected_at)")
 
+            # 检查新列是否存在，然后创建相应索引
+            cursor = conn.execute("PRAGMA table_info(posts)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            if 'source' in existing_columns:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_source ON posts(source)")
+
+            if 'created_at' in existing_columns:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_source_created ON posts(source, created_at)")
+
+            if 'source' in existing_columns and 'source_id' in existing_columns:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_unique_source ON posts(source, source_id)")
+
             # filtered_posts表索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_pain_score ON filtered_posts(pain_score)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_subreddit ON filtered_posts(subreddit)")
@@ -224,17 +242,22 @@ class PainPointDB:
                     id TEXT PRIMARY KEY,
                     title TEXT NOT NULL,
                     body TEXT,
-                    subreddit TEXT NOT NULL,
+                    subreddit TEXT,
                     url TEXT NOT NULL,
+                    source TEXT NOT NULL DEFAULT 'reddit',
+                    source_id TEXT NOT NULL,
+                    platform_data TEXT,
                     score INTEGER NOT NULL,
                     num_comments INTEGER NOT NULL,
-                    upvote_ratio REAL NOT NULL,
-                    is_self INTEGER NOT NULL,
+                    upvote_ratio REAL,
+                    is_self INTEGER,
                     created_utc REAL NOT NULL,
+                    created_at TIMESTAMP NOT NULL,
                     author TEXT,
                     category TEXT,
                     collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    raw_data TEXT  -- 原始JSON数据
+                    raw_data TEXT,  -- 原始JSON数据
+                    UNIQUE(source, source_id)
                 )
             """)
 
@@ -242,6 +265,19 @@ class PainPointDB:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_subreddit ON posts(subreddit)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_score ON posts(score)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_collected_at ON posts(collected_at)")
+
+            # 检查新列是否存在，然后创建相应索引
+            cursor = conn.execute("PRAGMA table_info(posts)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            if 'source' in existing_columns:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_source ON posts(source)")
+
+            if 'created_at' in existing_columns:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_source_created ON posts(source, created_at)")
+
+            if 'source' in existing_columns and 'source_id' in existing_columns:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_unique_source ON posts(source, source_id)")
             conn.commit()
 
     def _init_filtered_posts_db(self):
@@ -355,25 +391,30 @@ class PainPointDB:
 
     # Raw posts operations
     def insert_raw_post(self, post_data: Dict[str, Any]) -> bool:
-        """插入原始帖子数据"""
+        """插入原始帖子数据（支持多数据源）"""
         try:
             with self.get_connection("raw") as conn:
                 conn.execute("""
                     INSERT OR REPLACE INTO posts
-                    (id, title, body, subreddit, url, score, num_comments,
-                     upvote_ratio, is_self, created_utc, author, category, raw_data)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, title, body, subreddit, url, source, source_id, platform_data,
+                     score, num_comments, upvote_ratio, is_self, created_utc, created_at,
+                     author, category, raw_data)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    post_data["id"],
+                    post_data.get("id"),                    # 统一ID (兼容旧数据)
                     post_data["title"],
                     post_data.get("body", ""),
-                    post_data["subreddit"],
+                    post_data.get("subreddit", "unknown"),   # 兼容性：如果没有subreddit，使用unknown
                     post_data["url"],
+                    post_data.get("source", "reddit"),      # 新字段，默认为reddit
+                    post_data.get("source_id"),             # 新字段
+                    json.dumps(post_data.get("platform_data", {})),  # 新字段
                     post_data["score"],
                     post_data["num_comments"],
-                    post_data.get("upvote_ratio", 0.0),
-                    int(post_data.get("is_self", False)),
+                    post_data.get("upvote_ratio"),          # 可能为None (新字段)
+                    post_data.get("is_self"),               # 可能为None (新字段)
                     post_data.get("created_utc", 0),
+                    post_data.get("created_at", datetime.now().isoformat()),  # 新字段
                     post_data.get("author", ""),
                     post_data.get("category", ""),
                     json.dumps(post_data)
@@ -413,6 +454,39 @@ class PainPointDB:
                 return [dict(row) for row in cursor.fetchall()]
         except Exception as e:
             logger.error(f"Failed to get unprocessed posts: {e}")
+            return []
+
+    def get_unprocessed_posts_by_source(self, source: str, limit: int = 100) -> List[Dict]:
+        """获取未处理的帖子，支持按数据源过滤"""
+        try:
+            # 首先获取所有已处理的帖子ID
+            with self.get_connection("filtered") as conn:
+                cursor = conn.execute("SELECT id FROM filtered_posts")
+                processed_ids = {row['id'] for row in cursor.fetchall()}
+
+            # 然后获取未处理的帖子，按数据源过滤
+            with self.get_connection("raw") as conn:
+                if processed_ids:
+                    # 如果有已处理的帖子，排除它们
+                    placeholders = ','.join('?' * len(processed_ids))
+                    cursor = conn.execute(f"""
+                        SELECT * FROM posts
+                        WHERE source = ?
+                        AND id NOT IN ({placeholders})
+                        ORDER BY collected_at DESC
+                        LIMIT ?
+                    """, [source] + list(processed_ids) + [limit])
+                else:
+                    # 如果没有已处理的帖子，直接获取
+                    cursor = conn.execute("""
+                        SELECT * FROM posts
+                        WHERE source = ?
+                        ORDER BY collected_at DESC
+                        LIMIT ?
+                    """, (source, limit))
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Failed to get unprocessed posts for source {source}: {e}")
             return []
 
     # Filtered posts operations
@@ -670,6 +744,15 @@ class PainPointDB:
                 cursor = conn.execute("SELECT COUNT(*) as count FROM opportunities")
                 stats["opportunities_count"] = cursor.fetchone()["count"]
 
+            # 按数据源统计原始帖子
+            with self.get_connection("raw") as conn:
+                cursor = conn.execute("""
+                    SELECT source, COUNT(*) as count
+                    FROM posts
+                    GROUP BY source
+                """)
+                stats["posts_by_source"] = {row['source']: row['count'] for row in cursor.fetchall()}
+
         except Exception as e:
             logger.error(f"Failed to get statistics: {e}")
 
@@ -688,7 +771,7 @@ class PainPointDB:
         """切换到统一数据库模式（需要重启应用）"""
         if not self.unified:
             logger.warning("Switch to unified database mode requires application restart")
-            logger.info("Please create a new PainPointDB(unified=True) instance")
+            logger.info("Please create a new WiseCollectionDB(unified=True) instance")
 
     def get_cross_table_stats(self) -> Dict[str, Any]:
         """获取跨表统计信息（仅在统一模式下有效）"""
@@ -734,7 +817,7 @@ class PainPointDB:
 
 
 # 全局数据库实例（使用统一数据库）
-db = PainPointDB(unified=True)
+db = WiseCollectionDB(unified=True)
 
 # 保持向后兼容的多数据库实例
-db_multi = PainPointDB(unified=False)
+db_multi = WiseCollectionDB(unified=False)

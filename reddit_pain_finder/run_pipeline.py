@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Reddit Pain Point Finder - Main Pipeline Runner
-主要的pipeline执行脚本 - 一键运行整个痛点发现流程
+Wise Collection - Main Pipeline Runner
+主要的pipeline执行脚本 - 一键运行整个数据收集流程
 """
 import os
 import sys
@@ -17,7 +17,7 @@ project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 # 导入pipeline模块
-from pipeline.fetch import RedditPainFetcher
+from pipeline.fetch import RedditSourceFetcher
 from pipeline.filter_signal import PainSignalFilter
 from pipeline.extract_pain import PainPointExtractor
 from pipeline.embed import PainEventEmbedder
@@ -40,8 +40,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-class RedditPainPipeline:
-    """Reddit痛点发现Pipeline"""
+class WiseCollectionPipeline:
+    """Wise Collection数据收集Pipeline"""
 
     def __init__(self):
         """初始化pipeline"""
@@ -58,15 +58,15 @@ class RedditPainPipeline:
         # 确保日志目录存在
         os.makedirs("logs", exist_ok=True)
 
-    def run_stage_fetch(self, limit_subreddits: Optional[int] = None) -> Dict[str, Any]:
+    def run_stage_fetch(self, limit_sources: Optional[int] = None) -> Dict[str, Any]:
         """阶段1: 数据抓取"""
         logger.info("=" * 50)
-        logger.info("STAGE 1: Fetching Reddit posts")
+        logger.info("STAGE 1: Wise Collection Posts Fetcher")
         logger.info("=" * 50)
 
         try:
-            fetcher = RedditPainFetcher()
-            result = fetcher.fetch_all(limit_subreddits=limit_subreddits)
+            fetcher = RedditSourceFetcher()
+            result = fetcher.fetch_all(limit_sources=limit_sources)
 
             self.stats["stages_completed"].append("fetch")
             self.stats["stage_results"]["fetch"] = result
@@ -295,7 +295,7 @@ class RedditPainPipeline:
 
     def run_full_pipeline(
         self,
-        limit_subreddits: Optional[int] = None,
+        limit_sources: Optional[int] = None,
         limit_posts: Optional[int] = None,
         limit_events: Optional[int] = None,
         limit_clusters: Optional[int] = None,
@@ -307,7 +307,7 @@ class RedditPainPipeline:
         logger.info(f"⏰ Started at: {self.pipeline_start_time}")
 
         stages = [
-            ("fetch", lambda: self.run_stage_fetch(limit_subreddits)),
+            ("fetch", lambda: self.run_stage_fetch(limit_sources)),
             ("filter", lambda: self.run_stage_filter(limit_posts)),
             ("extract", lambda: self.run_stage_extract(limit_posts)),
             ("embed", lambda: self.run_stage_embed(limit_events)),
@@ -335,7 +335,7 @@ class RedditPainPipeline:
     def run_single_stage(self, stage_name: str, **kwargs) -> Dict[str, Any]:
         """运行单个阶段"""
         stage_map = {
-            "fetch": lambda: self.run_stage_fetch(kwargs.get("limit_subreddits")),
+            "fetch": lambda: self.run_stage_fetch(kwargs.get("limit_sources")),
             "filter": lambda: self.run_stage_filter(kwargs.get("limit_posts")),
             "extract": lambda: self.run_stage_extract(kwargs.get("limit_posts")),
             "embed": lambda: self.run_stage_embed(kwargs.get("limit_events")),
@@ -375,7 +375,7 @@ def main():
                        default="all", help="Which stage to run (default: all)")
 
     # 限制参数
-    parser.add_argument("--limit-subreddits", type=int, help="Limit number of subreddits to fetch")
+    parser.add_argument("--limit-sources", type=int, help="Limit number of sources to fetch")
     parser.add_argument("--limit-posts", type=int, help="Limit number of posts to process")
     parser.add_argument("--limit-events", type=int, help="Limit number of pain events to process")
     parser.add_argument("--limit-clusters", type=int, help="Limit number of clusters to process")
@@ -390,12 +390,12 @@ def main():
 
     try:
         # 初始化pipeline
-        pipeline = RedditPainPipeline()
+        pipeline = WiseCollectionPipeline()
 
         if args.stage == "all":
             # 运行完整pipeline
             result = pipeline.run_full_pipeline(
-                limit_subreddits=args.limit_subreddits,
+                limit_sources=args.limit_sources,
                 limit_posts=args.limit_posts,
                 limit_events=args.limit_events,
                 limit_clusters=args.limit_clusters,
@@ -405,7 +405,7 @@ def main():
         else:
             # 运行单个阶段
             stage_kwargs = {
-                "limit_subreddits": args.limit_subreddits,
+                "limit_sources": args.limit_sources,
                 "limit_posts": args.limit_posts,
                 "limit_events": args.limit_events,
                 "limit_clusters": args.limit_clusters,

@@ -163,6 +163,11 @@ class WiseCollectionDB:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     cluster_name TEXT NOT NULL,
                     cluster_description TEXT,
+                    source_type TEXT,  -- 新增：数据源类型 (hn_ask, hn_show, reddit, etc.)
+                    centroid_summary TEXT,  -- 新增：聚类中心摘要
+                    common_pain TEXT,  -- 新增：共同痛点
+                    common_context TEXT,  -- 新增：共同上下文
+                    example_events TEXT,  -- 新增：代表性事件 (JSON数组)
                     pain_event_ids TEXT NOT NULL,  -- JSON数组
                     cluster_size INTEGER NOT NULL,
                     avg_pain_score REAL,
@@ -192,6 +197,20 @@ class WiseCollectionDB:
                     recommendation TEXT,  -- AI建议：pursue/modify/abandon with reason
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (cluster_id) REFERENCES clusters(id)
+                )
+            """)
+
+            # 创建跨源对齐问题表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS aligned_problems (
+                    id TEXT PRIMARY KEY,  -- aligned_AP_XX_timestamp format
+                    aligned_problem_id TEXT UNIQUE,  -- AP_XX format
+                    sources TEXT,  -- JSON array of source types
+                    core_problem TEXT,
+                    why_they_look_different TEXT,
+                    evidence TEXT,  -- JSON array of evidence objects
+                    cluster_ids TEXT,  -- JSON array of original cluster IDs
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
 
@@ -230,6 +249,9 @@ class WiseCollectionDB:
             # opportunities表索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_score ON opportunities(total_score)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_cluster_id ON opportunities(cluster_id)")
+
+            # 添加对齐跟踪列到clusters表（如果不存在）
+            self._add_alignment_columns_to_clusters(conn)
 
             conn.commit()
             logger.info("Unified database initialized successfully")
@@ -351,6 +373,11 @@ class WiseCollectionDB:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     cluster_name TEXT NOT NULL,
                     cluster_description TEXT,
+                    source_type TEXT,  -- 新增：数据源类型 (hn_ask, hn_show, reddit, etc.)
+                    centroid_summary TEXT,  -- 新增：聚类中心摘要
+                    common_pain TEXT,  -- 新增：共同痛点
+                    common_context TEXT,  -- 新增：共同上下文
+                    example_events TEXT,  -- 新增：代表性事件 (JSON数组)
                     pain_event_ids TEXT NOT NULL,  -- JSON数组
                     cluster_size INTEGER NOT NULL,
                     avg_pain_score REAL,
@@ -383,11 +410,59 @@ class WiseCollectionDB:
                 )
             """)
 
+            # 创建跨源对齐问题表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS aligned_problems (
+                    id TEXT PRIMARY KEY,  -- aligned_AP_XX_timestamp format
+                    aligned_problem_id TEXT UNIQUE,  -- AP_XX format
+                    sources TEXT,  -- JSON array of source types
+                    core_problem TEXT,
+                    why_they_look_different TEXT,
+                    evidence TEXT,  -- JSON array of evidence objects
+                    cluster_ids TEXT,  -- JSON array of original cluster IDs
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
             # 创建索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_clusters_size ON clusters(cluster_size)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_score ON opportunities(total_score)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_cluster_id ON opportunities(cluster_id)")
+
+            # 添加对齐跟踪列到clusters表（如果不存在）
+            self._add_alignment_columns_to_clusters(conn)
+
             conn.commit()
+
+    def _add_alignment_columns_to_clusters(self, conn):
+        """为clusters表添加对齐跟踪列（如果不存在）"""
+        try:
+            # 检查列是否存在
+            cursor = conn.execute("PRAGMA table_info(clusters)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            # 添加alignment_status列（如果不存在）
+            if 'alignment_status' not in existing_columns:
+                conn.execute("""
+                    ALTER TABLE clusters
+                    ADD COLUMN alignment_status TEXT DEFAULT 'unprocessed'
+                """)
+                logger.info("Added alignment_status column to clusters table")
+
+            # 添加aligned_problem_id列（如果不存在）
+            if 'aligned_problem_id' not in existing_columns:
+                conn.execute("""
+                    ALTER TABLE clusters
+                    ADD COLUMN aligned_problem_id TEXT
+                """)
+                logger.info("Added aligned_problem_id column to clusters table")
+
+            # 创建相关索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_clusters_alignment_status ON clusters(alignment_status)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_clusters_aligned_problem_id ON clusters(aligned_problem_id)")
+
+        except Exception as e:
+            logger.error(f"Failed to add alignment columns to clusters table: {e}")
 
     # Raw posts operations
     def insert_raw_post(self, post_data: Dict[str, Any]) -> bool:
@@ -643,12 +718,18 @@ class WiseCollectionDB:
             with self.get_connection("clusters") as conn:
                 cursor = conn.execute("""
                     INSERT INTO clusters
-                    (cluster_name, cluster_description, pain_event_ids, cluster_size,
+                    (cluster_name, cluster_description, source_type, centroid_summary,
+                     common_pain, common_context, example_events, pain_event_ids, cluster_size,
                      avg_pain_score, workflow_confidence)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     cluster_data["cluster_name"],
                     cluster_data.get("cluster_description", ""),
+                    cluster_data.get("source_type", ""),
+                    cluster_data.get("centroid_summary", ""),
+                    cluster_data.get("common_pain", ""),
+                    cluster_data.get("common_context", ""),
+                    json.dumps(cluster_data.get("example_events", [])),
                     json.dumps(cluster_data["pain_event_ids"]),
                     cluster_data["cluster_size"],
                     cluster_data.get("avg_pain_score", 0.0),

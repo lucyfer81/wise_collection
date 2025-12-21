@@ -277,22 +277,7 @@ Return only valid JSON arrays of alignment objects. If no alignments exist, retu
     def _insert_aligned_problem(self, alignment_data: Dict):
         """插入对齐问题到数据库"""
         try:
-            with self.db.get_connection("clusters") as conn:
-                conn.execute("""
-                    INSERT OR REPLACE INTO aligned_problems
-                    (id, aligned_problem_id, sources, core_problem,
-                     why_they_look_different, evidence, cluster_ids)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    alignment_data['id'],
-                    alignment_data['aligned_problem_id'],
-                    json.dumps(alignment_data['sources']),
-                    alignment_data['core_problem'],
-                    alignment_data['why_they_look_different'],
-                    json.dumps(alignment_data['evidence']),
-                    json.dumps(alignment_data['cluster_ids'])
-                ))
-                conn.commit()
+            self.db.insert_aligned_problem(alignment_data)
         except Exception as e:
             logger.error(f"Failed to insert aligned problem: {e}")
             raise
@@ -300,13 +285,7 @@ Return only valid JSON arrays of alignment objects. If no alignments exist, retu
     def _update_cluster_alignment_status(self, cluster_name: str, status: str, aligned_problem_id: str = None):
         """更新聚类对齐状态"""
         try:
-            with self.db.get_connection("clusters") as conn:
-                conn.execute("""
-                    UPDATE clusters
-                    SET alignment_status = ?, aligned_problem_id = ?
-                    WHERE cluster_name = ?
-                """, (status, aligned_problem_id, cluster_name))
-                conn.commit()
+            self.db.update_cluster_alignment_status(cluster_name, status, aligned_problem_id)
         except Exception as e:
             logger.error(f"Failed to update cluster alignment status: {e}")
             raise

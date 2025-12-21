@@ -825,6 +825,21 @@ class WiseCollectionDB:
                 cursor = conn.execute("SELECT COUNT(*) as count FROM opportunities")
                 stats["opportunities_count"] = cursor.fetchone()["count"]
 
+                # 对齐统计
+                cursor = conn.execute("SELECT COUNT(*) as count FROM aligned_problems")
+                stats["aligned_problems_count"] = cursor.fetchone()["count"]
+
+                cursor = conn.execute("""
+                    SELECT alignment_status, COUNT(*) as count
+                    FROM clusters
+                    WHERE alignment_status IS NOT NULL
+                    GROUP BY alignment_status
+                """)
+                stats["clusters_by_alignment_status"] = {
+                    row['alignment_status']: row['count']
+                    for row in cursor.fetchall()
+                }
+
             # 按数据源统计原始帖子
             with self.get_connection("raw") as conn:
                 cursor = conn.execute("""
@@ -852,7 +867,139 @@ class WiseCollectionDB:
         """切换到统一数据库模式（需要重启应用）"""
         if not self.unified:
             logger.warning("Switch to unified database mode requires application restart")
-            logger.info("Please create a new WiseCollectionDB(unified=True) instance")
+
+    # 跨源对齐相关方法
+    def get_aligned_problems(self) -> List[Dict]:
+        """获取所有对齐问题"""
+        try:
+            with self.get_connection("clusters") as conn:
+                cursor = conn.execute("""
+                    SELECT id, aligned_problem_id, sources, core_problem,
+                           why_they_look_different, evidence, cluster_ids, created_at
+                    FROM aligned_problems
+                    ORDER BY created_at DESC
+                """)
+
+                results = []
+                for row in cursor.fetchall():
+                    result = dict(row)
+                    result['sources'] = json.loads(result['sources'])
+                    result['evidence'] = json.loads(result['evidence'])
+                    result['cluster_ids'] = json.loads(result['cluster_ids'])
+                    results.append(result)
+
+                return results
+
+        except Exception as e:
+            logger.error(f"Failed to get aligned problems: {e}")
+            return []
+
+    def update_cluster_alignment_status(self, cluster_name: str, status: str, aligned_problem_id: str = None):
+        """更新聚类对齐状态"""
+        try:
+            with self.get_connection("clusters") as conn:
+                conn.execute("""
+                    UPDATE clusters
+                    SET alignment_status = ?, aligned_problem_id = ?
+                    WHERE cluster_name = ?
+                """, (status, aligned_problem_id, cluster_name))
+                conn.commit()
+        except Exception as e:
+            logger.error(f"Failed to update cluster alignment status: {e}")
+            raise
+
+    def insert_aligned_problem(self, aligned_problem_data: Dict):
+        """插入新的对齐问题"""
+        try:
+            with self.get_connection("clusters") as conn:
+                conn.execute("""
+                    INSERT OR REPLACE INTO aligned_problems
+                    (id, aligned_problem_id, sources, core_problem,
+                     why_they_look_different, evidence, cluster_ids)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    aligned_problem_data['id'],
+                    aligned_problem_data['aligned_problem_id'],
+                    json.dumps(aligned_problem_data['sources']),
+                    aligned_problem_data['core_problem'],
+                    aligned_problem_data['why_they_look_different'],
+                    json.dumps(aligned_problem_data['evidence']),
+                    json.dumps(aligned_problem_data['cluster_ids'])
+                ))
+                conn.commit()
+        except Exception as e:
+            logger.error(f"Failed to insert aligned problem: {e}")
+            raise
+
+    def get_clusters_for_opportunity_mapping(self) -> List[Dict]:
+        """获取用于机会映射的聚类（包括对齐问题）"""
+        try:
+            with self.get_connection("clusters") as conn:
+                # 获取未对齐的原始聚类
+                cursor = conn.execute("""
+                    SELECT cluster_name, source_type, centroid_summary,
+                           common_pain, pain_event_ids, cluster_size
+                    FROM clusters
+                    WHERE alignment_status IN ('unprocessed', 'processed')
+                    OR alignment_status IS NULL
+                """)
+
+                clusters = [dict(row) for row in cursor.fetchall()]
+
+                # 获取对齐问题作为"虚拟聚类"
+                cursor = conn.execute("""
+                    SELECT aligned_problem_id as cluster_name,
+                           'aligned' as source_type,
+                           core_problem as centroid_summary,
+                           '' as common_pain,
+                           '[]' as pain_event_ids,
+                           JSON_LENGTH(cluster_ids) as cluster_size
+                    FROM aligned_problems
+                """)
+
+                aligned_clusters = [dict(row) for row in cursor.fetchall()]
+
+                # 合并结果
+                return clusters + aligned_clusters
+
+        except Exception as e:
+            logger.error(f"Failed to get clusters for opportunity mapping: {e}")
+            return []
+
+    def get_clusters_for_aligned_problem(self, aligned_problem_id: str) -> List[Dict]:
+        """获取对齐问题的支持聚类"""
+        try:
+            with self.get_connection("clusters") as conn:
+                # 首先获取对齐问题的cluster_ids
+                cursor = conn.execute("""
+                    SELECT cluster_ids
+                    FROM aligned_problems
+                    WHERE aligned_problem_id = ?
+                """, (aligned_problem_id,))
+
+                result = cursor.fetchone()
+                if not result:
+                    return []
+
+                cluster_ids = json.loads(result['cluster_ids'])
+
+                # 获取这些聚类的详细信息
+                if not cluster_ids:
+                    return []
+
+                placeholders = ','.join(['?' for _ in cluster_ids])
+                cursor = conn.execute(f"""
+                    SELECT cluster_name, source_type, centroid_summary,
+                           common_pain, cluster_size
+                    FROM clusters
+                    WHERE cluster_name IN ({placeholders})
+                """, cluster_ids)
+
+                return [dict(row) for row in cursor.fetchall()]
+
+        except Exception as e:
+            logger.error(f"Failed to get clusters for aligned problem {aligned_problem_id}: {e}")
+            return []
 
     def get_cross_table_stats(self) -> Dict[str, Any]:
         """获取跨表统计信息（仅在统一模式下有效）"""

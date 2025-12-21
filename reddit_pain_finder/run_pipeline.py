@@ -10,7 +10,7 @@ import logging
 import json
 import time
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 # 设置项目根目录
 project_root = os.path.dirname(os.path.abspath(__file__))
@@ -24,9 +24,11 @@ from pipeline.embed import PainEventEmbedder
 from pipeline.cluster import PainEventClusterer
 from pipeline.score_viability import ViabilityScorer
 from pipeline.map_opportunity import OpportunityMapper
+from pipeline.align_cross_sources import CrossSourceAligner
 
 # 导入工具模块
 from utils.db import db
+from utils.llm_client import LLMClient
 
 # 设置日志
 logging.basicConfig(
@@ -58,20 +60,54 @@ class WiseCollectionPipeline:
         # 确保日志目录存在
         os.makedirs("logs", exist_ok=True)
 
-    def run_stage_fetch(self, limit_sources: Optional[int] = None) -> Dict[str, Any]:
-        """阶段1: 数据抓取"""
+    def _load_config(self, config_path: str = "config/llm.yaml") -> Dict[str, Any]:
+        """加载配置文件"""
+        try:
+            import yaml
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            return config
+        except Exception as e:
+            logger.warning(f"Failed to load config from {config_path}: {e}")
+            # 返回默认配置
+            return {
+                'database': {'path': 'data/wise_collection.db'},
+                'llm': {
+                    'models': {
+                        'main': 'gpt-4',
+                        'medium': 'gpt-3.5-turbo',
+                        'small': 'gpt-3.5-turbo'
+                    }
+                }
+            }
+
+    def run_stage_fetch(self, limit_sources: Optional[int] = None,
+                       sources: Optional[List[str]] = None) -> Dict[str, Any]:
+        """阶段1: 数据抓取（支持多数据源）"""
         logger.info("=" * 50)
-        logger.info("STAGE 1: Wise Collection Posts Fetcher")
+        logger.info("STAGE 1: Multi-Source Posts Fetcher")
         logger.info("=" * 50)
 
         try:
-            fetcher = RedditSourceFetcher()
+            from pipeline.fetch import MultiSourceFetcher
+
+            # 使用指定的数据源，默认为 reddit + hackernews
+            fetch_sources = sources or ['reddit', 'hackernews']
+            fetcher = MultiSourceFetcher(sources=fetch_sources)
             result = fetcher.fetch_all(limit_sources=limit_sources)
 
             self.stats["stages_completed"].append("fetch")
             self.stats["stage_results"]["fetch"] = result
 
-            logger.info(f"✅ Stage 1 completed: Found {result['total_saved']} posts")
+            logger.info(f"✅ Stage 1 completed: Found {result['total_saved']} posts from {len(result['sources_processed'])} sources")
+
+            # 输出各数据源统计
+            for source, stats in result.get("source_stats", {}).items():
+                if "error" not in stats:
+                    logger.info(f"   - {source}: {stats.get('total_saved', 0)} posts")
+                else:
+                    logger.error(f"   - {source}: ERROR - {stats['error']}")
+
             return result
 
         except Exception as e:
@@ -183,6 +219,54 @@ class WiseCollectionPipeline:
         except Exception as e:
             logger.error(f"❌ Stage 5 failed: {e}")
             self.stats["stages_failed"].append("cluster")
+            raise
+
+    def run_stage_cross_source_alignment(self) -> Dict[str, Any]:
+        """阶段5.5: 跨源对齐"""
+        logger.info("=" * 50)
+        logger.info("STAGE 5.5: Cross-Source Alignment")
+        logger.info("=" * 50)
+
+        try:
+            # 加载配置
+            config = self._load_config()
+
+            # 初始化对齐器
+            llm_client = LLMClient(config['llm'])
+            aligner = CrossSourceAligner(db, llm_client)
+
+            # 执行跨源对齐
+            logger.info("Processing cross-source alignment...")
+            aligner.process_alignments()
+
+            # 获取对齐结果
+            aligned_problems = db.get_aligned_problems()
+
+            result = {
+                "aligned_problems_count": len(aligned_problems),
+                "aligned_problems": aligned_problems
+            }
+
+            self.stats["stages_completed"].append("alignment")
+            self.stats["stage_results"]["alignment"] = result
+
+            logger.info(f"✅ Stage 5.5 completed: Found {len(aligned_problems)} aligned problems")
+
+            # 显示对齐摘要
+            if aligned_problems:
+                logger.info("\nAlignment Summary:")
+                logger.info(f"- Total aligned problems: {len(aligned_problems)}")
+                for problem in aligned_problems[:3]:  # 显示前3个
+                    logger.info(f"  {problem['aligned_problem_id']}: {problem['core_problem'][:100]}...")
+                    logger.info(f"  Sources: {', '.join(problem['sources'])}")
+            else:
+                logger.info("No cross-source alignments found in this run")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ Stage 5.5 failed: {e}")
+            self.stats["stages_failed"].append("alignment")
             raise
 
     def run_stage_map_opportunities(self, limit_clusters: Optional[int] = None) -> Dict[str, Any]:
@@ -300,18 +384,24 @@ class WiseCollectionPipeline:
         limit_events: Optional[int] = None,
         limit_clusters: Optional[int] = None,
         limit_opportunities: Optional[int] = None,
+        sources: Optional[List[str]] = None,
         stop_on_error: bool = False
     ) -> Dict[str, Any]:
         """运行完整pipeline"""
-        logger.info("🚀 Starting Reddit Pain Point Finder Pipeline")
+        logger.info("🚀 Starting Wise Collection Multi-Source Pipeline")
         logger.info(f"⏰ Started at: {self.pipeline_start_time}")
 
+        # 使用指定的数据源，默认为 reddit + hackernews
+        fetch_sources = sources or ['reddit', 'hackernews']
+        logger.info(f"📡 Data sources: {', '.join(fetch_sources)}")
+
         stages = [
-            ("fetch", lambda: self.run_stage_fetch(limit_sources)),
+            ("fetch", lambda: self.run_stage_fetch(limit_sources, fetch_sources)),
             ("filter", lambda: self.run_stage_filter(limit_posts)),
             ("extract", lambda: self.run_stage_extract(limit_posts)),
             ("embed", lambda: self.run_stage_embed(limit_events)),
             ("cluster", lambda: self.run_stage_cluster(limit_events)),
+            ("alignment", lambda: self.run_stage_cross_source_alignment()),
             ("map_opportunities", lambda: self.run_stage_map_opportunities(limit_clusters)),
             ("score", lambda: self.run_stage_score(limit_opportunities))
         ]
@@ -335,11 +425,12 @@ class WiseCollectionPipeline:
     def run_single_stage(self, stage_name: str, **kwargs) -> Dict[str, Any]:
         """运行单个阶段"""
         stage_map = {
-            "fetch": lambda: self.run_stage_fetch(kwargs.get("limit_sources")),
+            "fetch": lambda: self.run_stage_fetch(kwargs.get("limit_sources"), kwargs.get("sources")),
             "filter": lambda: self.run_stage_filter(kwargs.get("limit_posts")),
             "extract": lambda: self.run_stage_extract(kwargs.get("limit_posts")),
             "embed": lambda: self.run_stage_embed(kwargs.get("limit_events")),
             "cluster": lambda: self.run_stage_cluster(kwargs.get("limit_events")),
+            "alignment": lambda: self.run_stage_cross_source_alignment(),
             "map": lambda: self.run_stage_map_opportunities(kwargs.get("limit_clusters")),
             "score": lambda: self.run_stage_score(kwargs.get("limit_opportunities"))
         }
@@ -368,11 +459,15 @@ class WiseCollectionPipeline:
 
 def main():
     """主函数"""
-    parser = argparse.ArgumentParser(description="Reddit Pain Point Finder Pipeline")
+    parser = argparse.ArgumentParser(description="Wise Collection Multi-Source Pipeline")
 
     # 运行模式
-    parser.add_argument("--stage", choices=["fetch", "filter", "extract", "embed", "cluster", "map", "score", "all"],
+    parser.add_argument("--stage", choices=["fetch", "filter", "extract", "embed", "cluster", "alignment", "map", "score", "all"],
                        default="all", help="Which stage to run (default: all)")
+
+    # 数据源选择
+    parser.add_argument("--sources", nargs="+", choices=["reddit", "hackernews"],
+                       default=["reddit", "hackernews"], help="Data sources to fetch (default: reddit hackernews)")
 
     # 限制参数
     parser.add_argument("--limit-sources", type=int, help="Limit number of sources to fetch")
@@ -400,6 +495,7 @@ def main():
                 limit_events=args.limit_events,
                 limit_clusters=args.limit_clusters,
                 limit_opportunities=args.limit_opportunities,
+                sources=args.sources,
                 stop_on_error=args.stop_on_error
             )
         else:
@@ -409,7 +505,8 @@ def main():
                 "limit_posts": args.limit_posts,
                 "limit_events": args.limit_events,
                 "limit_clusters": args.limit_clusters,
-                "limit_opportunities": args.limit_opportunities
+                "limit_opportunities": args.limit_opportunities,
+                "sources": args.sources
             }
 
             # 只传递相关的参数

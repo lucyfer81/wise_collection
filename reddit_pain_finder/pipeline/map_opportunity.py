@@ -144,7 +144,8 @@ class OpportunityMapper:
 
             # 检查是否找到机会
             if "opportunity" in opportunity_data and opportunity_data["opportunity"]:
-                return opportunity_data
+                # 为了保持一致性，包装在content中
+                return {"content": opportunity_data}
             else:
                 logger.info(f"No viable opportunity found for cluster {cluster_data['cluster_name']}")
                 return None
@@ -156,7 +157,11 @@ class OpportunityMapper:
     def _evaluate_opportunity_quality(self, opportunity_data: Dict[str, Any], cluster_data: Dict[str, Any]) -> Dict[str, Any]:
         """评估机会质量"""
         try:
-            opportunity = opportunity_data.get("opportunity", {})
+            # 处理可能的数据结构差异
+            if "content" in opportunity_data:
+                opportunity = opportunity_data["content"].get("opportunity", {})
+            else:
+                opportunity = opportunity_data.get("opportunity", {})
 
             if not opportunity:
                 return {"is_viable": False, "reason": "No opportunity data"}
@@ -306,16 +311,27 @@ class OpportunityMapper:
     def _save_opportunity_to_database(self, cluster_id: int, opportunity_data: Dict[str, Any], quality_result: Dict[str, Any]) -> Optional[int]:
         """保存机会到数据库"""
         try:
-            opportunity = opportunity_data.get("opportunity", {})
+            # 处理可能的数据结构差异
+            if "content" in opportunity_data:
+                content = opportunity_data["content"]
+                opportunity = content.get("opportunity", {})
+                current_tools = content.get("current_tools", [])
+                missing_capability = content.get("missing_capability", "")
+                why_existing_fail = content.get("why_existing_fail", "")
+            else:
+                opportunity = opportunity_data.get("opportunity", {})
+                current_tools = opportunity_data.get("current_tools", [])
+                missing_capability = opportunity_data.get("missing_capability", "")
+                why_existing_fail = opportunity_data.get("why_existing_fail", "")
 
             # 准备机会数据
             opportunity_record = {
                 "cluster_id": cluster_id,
                 "opportunity_name": opportunity.get("name", ""),
                 "description": opportunity.get("description", ""),
-                "current_tools": json.dumps(opportunity_data.get("current_tools", [])),
-                "missing_capability": opportunity_data.get("missing_capability", ""),
-                "why_existing_fail": opportunity_data.get("why_existing_fail", ""),
+                "current_tools": json.dumps(current_tools),
+                "missing_capability": missing_capability,
+                "why_existing_fail": why_existing_fail,
                 "target_users": opportunity.get("target_users", ""),
                 "pain_frequency_score": opportunity.get("pain_frequency", 0),
                 "market_size_score": opportunity.get("market_size", 0),
@@ -409,7 +425,7 @@ class OpportunityMapper:
                                 opportunities_created.append(opportunity_summary)
                                 viable_opportunities += 1
 
-                                logger.info(f"Created opportunity: {opportunity_data['opportunity']['name']} (Score: {quality_result['quality_score']:.2f})")
+                                logger.info(f"Created opportunity: {opportunity_data['content']['opportunity']['name']} (Score: {quality_result['quality_score']:.2f})")
                         else:
                             logger.debug(f"Opportunity not viable: {quality_result.get('reason', 'Unknown')}")
                     else:

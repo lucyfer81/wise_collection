@@ -937,8 +937,9 @@ class WiseCollectionDB:
             with self.get_connection("clusters") as conn:
                 # 获取未对齐的原始聚类
                 cursor = conn.execute("""
-                    SELECT cluster_name, source_type, centroid_summary,
-                           common_pain, pain_event_ids, cluster_size
+                    SELECT id, cluster_name, source_type, centroid_summary,
+                           common_pain, pain_event_ids, cluster_size,
+                           cluster_description, workflow_confidence, created_at
                     FROM clusters
                     WHERE alignment_status IN ('unprocessed', 'processed')
                     OR alignment_status IS NULL
@@ -946,18 +947,24 @@ class WiseCollectionDB:
 
                 clusters = [dict(row) for row in cursor.fetchall()]
 
-                # 获取对齐问题作为"虚拟聚类"
+                # 获取对齐问题作为"虚拟聚类"，在Python中计算cluster_size
                 cursor = conn.execute("""
                     SELECT aligned_problem_id as cluster_name,
                            'aligned' as source_type,
                            core_problem as centroid_summary,
                            '' as common_pain,
                            '[]' as pain_event_ids,
-                           JSON_LENGTH(cluster_ids) as cluster_size
+                           cluster_ids
                     FROM aligned_problems
                 """)
 
-                aligned_clusters = [dict(row) for row in cursor.fetchall()]
+                aligned_clusters = []
+                for row in cursor.fetchall():
+                    cluster_dict = dict(row)
+                    # 在Python中计算JSON数组的长度
+                    cluster_ids = json.loads(cluster_dict['cluster_ids'])
+                    cluster_dict['cluster_size'] = len(cluster_ids)
+                    aligned_clusters.append(cluster_dict)
 
                 # 合并结果
                 return clusters + aligned_clusters

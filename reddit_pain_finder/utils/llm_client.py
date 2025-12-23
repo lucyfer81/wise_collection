@@ -367,35 +367,42 @@ Fields explanation:
 - confidence: how confident you are this is a real pain point (0-1)"""
 
     def _get_workflow_clustering_prompt(self) -> str:
-        """获取工作流聚类提示"""
+        """Get workflow clustering prompt with continuous scoring"""
         return """You are analyzing user pain events.
 
-Given the following pain events, determine whether they belong to THE SAME UNDERLYING WORKFLOW problem.
+Given the following pain events, rate how similar their UNDERLYING WORKFLOWS are on a continuous scale.
 
 A workflow means:
-- the same repeated activity
-- where different people fail in similar ways
-- with similar root causes
+- The same repeated activity
+- Where different people fail in similar ways
+- With similar root causes
 
-If they belong to the same workflow:
-- give the workflow a short descriptive name
-- provide a brief description of the workflow
-- estimate confidence (0-1)
+Your task: Rate the workflow similarity from 0.0 to 1.0:
+- 0.0 = Completely different workflows
+- 0.3 = Some vague similarity but different core activities
+- 0.5 = Partially similar with key differences
+- 0.7 = Strong similarity with minor variations
+- 1.0 = Identical workflows
 
-If they should NOT be clustered:
-- say they should not be clustered
-- explain why briefly
+If similarity >= 0.7:
+- Give the workflow a short descriptive name
+- Provide a brief description
+- Explain your reasoning
+
+If similarity < 0.7:
+- Still provide a workflow name and description
+- But note the key differences in reasoning
 
 Return JSON only with this format:
 {
-  "same_workflow": true/false,
-  "workflow_name": "name if same workflow",
-  "workflow_description": "description if same workflow",
+  "workflow_similarity": 0.75,
+  "workflow_name": "name of the workflow (even if low similarity)",
+  "workflow_description": "description of what these events have in common",
   "confidence": 0.8,
-  "reasoning": "brief explanation"
+  "reasoning": "brief explanation of your rating"
 }
 
-Be conservative - only cluster if they're clearly the same workflow."""
+Be precise with your similarity score - use the full 0.0-1.0 range."""
 
     def _get_opportunity_mapping_prompt(self) -> str:
         """获取机会映射提示"""

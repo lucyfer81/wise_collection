@@ -212,6 +212,7 @@ class WiseCollectionDB:
                     why_they_look_different TEXT,
                     evidence TEXT,  -- JSON array of evidence objects
                     cluster_ids TEXT,  -- JSON array of original cluster IDs
+                    alignment_score REAL DEFAULT 0.0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -260,6 +261,9 @@ class WiseCollectionDB:
 
             # 添加workflow_similarity列到clusters表（如果不存在）
             self._add_workflow_similarity_column(conn)
+
+            # 添加alignment_score列到aligned_problems表（如果不存在）
+            self._add_alignment_score_column(conn)
 
             conn.commit()
             logger.info("Unified database initialized successfully")
@@ -434,6 +438,7 @@ class WiseCollectionDB:
                     why_they_look_different TEXT,
                     evidence TEXT,  -- JSON array of evidence objects
                     cluster_ids TEXT,  -- JSON array of original cluster IDs
+                    alignment_score REAL DEFAULT 0.0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -448,6 +453,9 @@ class WiseCollectionDB:
 
             # 添加workflow_similarity列到clusters表（如果不存在）
             self._add_workflow_similarity_column(conn)
+
+            # 添加alignment_score列到aligned_problems表（如果不存在）
+            self._add_alignment_score_column(conn)
 
             conn.commit()
 
@@ -536,6 +544,30 @@ class WiseCollectionDB:
 
         except Exception as e:
             logger.error(f"Failed to add workflow_similarity column: {e}")
+
+    def _add_alignment_score_column(self, conn):
+        """Add alignment_score column to aligned_problems table if not exists"""
+        try:
+            cursor = conn.execute("PRAGMA table_info(aligned_problems)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            if 'alignment_score' not in existing_columns:
+                conn.execute("""
+                    ALTER TABLE aligned_problems
+                    ADD COLUMN alignment_score REAL DEFAULT 0.0
+                """)
+                logger.info("Added alignment_score column to aligned_problems table")
+
+                # Existing alignments get default high score
+                conn.execute("""
+                    UPDATE aligned_problems
+                    SET alignment_score = 0.85
+                    WHERE alignment_score = 0.0
+                """)
+                logger.info("Set default alignment_score for existing aligned problems")
+
+        except Exception as e:
+            logger.error(f"Failed to add alignment_score column: {e}")
 
     # Raw posts operations
     def insert_raw_post(self, post_data: Dict[str, Any]) -> bool:
@@ -990,8 +1022,8 @@ class WiseCollectionDB:
                 conn.execute("""
                     INSERT OR REPLACE INTO aligned_problems
                     (id, aligned_problem_id, sources, core_problem,
-                     why_they_look_different, evidence, cluster_ids)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                     why_they_look_different, evidence, cluster_ids, alignment_score)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     aligned_problem_data['id'],
                     aligned_problem_data['aligned_problem_id'],
@@ -999,7 +1031,8 @@ class WiseCollectionDB:
                     aligned_problem_data['core_problem'],
                     aligned_problem_data['why_they_look_different'],
                     json.dumps(aligned_problem_data['evidence']),
-                    json.dumps(aligned_problem_data['cluster_ids'])
+                    json.dumps(aligned_problem_data['cluster_ids']),
+                    aligned_problem_data.get('alignment_score', 0.0)
                 ))
                 conn.commit()
         except Exception as e:

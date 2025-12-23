@@ -1158,6 +1158,72 @@ class WiseCollectionDB:
 
         return stats
 
+    def get_score_statistics(self) -> Dict[str, Any]:
+        """Get statistics on continuous scores"""
+        stats = {}
+
+        try:
+            with self.get_connection("clusters") as conn:
+                # Workflow similarity distribution
+                cursor = conn.execute("""
+                    SELECT
+                        COUNT(*) as total_clusters,
+                        AVG(workflow_similarity) as avg_similarity,
+                        MIN(workflow_similarity) as min_similarity,
+                        MAX(workflow_similarity) as max_similarity
+                    FROM clusters
+                    WHERE workflow_similarity IS NOT NULL
+                """)
+                row = cursor.fetchone()
+                stats['workflow_similarity'] = dict(row) if row else {}
+
+                # Distribution buckets
+                cursor = conn.execute("""
+                    SELECT
+                        CASE
+                            WHEN workflow_similarity >= 0.8 THEN 'high'
+                            WHEN workflow_similarity >= 0.6 THEN 'medium'
+                            ELSE 'low'
+                        END as bucket,
+                        COUNT(*) as count
+                    FROM clusters
+                    WHERE workflow_similarity IS NOT NULL
+                    GROUP BY bucket
+                """)
+                stats['workflow_similarity_distribution'] = {row['bucket']: row['count'] for row in cursor.fetchall()}
+
+            with self.get_connection("clusters") as conn:
+                # Alignment score distribution
+                cursor = conn.execute("""
+                    SELECT
+                        COUNT(*) as total_alignments,
+                        AVG(alignment_score) as avg_alignment,
+                        MIN(alignment_score) as min_alignment,
+                        MAX(alignment_score) as max_alignment
+                    FROM aligned_problems
+                    WHERE alignment_score IS NOT NULL
+                """)
+                row = cursor.fetchone()
+                stats['alignment_score'] = dict(row) if row else {}
+
+            with self.get_connection("raw") as conn:
+                # Trust level distribution by source
+                cursor = conn.execute("""
+                    SELECT
+                        source,
+                        COUNT(*) as count,
+                        AVG(trust_level) as avg_trust_level
+                    FROM posts
+                    WHERE trust_level IS NOT NULL
+                    GROUP BY source
+                """)
+                stats['trust_level_by_source'] = {row['source']: {'count': row['count'], 'avg_trust': row['avg_trust_level']} for row in cursor.fetchall()}
+
+        except Exception as e:
+            logger.error(f"Failed to get score statistics: {e}")
+
+        return stats
+
 
 # 全局数据库实例（使用统一数据库）
 db = WiseCollectionDB(unified=True)

@@ -447,9 +447,9 @@ Processing time: {processing_time:.2f}s
         try:
             with db.get_connection("clusters") as conn:
                 cursor = conn.execute("""
-                    SELECT id, cluster_name, cluster_size, avg_pain_score, workflow_confidence, created_at
+                    SELECT id, cluster_name, cluster_size, avg_pain_score, workflow_confidence, workflow_similarity, created_at
                     FROM clusters
-                    ORDER BY cluster_size DESC, workflow_confidence DESC
+                    ORDER BY cluster_size DESC, workflow_similarity DESC
                 """)
                 clusters = [dict(row) for row in cursor.fetchall()]
 

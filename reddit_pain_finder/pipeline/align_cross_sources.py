@@ -9,6 +9,9 @@ from utils.db import WiseCollectionDB
 from utils.llm_client import LLMClient
 import logging
 
+# Hardcoded threshold for alignment confidence
+ALIGNMENT_SCORE_THRESHOLD = 0.7
+
 logger = logging.getLogger(__name__)
 
 class CrossSourceAligner:
@@ -151,11 +154,23 @@ Rules:
 4. Only align clusters from DIFFERENT source types
 5. Be conservative - only align when you're confident it's the same problem
 
+## Alignment Scoring
+
+Rate each potential alignment on a scale from 0.0 to 1.0:
+- 0.0 = Completely different problems, no relationship
+- 0.3 = Same general domain but different issues
+- 0.5 = Related problems with some overlap
+- 0.7 = Strong indication they're the same problem
+- 1.0 = Clearly the same problem, just described differently
+
+Only include alignments with scores >= 0.7 in your output.
+
 ## Output Format
 
 For each alignment discovered, output a JSON object with this structure:
 {
   "aligned_problem_id": "AP_XX",
+  "alignment_score": 0.85,
   "sources": ["source_type_1", "source_type_2"],
   "core_problem": "Clear description of the shared underlying problem",
   "why_they_look_different": "Explanation of how the same problem appears different across communities",
@@ -199,13 +214,28 @@ Return only valid JSON arrays of alignment objects. If no alignments exist, retu
             for alignment in alignments:
                 # 验证必需字段
                 required_fields = [
-                    'aligned_problem_id', 'sources', 'core_problem',
+                    'aligned_problem_id', 'alignment_score', 'sources', 'core_problem',
                     'why_they_look_different', 'evidence'
                 ]
 
                 if not all(field in alignment for field in required_fields):
                     logger.warning(f"Alignment missing required fields: {alignment}")
                     continue
+
+                # 验证alignment_score是浮点数
+                try:
+                    alignment_score = float(alignment['alignment_score'])
+                except (ValueError, TypeError):
+                    logger.warning(f"Alignment has invalid alignment_score: {alignment.get('alignment_score')}")
+                    continue
+
+                # 过滤低于阈值的对齐
+                if alignment_score < ALIGNMENT_SCORE_THRESHOLD:
+                    logger.info(f"Skipping alignment with score {alignment_score} below threshold {ALIGNMENT_SCORE_THRESHOLD}")
+                    continue
+
+                # 存储验证后的分数
+                alignment['alignment_score'] = alignment_score
 
                 # 处理cluster_ids字段
                 if 'original_cluster_ids' not in alignment:
@@ -247,6 +277,10 @@ Return only valid JSON arrays of alignment objects. If no alignments exist, retu
             try:
                 # 生成唯一ID
                 alignment['id'] = f"aligned_{alignment['aligned_problem_id']}_{int(time.time())}"
+
+                # 记录对齐分数
+                alignment_score = alignment.get('alignment_score', 0.0)
+                logger.info(f"Processing alignment {alignment['aligned_problem_id']} with score {alignment_score}")
 
                 # 插入对齐问题
                 self._insert_aligned_problem(alignment)

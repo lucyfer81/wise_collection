@@ -38,6 +38,29 @@ class RedditSourceFetcher:
             "start_time": None
         }
 
+    def _get_trust_level_for_category(self, category: str) -> float:
+        """Get trust level for a category from config"""
+        try:
+            # Get the category config
+            category_config = self.config.get(category, {})
+            if isinstance(category_config, dict):
+                trust_level = category_config.get("trust_level")
+                if trust_level is not None:
+                    return float(trust_level)
+
+            # Default fallback levels
+            default_levels = {
+                'core': 0.9,
+                'secondary': 0.7,
+                'verticals': 0.6,
+                'experimental': 0.4
+            }
+            return default_levels.get(category, 0.5)
+
+        except Exception as e:
+            logger.warning(f"Failed to get trust_level for {category}: {e}, using default 0.5")
+            return 0.5
+
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """加载配置文件"""
         try:
@@ -267,6 +290,7 @@ class RedditSourceFetcher:
                 "author": submission.author.name if submission.author else "[deleted]",
                 "comments": comments,
                 "pain_score": pain_score,
+                "trust_level": self._get_trust_level_for_category(subreddit_config["category"]),
                 "collected_at": datetime.now().isoformat()
             }
 

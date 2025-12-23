@@ -106,6 +106,7 @@ class HackerNewsFetcher:
             "author": item.get("by", ""),
             "comments": comments,
             "pain_score": 0.5,  # 默认pain_score，后续pipeline会重新计算
+            "trust_level": 0.8,  # HN has high quality technical discussions
             "collected_at": datetime.now().isoformat()
         }
 

@@ -530,8 +530,7 @@ class WiseCollectionDB:
                 # For existing clusters, migrate workflow_confidence to workflow_similarity
                 conn.execute("""
                     UPDATE clusters
-                    SET workflow_similarity = workflow_confidence
-                    WHERE workflow_confidence IS NOT NULL
+                    SET workflow_similarity = COALESCE(workflow_confidence, 0.0)
                 """)
                 logger.info("Migrated workflow_confidence to workflow_similarity")
 

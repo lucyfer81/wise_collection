@@ -104,6 +104,7 @@ class WiseCollectionDB:
                     created_at TIMESTAMP NOT NULL,
                     author TEXT,
                     category TEXT,
+                    trust_level REAL DEFAULT 0.5,
                     collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     raw_data TEXT,  -- 原始JSON数据
                     UNIQUE(source, source_id)
@@ -253,6 +254,9 @@ class WiseCollectionDB:
             # 添加对齐跟踪列到clusters表（如果不存在）
             self._add_alignment_columns_to_clusters(conn)
 
+            # 添加trust_level列到posts表（如果不存在）
+            self._add_trust_level_column(conn)
+
             conn.commit()
             logger.info("Unified database initialized successfully")
 
@@ -277,6 +281,7 @@ class WiseCollectionDB:
                     created_at TIMESTAMP NOT NULL,
                     author TEXT,
                     category TEXT,
+                    trust_level REAL DEFAULT 0.5,
                     collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     raw_data TEXT,  -- 原始JSON数据
                     UNIQUE(source, source_id)
@@ -300,6 +305,10 @@ class WiseCollectionDB:
 
             if 'source' in existing_columns and 'source_id' in existing_columns:
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_unique_source ON posts(source, source_id)")
+
+            # 添加trust_level列到posts表（如果不存在）
+            self._add_trust_level_column(conn)
+
             conn.commit()
 
     def _init_filtered_posts_db(self):
@@ -464,6 +473,39 @@ class WiseCollectionDB:
         except Exception as e:
             logger.error(f"Failed to add alignment columns to clusters table: {e}")
 
+    def _add_trust_level_column(self, conn):
+        """Add trust_level column to posts table if not exists"""
+        try:
+            cursor = conn.execute("PRAGMA table_info(posts)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            if 'trust_level' not in existing_columns:
+                conn.execute("""
+                    ALTER TABLE posts
+                    ADD COLUMN trust_level REAL DEFAULT 0.5
+                """)
+                logger.info("Added trust_level column to posts table")
+
+                # Migrate existing data: set trust_level based on category
+                category_trust_levels = {
+                    'core': 0.9,
+                    'secondary': 0.7,
+                    'verticals': 0.6,
+                    'experimental': 0.4
+                }
+
+                for category, level in category_trust_levels.items():
+                    conn.execute("""
+                        UPDATE posts
+                        SET trust_level = ?
+                        WHERE category = ?
+                    """, (level, category))
+
+                logger.info("Migrated trust_level for existing posts")
+
+        except Exception as e:
+            logger.error(f"Failed to add trust_level column: {e}")
+
     # Raw posts operations
     def insert_raw_post(self, post_data: Dict[str, Any]) -> bool:
         """插入原始帖子数据（支持多数据源）"""
@@ -473,8 +515,8 @@ class WiseCollectionDB:
                     INSERT OR REPLACE INTO posts
                     (id, title, body, subreddit, url, source, source_id, platform_data,
                      score, num_comments, upvote_ratio, is_self, created_utc, created_at,
-                     author, category, raw_data)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     author, category, trust_level, raw_data)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     post_data.get("id"),                    # 统一ID (兼容旧数据)
                     post_data["title"],
@@ -492,6 +534,7 @@ class WiseCollectionDB:
                     post_data.get("created_at", datetime.now().isoformat()),  # 新字段
                     post_data.get("author", ""),
                     post_data.get("category", ""),
+                    post_data.get("trust_level", 0.5),      # 新字段，默认0.5
                     json.dumps(post_data)
                 ))
                 conn.commit()

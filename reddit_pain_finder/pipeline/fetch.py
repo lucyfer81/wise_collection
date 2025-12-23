@@ -460,17 +460,107 @@ Posts per minute: {self.stats["total_saved"] / max(runtime.total_seconds() / 60,
 
         return self.stats.copy()
 
+class HackerNewsSourceFetcher:
+    """Hacker News痛点数据抓取器"""
+
+    def __init__(self):
+        """初始化抓取器"""
+        # 导入HN抓取器
+        from .hn_fetch import HackerNewsFetcher
+        self.hn_fetcher = HackerNewsFetcher()
+
+    def fetch_all(self) -> Dict[str, Any]:
+        """抓取HN数据（兼容现有接口）"""
+        return self.hn_fetcher.fetch_all()
+
+
+class MultiSourceFetcher:
+    """多数据源抓取器"""
+
+    def __init__(self, sources: List[str] = None, config_path: str = "config/subreddits.yaml"):
+        """初始化抓取器
+
+        Args:
+            sources: 要抓取的数据源列表，如 ['reddit', 'hackernews']
+            config_path: Reddit配置文件路径
+        """
+        self.sources = sources or ['reddit', 'hackernews']
+        self.fetchers = {}
+
+        # 初始化各个抓取器
+        if 'reddit' in self.sources:
+            self.fetchers['reddit'] = RedditSourceFetcher(config_path)
+        if 'hackernews' in self.sources:
+            self.fetchers['hackernews'] = HackerNewsSourceFetcher()
+
+    def fetch_all(self, limit_sources: Optional[int] = None) -> Dict[str, Any]:
+        """抓取所有配置的数据源"""
+        overall_stats = {
+            "sources_processed": [],
+            "total_saved": 0,
+            "total_filtered": 0,
+            "total_errors": 0,
+            "source_stats": {},
+            "runtime_seconds": 0
+        }
+
+        start_time = datetime.now()
+
+        for source_name in self.sources:
+            if source_name in self.fetchers:
+                logger.info(f"Fetching from {source_name}...")
+                try:
+                    stats = self.fetchers[source_name].fetch_all()
+                    overall_stats["sources_processed"].append(source_name)
+                    overall_stats["total_saved"] += stats.get("total_saved", 0)
+                    overall_stats["total_filtered"] += stats.get("filtered_out", 0)
+                    overall_stats["total_errors"] += stats.get("errors", 0)
+                    overall_stats["source_stats"][source_name] = stats
+
+                except Exception as e:
+                    logger.error(f"Failed to fetch from {source_name}: {e}")
+                    overall_stats["total_errors"] += 1
+                    overall_stats["source_stats"][source_name] = {"error": str(e)}
+
+        # 计算总运行时间
+        runtime = datetime.now() - start_time
+        overall_stats["runtime_seconds"] = runtime.total_seconds()
+
+        # 输出总结
+        logger.info(f"""
+=== Multi-Source Fetch Summary ===
+Sources processed: {overall_stats["sources_processed"]}
+Total posts saved: {overall_stats["total_saved"]}
+Total posts filtered: {overall_stats["total_filtered"]}
+Total errors: {overall_stats["total_errors"]}
+Runtime: {runtime}
+Posts per minute: {overall_stats["total_saved"] / max(runtime.total_seconds() / 60, 1):.1f}
+""")
+
+        # 输出各数据源统计
+        for source, stats in overall_stats.get("source_stats", {}).items():
+            if "error" not in stats:
+                logger.info(f"   - {source}: {stats.get('total_saved', 0)} saved, {stats.get('filtered_out', 0)} filtered")
+            else:
+                logger.error(f"   - {source}: ERROR - {stats['error']}")
+
+        return overall_stats
+
+
 def main():
     """主函数"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Fetch Reddit posts for pain point discovery")
-    parser.add_argument("--limit", type=int, help="Limit number of subreddits to process")
-    parser.add_argument("--config", default="config/subreddits.yaml", help="Config file path")
+    parser = argparse.ArgumentParser(description="Fetch posts for pain point discovery")
+    parser.add_argument("--limit", type=int, help="Limit number of sources to process")
+    parser.add_argument("--config", default="config/subreddits.yaml", help="Reddit config file path")
+    parser.add_argument("--sources", nargs="+", choices=["reddit", "hackernews"],
+                       default=["reddit", "hackernews"], help="Data sources to fetch")
     args = parser.parse_args()
 
     try:
-        fetcher = RedditSourceFetcher(args.config)
+        # 使用新的多数据源抓取器
+        fetcher = MultiSourceFetcher(sources=args.sources, config_path=args.config)
         stats = fetcher.fetch_all(limit_sources=args.limit)
 
         # 输出JSON格式的统计信息（用于脚本集成）

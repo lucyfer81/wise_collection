@@ -158,11 +158,16 @@ class PainEventClusterer:
     def _save_cluster_to_database(self, cluster_data: Dict[str, Any]) -> Optional[int]:
         """保存聚类到数据库"""
         try:
-            # 准备聚类数据
+            # 准备聚类数据 - 支持新的source-aware字段
             cluster_record = {
                 "cluster_name": cluster_data["cluster_name"],
                 "cluster_description": cluster_data["cluster_description"],
-                "pain_event_ids": json.dumps(cluster_data["pain_event_ids"]),
+                "source_type": cluster_data.get("source_type", ""),
+                "centroid_summary": cluster_data.get("centroid_summary", ""),
+                "common_pain": cluster_data.get("common_pain", ""),
+                "common_context": cluster_data.get("common_context", ""),
+                "example_events": cluster_data.get("example_events", []),
+                "pain_event_ids": cluster_data["pain_event_ids"],
                 "cluster_size": cluster_data["cluster_size"],
                 "avg_pain_score": cluster_data.get("avg_pain_score", 0.0),
                 "workflow_confidence": cluster_data.get("workflow_confidence", 0.0)
@@ -176,110 +181,81 @@ class PainEventClusterer:
             return None
 
     def cluster_pain_events(self, limit: int = 200) -> Dict[str, Any]:
-        """聚类痛点事件"""
-        logger.info(f"Starting clustering of up to {limit} pain events")
+        """聚类痛点事件 - 按source分组聚类"""
+        logger.info(f"Starting source-aware clustering of up to {limit} pain events")
 
         start_time = time.time()
 
         try:
-            # 获取所有有嵌入向量的痛点事件
-            pain_events = db.get_all_pain_events_with_embeddings()
+            # 获取所有有嵌入向量的痛点事件，并包含source信息
+            pain_events = self._get_pain_events_with_source_and_embeddings()
 
-            if len(pain_events) < 2:
-                logger.info("Not enough pain events for clustering")
+            if len(pain_events) < 4:
+                logger.info("Not enough pain events for clustering (need at least 4)")
                 return {"clusters_created": 0, "events_processed": 0}
 
             # 限制处理数量
             if len(pain_events) > limit:
                 pain_events = pain_events[:limit]
 
-            logger.info(f"Processing {len(pain_events)} pain events for clustering")
+            logger.info(f"Processing {len(pain_events)} pain events for source-aware clustering")
 
-            # 使用向量聚类
-            vector_clusters = pain_clustering.cluster_pain_events(pain_events)
+            # 按source类型分组
+            source_groups = self._group_events_by_source(pain_events)
+            logger.info(f"Found {len(source_groups)} source groups: {list(source_groups.keys())}")
 
-            if not vector_clusters:
-                logger.info("No clusters found")
-                return {"clusters_created": 0, "events_processed": len(pain_events)}
-
-            logger.info(f"Found {len(vector_clusters)} vector clusters")
-
-            # 验证和优化聚类
+            # 对每个source组分别聚类
             final_clusters = []
-            validated_clusters = 0
+            total_validated_clusters = 0
 
-            for i, cluster in enumerate(vector_clusters):
-                logger.info(f"Validating cluster {i+1}/{len(vector_clusters)} (size: {cluster['cluster_size']})")
-
-                # 获取聚类中的事件
-                cluster_events = cluster["events"]
-
-                # 跳过太小的聚类
-                if len(cluster_events) < 2:
-                    logger.debug(f"Skipping cluster {i+1}: too small ({len(cluster_events)} events)")
+            for source_type, events_in_source in source_groups.items():
+                if len(events_in_source) < 4:
+                    logger.info(f"Skipping source {source_type}: not enough events ({len(events_in_source)} < 4)")
                     continue
 
-                # 对于大聚类，采样前20个事件进行验证
-                events_for_validation = cluster_events
-                if len(cluster_events) > 20:
-                    events_for_validation = cluster_events[:20]
-                    logger.info(f"Sampling first 20 events from large cluster of {len(cluster_events)} for validation")
+                logger.info(f"\n=== Processing source: {source_type} ({len(events_in_source)} events) ===")
 
-                # 使用LLM验证聚类
-                validation_result = self._validate_cluster_with_llm(events_for_validation)
-                self.stats["llm_validations"] += 1
+                # 使用向量聚类
+                vector_clusters = pain_clustering.cluster_pain_events(events_in_source)
 
-                if validation_result["is_valid_cluster"]:
-                    # 创建聚类摘要
-                    cluster_summary = self._create_cluster_summary(cluster_events)
+                if not vector_clusters:
+                    logger.info(f"No clusters found for source {source_type}")
+                    continue
 
-                    # 准备最终聚类数据
-                    final_cluster = {
-                        "cluster_name": validation_result["cluster_name"],
-                        "cluster_description": validation_result["cluster_description"],
-                        "pain_event_ids": [event["id"] for event in cluster_events],
-                        "cluster_size": len(cluster_events),
-                        "workflow_confidence": validation_result["confidence"],
-                        "cluster_summary": cluster_summary,
-                        "validation_reasoning": validation_result["reasoning"]
-                    }
+                logger.info(f"Found {len(vector_clusters)} vector clusters for source {source_type}")
 
-                    # 保存到数据库
-                    cluster_id = self._save_cluster_to_database(final_cluster)
-                    if cluster_id:
-                        final_cluster["cluster_id"] = cluster_id
-                        final_clusters.append(final_cluster)
-                        validated_clusters += 1
+                # 验证和优化聚类
+                source_clusters = self._process_source_clusters(
+                    vector_clusters, source_type
+                )
 
-                        logger.info(f"Saved cluster: {validation_result['cluster_name']} ({len(cluster_events)} events)")
-                else:
-                    logger.warning(f"Cluster {i+1} rejected by LLM: {validation_result['reasoning']}")
+                final_clusters.extend(source_clusters)
+                total_validated_clusters += len(source_clusters)
 
-                # 添加延迟避免API限制
-                time.sleep(1)
+                logger.info(f"Source {source_type}: {len(source_clusters)} validated clusters")
 
             # 更新统计信息
             processing_time = time.time() - start_time
             self.stats["total_events_processed"] = len(pain_events)
-            self.stats["clusters_created"] = validated_clusters
+            self.stats["clusters_created"] = total_validated_clusters
             self.stats["processing_time"] = processing_time
 
-            if validated_clusters > 0:
-                self.stats["avg_cluster_size"] = sum(len(cluster["pain_event_ids"]) for cluster in final_clusters) / validated_clusters
+            if total_validated_clusters > 0:
+                self.stats["avg_cluster_size"] = sum(len(cluster["pain_event_ids"]) for cluster in final_clusters) / total_validated_clusters
 
             logger.info(f"""
-=== Clustering Summary ===
+=== Source-Aware Clustering Summary ===
 Pain events processed: {len(pain_events)}
-Vector clusters found: {len(vector_clusters)}
-Validated clusters created: {validated_clusters}
+Source groups processed: {len(source_groups)}
+Validated clusters created: {total_validated_clusters}
 Average cluster size: {self.stats['avg_cluster_size']:.1f}
 Processing time: {processing_time:.2f}s
 """)
 
             return {
-                "clusters_created": validated_clusters,
+                "clusters_created": total_validated_clusters,
                 "events_processed": len(pain_events),
-                "vector_clusters": len(vector_clusters),
+                "source_groups": len(source_groups),
                 "final_clusters": final_clusters,
                 "clustering_stats": self.get_statistics()
             }
@@ -287,6 +263,135 @@ Processing time: {processing_time:.2f}s
         except Exception as e:
             logger.error(f"Failed to cluster pain events: {e}")
             raise
+
+    def _get_pain_events_with_source_and_embeddings(self) -> List[Dict[str, Any]]:
+        """获取有嵌入向量和source信息的痛点事件"""
+        try:
+            import pickle
+            with db.get_connection("pain") as conn:
+                # 如果是统一数据库，可以从posts表获取source信息
+                if db.is_unified():
+                    cursor = conn.execute("""
+                        SELECT p.*, e.embedding_vector, e.embedding_model,
+                               COALESCE(po.source, 'reddit') as source_type
+                        FROM pain_events p
+                        JOIN pain_embeddings e ON p.id = e.pain_event_id
+                        LEFT JOIN filtered_posts fp ON p.post_id = fp.id
+                        LEFT JOIN posts po ON p.post_id = po.id
+                        ORDER BY p.extracted_at DESC
+                    """)
+                else:
+                    # 多数据库模式，默认为reddit
+                    cursor = conn.execute("""
+                        SELECT p.*, e.embedding_vector, e.embedding_model,
+                               'reddit' as source_type
+                        FROM pain_events p
+                        JOIN pain_embeddings e ON p.id = e.pain_event_id
+                        ORDER BY p.extracted_at DESC
+                    """)
+
+                results = []
+                for row in cursor.fetchall():
+                    event_data = dict(row)
+                    # 反序列化嵌入向量
+                    if event_data["embedding_vector"]:
+                        event_data["embedding_vector"] = pickle.loads(event_data["embedding_vector"])
+                    results.append(event_data)
+                return results
+        except Exception as e:
+            logger.error(f"Failed to get pain events with source and embeddings: {e}")
+            return []
+
+    def _group_events_by_source(self, pain_events: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+        """按source类型分组痛点事件"""
+        source_groups = {}
+        for event in pain_events:
+            source = event.get('source_type', 'reddit')
+            if source not in source_groups:
+                source_groups[source] = []
+            source_groups[source].append(event)
+        return source_groups
+
+    def _process_source_clusters(self, vector_clusters: List[Dict[str, Any]], source_type: str) -> List[Dict[str, Any]]:
+        """处理单个source的聚类"""
+        final_clusters = []
+        cluster_counter = 1
+
+        for i, cluster in enumerate(vector_clusters):
+            logger.info(f"Validating {source_type} cluster {i+1}/{len(vector_clusters)} (size: {cluster['cluster_size']})")
+
+            # 获取聚类中的事件
+            cluster_events = cluster["events"]
+
+            # 严格的跳过规则：至少4个事件
+            if len(cluster_events) < 4:
+                logger.debug(f"Skipping cluster {i+1}: too small ({len(cluster_events)} < 4 events)")
+                continue
+
+            # 对于大聚类，采样前20个事件进行验证和摘要
+            events_for_processing = cluster_events
+            if len(cluster_events) > 20:
+                events_for_processing = cluster_events[:20]
+                logger.info(f"Sampling first 20 events from large cluster of {len(cluster_events)} for processing")
+
+            # 使用LLM验证聚类
+            validation_result = self._validate_cluster_with_llm(events_for_processing)
+            self.stats["llm_validations"] += 1
+
+            if validation_result["is_valid_cluster"]:
+                # 使用Cluster Summarizer生成source内摘要
+                summary_result = self._summarize_source_cluster(events_for_processing, source_type)
+
+                # 生成标准化cluster ID
+                cluster_id = f"{source_type.replace('-', '_')}_{cluster_counter:02d}"
+                cluster_counter += 1
+
+                # 准备最终聚类数据
+                final_cluster = {
+                    "cluster_name": f"{source_type}: {validation_result['cluster_name']}",
+                    "cluster_description": validation_result["cluster_description"],
+                    "source_type": source_type,
+                    "cluster_id": cluster_id,
+                    "centroid_summary": summary_result.get("centroid_summary", ""),
+                    "common_pain": summary_result.get("common_pain", ""),
+                    "common_context": summary_result.get("common_context", ""),
+                    "example_events": summary_result.get("example_events", []),
+                    "pain_event_ids": [event["id"] for event in cluster_events],
+                    "cluster_size": len(cluster_events),
+                    "workflow_confidence": validation_result["confidence"],
+                    "validation_reasoning": validation_result["reasoning"]
+                }
+
+                # 保存到数据库
+                saved_cluster_id = self._save_cluster_to_database(final_cluster)
+                if saved_cluster_id:
+                    final_cluster["saved_cluster_id"] = saved_cluster_id
+                    final_clusters.append(final_cluster)
+
+                    logger.info(f"✅ Saved {cluster_id}: {validation_result['cluster_name']} ({len(cluster_events)} events)")
+            else:
+                logger.warning(f"❌ Cluster {i+1} rejected by LLM: {validation_result['reasoning']}")
+
+            # 添加延迟避免API限制
+            time.sleep(1)
+
+        return final_clusters
+
+    def _summarize_source_cluster(self, pain_events: List[Dict[str, Any]], source_type: str) -> Dict[str, Any]:
+        """使用Cluster Summarizer生成source内聚类摘要"""
+        try:
+            response = llm_client.summarize_source_cluster(pain_events, source_type)
+            return response.get("content", {})
+        except Exception as e:
+            logger.error(f"Failed to summarize source cluster: {e}")
+            return {
+                "centroid_summary": "",
+                "common_pain": "",
+                "common_context": "",
+                "example_events": [],
+                "coherence_score": 0.0,
+                "reasoning": f"Summary failed: {e}"
+            }
 
     def get_cluster_analysis(self, cluster_id: int) -> Optional[Dict[str, Any]]:
         """获取聚类详细分析"""

@@ -228,11 +228,8 @@ class WiseCollectionPipeline:
         logger.info("=" * 50)
 
         try:
-            # 加载配置
-            config = self._load_config()
-
             # 初始化对齐器
-            llm_client = LLMClient(config['llm'])
+            llm_client = LLMClient()  # Uses default config path
             aligner = CrossSourceAligner(db, llm_client)
 
             # 执行跨源对齐

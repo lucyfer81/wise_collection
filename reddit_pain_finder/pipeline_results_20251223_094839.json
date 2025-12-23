@@ -1,0 +1,490 @@
+{
+  "start_time": "2025-12-23T09:14:47.956945",
+  "stages_completed": [
+    "fetch",
+    "filter",
+    "extract",
+    "embed",
+    "cluster",
+    "alignment",
+    "map_opportunities",
+    "score"
+  ],
+  "stages_failed": [],
+  "stage_results": {
+    "fetch": {
+      "sources_processed": [
+        "reddit",
+        "hackernews"
+      ],
+      "total_saved": 102,
+      "total_filtered": 2141,
+      "total_errors": 0,
+      "source_stats": {
+        "reddit": {
+          "total_fetched": 46,
+          "total_saved": 46,
+          "filtered_out": 2126,
+          "errors": 0,
+          "start_time": "2025-12-23 09:14:49.291091",
+          "runtime_seconds": 107.074991
+        },
+        "hackernews": {
+          "total_fetched": 56,
+          "total_saved": 56,
+          "filtered_out": 15,
+          "errors": 0,
+          "start_time": "2025-12-23 09:16:36.366570",
+          "runtime_seconds": 630.409511
+        }
+      },
+      "runtime_seconds": 737.485147
+    },
+    "filter": {
+      "processed": 720,
+      "filtered": 14,
+      "saved": 14,
+      "filter_stats": {
+        "total_processed": 720,
+        "passed_filter": 14,
+        "filtered_out": 706,
+        "filter_reasons": {
+          "insufficient_keywords; low_emotional_intensity; low_overall_score": 94,
+          "Post too short: 18 < 50": 2,
+          "low_emotional_intensity": 97,
+          "Post too short: 16 < 50": 1,
+          "Post too short: 48 < 50": 4,
+          "Post too short: 34 < 50": 3,
+          "Post too short: 37 < 50": 3,
+          "Post too short: 24 < 50": 5,
+          "Post too short: 43 < 50": 2,
+          "Post too short: 19 < 50": 5,
+          "Post too short: 33 < 50": 3,
+          "Post too short: 36 < 50": 3,
+          "Post too short: 41 < 50": 3,
+          "Post too short: 28 < 50": 2,
+          "Too few upvotes: 3 < 5": 25,
+          "Too few comments: 0 < 3": 10,
+          "Too few upvotes: 2 < 5": 30,
+          "low_emotional_intensity; low_overall_score": 167,
+          "Too few comments: 1 < 3": 4,
+          "Too few comments: 2 < 3": 7,
+          "Too few upvotes: 4 < 5": 22,
+          "insufficient_keywords; low_overall_score": 4,
+          "Excluded due to off_topic: discussion": 8,
+          "Excluded due to job: hiring": 10,
+          "Type business: too few upvotes: 7 < 15": 2,
+          "Type business: too few upvotes: 12 < 15": 2,
+          "Excluded due to showcase: i made": 32,
+          "Excluded due to showcase: my project": 9,
+          "Type discussion: too few comments: 13 < 15": 3,
+          "Excluded due to showcase: demo": 23,
+          "Post too short: 40 < 50": 1,
+          "Post too short: 44 < 50": 5,
+          "Post too short: 29 < 50": 2,
+          "Post too short: 17 < 50": 2,
+          "Post too short: 49 < 50": 1,
+          "Post too short: 20 < 50": 1,
+          "Post too short: 31 < 50": 1,
+          "Post too short: 45 < 50": 6,
+          "Type discussion: too few comments: 12 < 15": 2,
+          "Excluded due to question: how do i": 13,
+          "low_overall_score": 27,
+          "Post too short: 25 < 50": 4,
+          "Post too short: 42 < 50": 1,
+          "insufficient_keywords": 1,
+          "Post too short: 14 < 50": 3,
+          "Post too short: 35 < 50": 2,
+          "Post too short: 23 < 50": 1,
+          "Type business: too few upvotes: 14 < 15": 4,
+          "Post too short: 22 < 50": 2,
+          "Post too short: 38 < 50": 1,
+          "Post too short: 46 < 50": 1,
+          "Post too short: 21 < 50": 2,
+          "Post too short: 13 < 50": 2,
+          "Post too short: 15 < 50": 1,
+          "Excluded due to off_topic: general": 13,
+          "Excluded due to showcase: just launched": 3,
+          "Post too long: 5060 > 5000": 1,
+          "Post too short: 39 < 50": 1,
+          "Post too short: 47 < 50": 1,
+          "Type discussion: too few comments: 14 < 15": 1,
+          "Excluded due to showcase: showcase": 6,
+          "Excluded due to job: recruiting": 2,
+          "Post too long: 9310 > 5000": 1,
+          "Post too long: 5123 > 5000": 1,
+          "Type business: too few upvotes: 10 < 15": 1,
+          "Post too long: 5576 > 5000": 1,
+          "Post too long: 6227 > 5000": 1,
+          "Post too long: 5120 > 5000": 1,
+          "Post too long: 5545 > 5000": 1
+        },
+        "pass_rate": 0.019444444444444445
+      }
+    },
+    "extract": {
+      "processed": 65,
+      "failed": 0,
+      "pain_events_extracted": 28,
+      "pain_events_saved": 28,
+      "extraction_stats": {
+        "total_processed": 0,
+        "total_pain_events": 28,
+        "extraction_errors": 0,
+        "avg_confidence": 0.0,
+        "processing_time": 0.0,
+        "avg_events_per_post": 0,
+        "processing_rate": 0,
+        "llm_stats": {
+          "requests": 65,
+          "tokens_used": 49916,
+          "cost": 0.0,
+          "errors": 0
+        }
+      },
+      "failed_posts": []
+    },
+    "embed": {
+      "processed": 28,
+      "embeddings_created": 28,
+      "embedding_stats": {
+        "total_processed": 28,
+        "embeddings_created": 28,
+        "errors": 0,
+        "processing_time": 3.397969961166382,
+        "cache_hits": 0,
+        "success_rate": 1.0
+      }
+    },
+    "cluster": {
+      "clusters_created": 2,
+      "events_processed": 200,
+      "source_groups": 2,
+      "final_clusters": [
+        {
+          "cluster_name": "reddit: Collaborative Decision-Making and Communication",
+          "cluster_description": "A recurring workflow involving the author's attempts to contribute ideas, seek clarifications, participate in discussions, and move work forward in collaboration with teammate X, who consistently undermines, delays, or dismisses the author's input through gatekeeping, stonewalling, and dominance in meetings.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_01",
+          "centroid_summary": "A teammate consistently impedes collaboration by monopolizing communication channels and disregarding others' contributions",
+          "common_pain": "Unilateral control over communication and decision-making workflows, resulting in delayed responses, suppressed input, and disrupted collaboration",
+          "common_context": "Collaborative work environments requiring timely coordination, input validation, and shared decision-making",
+          "example_events": [
+            "Event 1: Teammate requires approval for all tasks, creating a bottleneck in workflow execution",
+            "Event 4: Teammate hijacks meetings and schedules follow-ups outside their domain, overriding shared ownership"
+          ],
+          "pain_event_ids": [
+            234,
+            233,
+            232,
+            231,
+            230
+          ],
+          "cluster_size": 5,
+          "workflow_confidence": 0.95,
+          "validation_reasoning": "All events involve the same individual (teammate X) obstructing the author's participation in collaborative work through similar behaviors\u2014centralizing control, dismissing input, delaying responses, and dominating communication channels. The contexts (executing work, raising ideas, seeking clarification, meetings, group conversations) are different facets of the same underlying workflow: team collaboration and decision-making. The recurring pattern suggests a systemic interpersonal bottleneck rooted in teammate X's behavior, affecting multiple aspects of joint work.",
+          "saved_cluster_id": 6
+        },
+        {
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "cluster_description": "A recurring workflow where individuals attempt to receive high-priority, time-sensitive alerts (e.g., on-call handoffs, urgent notifications) but are hindered by overly noisy, slow, or unreliable notification systems, leading to workarounds like disabling notifications entirely and risking missed critical information.",
+          "source_type": "hackernews",
+          "cluster_id": "hackernews_01",
+          "centroid_summary": "Inability to filter critical alerts from noise in existing notification systems",
+          "common_pain": "Lack of a reliable, low-latency, high-priority alert mechanism that can override noise and ensure acknowledgment",
+          "common_context": "Work environments requiring timely recognition of urgent alerts while minimizing distractions from low-priority interruptions",
+          "example_events": [
+            "Event 1: Notification systems allow too many low-priority interruptions, forcing users to disable all alerts and risk missing critical ones.",
+            "Event 2: No simple, guaranteed alert system exists to cut through noise until acknowledged, especially during on-call handoffs."
+          ],
+          "pain_event_ids": [
+            187,
+            186,
+            185,
+            184
+          ],
+          "cluster_size": 4,
+          "workflow_confidence": 0.95,
+          "validation_reasoning": "All four events revolve around the same core workflow: receiving urgent alerts in a timely and reliable way while being overwhelmed by low-priority or poorly prioritized interruptions. The context consistently involves maintaining focus or responding to critical events, and the pain stems from inadequate filtering or escalation of notifications. The workarounds (disabling notifications, relying on slow channels) and implied needs (guaranteed delivery, reduced noise) are highly aligned, indicating a shared underlying workflow.",
+          "saved_cluster_id": 7
+        }
+      ],
+      "clustering_stats": {
+        "total_events_processed": 200,
+        "clusters_created": 2,
+        "llm_validations": 5,
+        "processing_time": 78.65678906440735,
+        "avg_cluster_size": 4.5,
+        "clustering_rate": 0.01,
+        "processing_rate": 2.542692148750592,
+        "embedding_stats": {
+          "embeddings_created": 200,
+          "cache_hits": 28,
+          "total_tokens": 9215
+        }
+      }
+    },
+    "alignment": {
+      "aligned_problems_count": 1,
+      "aligned_problems": [
+        {
+          "id": "aligned_AP_01_1766293304",
+          "aligned_problem_id": "AP_01",
+          "sources": [
+            "reddit",
+            "hackernews"
+          ],
+          "core_problem": "Users are unable to effectively separate and prioritize important alerts or information from a high volume of digital notifications or communication noise.",
+          "why_they_look_different": "The Reddit cluster focuses on the personal consequence (missed critical alerts) and the channel (personal communication), while the HackerNews cluster describes the functional inability (inability to filter) within the system itself. The Reddit description is more user-outcome oriented, whereas HackerNews is more system-capability oriented.",
+          "evidence": [
+            {
+              "source": "reddit",
+              "cluster_summary": "Critical alerts are missed due to notification overload or misconfiguration in personal communication channels",
+              "evidence_quote": "Critical alerts are missed due to notification overload"
+            },
+            {
+              "source": "hackernews",
+              "cluster_summary": "Inability to filter critical alerts from noise in digital communication systems",
+              "evidence_quote": "Inability to filter critical alerts from noise in digital communication systems"
+            }
+          ],
+          "cluster_ids": [
+            "reddit_cluster_2",
+            "hackernews_cluster_1"
+          ],
+          "created_at": "2025-12-21 05:01:44"
+        }
+      ]
+    },
+    "map_opportunities": {
+      "opportunities_created": 8,
+      "viable_opportunities": 8,
+      "clusters_processed": 8,
+      "opportunity_details": [
+        {
+          "opportunity_id": 9,
+          "cluster_id": 1,
+          "cluster_name": "reddit: Notification Management for Critical Alerts",
+          "opportunity_name": "CriticalPing",
+          "opportunity_description": "A micro-tool that forwards critical alerts from monitoring services (via email or webhook) to a dedicated mobile app with loud, override-capable notifications and optional SMS fallback. Users whitelist alert sources, and the app ensures alerts are never silenced.",
+          "quality_score": 0.9,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Moderate competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 10,
+          "cluster_id": 2,
+          "cluster_name": "reddit: Inefficient Note-Taking and Knowledge Retrieval for Technical Learning",
+          "opportunity_name": "TechNote Recall",
+          "opportunity_description": "A terminal-style, single-input-field web app for capturing technical learning notes. It auto-tags notes by detected tech stack (e.g., Docker, AWS) and implements semantic vector search optimized for code snippets, commands, and technical concepts to surface forgotten notes.",
+          "quality_score": 0.9,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Moderate competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 11,
+          "cluster_id": 3,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "AckPing",
+          "opportunity_description": "A micro-tool that sends a single, high-priority alert (via SMS, phone call, or persistent desktop notification) that loops until explicitly acknowledged by the recipient. No integrations, just a simple API/webhook to trigger alerts.",
+          "quality_score": 1.0,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Low competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 12,
+          "cluster_id": 4,
+          "cluster_name": "reddit: Inefficient Note-Taking and Retrieval for Technical Learning",
+          "opportunity_name": "TechNote Snapper",
+          "opportunity_description": "A minimalist, web-based note tool with a single input field for instant capture of technical learning notes. It automatically generates semantic tags/keywords from the note content (using a lightweight NLP library) and enables fast retrieval via a simple search bar that surfaces relevant past notes without manual organization.",
+          "quality_score": 0.9,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Moderate competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 13,
+          "cluster_id": 5,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "AlertGate",
+          "opportunity_description": "A micro-tool that sits between notification sources (e.g., Slack, email) and the user, using simple rules (keywords, sender, time) to block all non-critical notifications and only forward urgent alerts via a dedicated, high-priority channel (e.g., SMS, push notification with sound).",
+          "quality_score": 1.0,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Low competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 14,
+          "cluster_id": 6,
+          "cluster_name": "reddit: Collaborative Decision-Making and Communication",
+          "opportunity_name": "Decision Tracker",
+          "opportunity_description": "A micro-tool that lets users quickly timestamp and log key collaborative moments: decisions made, ideas dismissed, requests delayed, or interruptions. Creates a simple, dated log with context (meeting name, attendees) that can be referenced later to demonstrate patterns.",
+          "quality_score": 1.0,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Low competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 15,
+          "cluster_id": 7,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "CriticalAck",
+          "opportunity_description": "A micro-tool that sends a single, high-priority alert via multiple channels (e.g., SMS, push notification) with a mandatory acknowledgment button; it's triggered via a simple API call and logs acknowledgment status.",
+          "quality_score": 0.9,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Moderate competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 16,
+          "cluster_id": 0,
+          "cluster_name": "AP_01",
+          "opportunity_name": "Multi-Source: Users are unable to effectively separate and prior...",
+          "opportunity_description": "This opportunity is validated by multiple communities across different platforms. Core problem: Users are unable to effectively separate and prioritize important alerts or information from a high volume of digital notifications or communication noise.",
+          "quality_score": 0.95,
+          "quality_reasons": [
+            "Multi-source validation",
+            "Large market size",
+            "High pain frequency",
+            "Moderate competition"
+          ]
+        }
+      ],
+      "mapping_stats": {
+        "total_clusters_processed": 8,
+        "opportunities_identified": 8,
+        "viable_opportunities": 8,
+        "processing_time": 269.3651235103607,
+        "avg_opportunity_score": 0.94375,
+        "opportunity_rate": 1.0,
+        "viable_rate": 1.0,
+        "processing_rate": 0.029699464784988368
+      }
+    },
+    "score": {
+      "opportunities_scored": 0,
+      "viable_opportunities": 0
+    }
+  },
+  "total_runtime_seconds": 2031.697265,
+  "final_summary": {
+    "pipeline_completed": true,
+    "stages_completed": 8,
+    "stages_failed": 0,
+    "total_runtime_minutes": 33.86,
+    "database_statistics": {
+      "raw_posts_count": 889,
+      "filtered_posts_count": 183,
+      "avg_pain_score": 0.509256474215509,
+      "pain_events_count": 254,
+      "clusters_count": 7,
+      "opportunities_count": 16,
+      "aligned_problems_count": 1,
+      "clusters_by_alignment_status": {
+        "processed": 7
+      },
+      "posts_by_source": {
+        "hackernews": 291,
+        "reddit": 598
+      }
+    },
+    "top_opportunities": [
+      {
+        "opportunity_name": "Decision Tracker",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "reddit: Collaborative Decision-Making and Communication"
+      },
+      {
+        "opportunity_name": "AlertGate",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise"
+      },
+      {
+        "opportunity_name": "AckPing",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise"
+      },
+      {
+        "opportunity_name": "CriticalPing",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise"
+      },
+      {
+        "opportunity_name": "AlertSiren",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "reddit: Notification Management for Critical Alerts"
+      },
+      {
+        "opportunity_name": "CriticalAck",
+        "total_score": 0.9,
+        "recommendation": "",
+        "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise"
+      },
+      {
+        "opportunity_name": "TechNote Snapper",
+        "total_score": 0.9,
+        "recommendation": "",
+        "cluster_name": "reddit: Inefficient Note-Taking and Retrieval for Technical Learning"
+      },
+      {
+        "opportunity_name": "TechNote Recall",
+        "total_score": 0.9,
+        "recommendation": "",
+        "cluster_name": "reddit: Inefficient Note-Taking and Knowledge Retrieval for Technical Learning"
+      },
+      {
+        "opportunity_name": "CriticalPing",
+        "total_score": 0.9,
+        "recommendation": "",
+        "cluster_name": "reddit: Notification Management for Critical Alerts"
+      },
+      {
+        "opportunity_name": "AlertEscalate",
+        "total_score": 0.9,
+        "recommendation": "",
+        "cluster_name": "reddit: Notification Management for Critical Alerts"
+      }
+    ],
+    "pipeline_efficiency": {
+      "posts_per_minute": 3.0122598014128843,
+      "pain_events_per_hour": 28.0,
+      "opportunities_per_hour": 8.0
+    }
+  }
+}

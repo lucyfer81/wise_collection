@@ -80,15 +80,21 @@ class CrossSourceAligner:
 
             # 调用LLM
             logger.info(f"Running cross-source alignment for {len(source_groups)} source types")
-            response = self.llm_client.get_completion(
-                prompt=alignment_prompt,
+            messages = [{"role": "user", "content": alignment_prompt}]
+            response = self.llm_client.chat_completion(
+                messages=messages,
                 model_type="main",
                 max_tokens=2000,
                 temperature=0.1
             )
 
-            # 解析响应
-            alignments = self._parse_alignment_response(response, clusters)
+            # 解析响应 - chat_completion返回字典格式
+            if isinstance(response, dict):
+                response_content = response.get('content', '')
+            else:
+                response_content = str(response)
+
+            alignments = self._parse_alignment_response(response_content, clusters)
             logger.info(f"Found {len(alignments)} cross-source alignments")
 
             return alignments

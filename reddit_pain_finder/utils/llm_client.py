@@ -244,6 +244,31 @@ Comments: {comments_count}
             json_mode=True
         )
 
+    def summarize_source_cluster(
+        self,
+        pain_events: List[Dict[str, Any]],
+        source_type: str
+    ) -> Dict[str, Any]:
+        """为同一source的聚类生成摘要"""
+        prompt = self._get_cluster_summarizer_prompt()
+
+        # 构建痛点事件文本，重点关注问题和上下文
+        events_text = "\n\n".join([
+            f"Event {i+1}:\nProblem: {event.get('problem', '')}\nContext: {event.get('context', '')}\nWorkaround: {event.get('current_workaround', '')}\n"
+            for i, event in enumerate(pain_events[:10])  # 最多处理10个事件以控制token长度
+        ])
+
+        messages = [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": f"Source Type: {source_type}\n\nPain Events:\n{events_text}"}
+        ]
+
+        return self.chat_completion(
+            messages=messages,
+            model_type="cluster_summarizer",
+            json_mode=True
+        )
+
     def map_opportunity(
         self,
         cluster_summary: Dict[str, Any]
@@ -445,6 +470,36 @@ Return JSON only with this format:
 }
 
 Be realistic and conservative in scoring."""
+
+    def _get_cluster_summarizer_prompt(self) -> str:
+        """获取聚类摘要提示"""
+        return """You are a cluster summarizer for pain events.
+
+These pain events come from the same source and discourse style.
+Your task is to summarize the SHARED UNDERLYING PROBLEM, ignoring emotional tone and individual details.
+
+Focus on:
+1. What is the common problem across all these events?
+2. What shared context or workflow is involved?
+3. What is the essential pain point, stripped of emotional language?
+4. Provide 2-3 representative examples that capture the essence
+
+BE CONSERVATIVE - only identify patterns that truly exist across multiple events.
+
+Return JSON only with this format:
+{
+  "centroid_summary": "brief summary of the core shared problem",
+  "common_pain": "the main difficulty or challenge (technical language)",
+  "common_context": "the shared workflow or situation where this occurs",
+  "example_events": [
+    "Event 1: representative problem description",
+    "Event 2: representative problem description"
+  ],
+  "coherence_score": 0.8,  # how well do these events belong together (0-1)
+  "reasoning": "brief explanation of why these belong together"
+}
+
+Do not exaggerate similarities. Be literal and precise."""
 
     def _get_signal_validation_prompt(self) -> str:
         """获取信号验证提示"""

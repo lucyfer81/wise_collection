@@ -1,6 +1,6 @@
 # Reddit Pain Finder - 代码汇总
 
-生成时间: 2025-12-15 20:43:12
+生成时间: 2025-12-23 09:16:00
 
 本文档包含 reddit_pain_finder 项目的核心代码文件：
 - Pipeline处理模块 (pipeline/)
@@ -16,8 +16,8 @@
 ```python
 #!/usr/bin/env python3
 """
-Reddit Pain Point Finder - Main Pipeline Runner
-主要的pipeline执行脚本 - 一键运行整个痛点发现流程
+Wise Collection - Main Pipeline Runner
+主要的pipeline执行脚本 - 一键运行整个数据收集流程
 """
 import os
 import sys
@@ -26,23 +26,25 @@ import logging
 import json
 import time
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 # 设置项目根目录
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 # 导入pipeline模块
-from pipeline.fetch import RedditPainFetcher
+from pipeline.fetch import RedditSourceFetcher
 from pipeline.filter_signal import PainSignalFilter
 from pipeline.extract_pain import PainPointExtractor
 from pipeline.embed import PainEventEmbedder
 from pipeline.cluster import PainEventClusterer
 from pipeline.score_viability import ViabilityScorer
 from pipeline.map_opportunity import OpportunityMapper
+from pipeline.align_cross_sources import CrossSourceAligner
 
 # 导入工具模块
 from utils.db import db
+from utils.llm_client import LLMClient
 
 # 设置日志
 logging.basicConfig(
@@ -56,8 +58,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-class RedditPainPipeline:
-    """Reddit痛点发现Pipeline"""
+class WiseCollectionPipeline:
+    """Wise Collection数据收集Pipeline"""
 
     def __init__(self):
         """初始化pipeline"""
@@ -74,20 +76,54 @@ class RedditPainPipeline:
         # 确保日志目录存在
         os.makedirs("logs", exist_ok=True)
 
-    def run_stage_fetch(self, limit_subreddits: Optional[int] = None) -> Dict[str, Any]:
-        """阶段1: 数据抓取"""
+    def _load_config(self, config_path: str = "config/llm.yaml") -> Dict[str, Any]:
+        """加载配置文件"""
+        try:
+            import yaml
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            return config
+        except Exception as e:
+            logger.warning(f"Failed to load config from {config_path}: {e}")
+            # 返回默认配置
+            return {
+                'database': {'path': 'data/wise_collection.db'},
+                'llm': {
+                    'models': {
+                        'main': 'gpt-4',
+                        'medium': 'gpt-3.5-turbo',
+                        'small': 'gpt-3.5-turbo'
+                    }
+                }
+            }
+
+    def run_stage_fetch(self, limit_sources: Optional[int] = None,
+                       sources: Optional[List[str]] = None) -> Dict[str, Any]:
+        """阶段1: 数据抓取（支持多数据源）"""
         logger.info("=" * 50)
-        logger.info("STAGE 1: Fetching Reddit posts")
+        logger.info("STAGE 1: Multi-Source Posts Fetcher")
         logger.info("=" * 50)
 
         try:
-            fetcher = RedditPainFetcher()
-            result = fetcher.fetch_all(limit_subreddits=limit_subreddits)
+            from pipeline.fetch import MultiSourceFetcher
+
+            # 使用指定的数据源，默认为 reddit + hackernews
+            fetch_sources = sources or ['reddit', 'hackernews']
+            fetcher = MultiSourceFetcher(sources=fetch_sources)
+            result = fetcher.fetch_all(limit_sources=limit_sources)
 
             self.stats["stages_completed"].append("fetch")
             self.stats["stage_results"]["fetch"] = result
 
-            logger.info(f"✅ Stage 1 completed: Found {result['total_saved']} posts")
+            logger.info(f"✅ Stage 1 completed: Found {result['total_saved']} posts from {len(result['sources_processed'])} sources")
+
+            # 输出各数据源统计
+            for source, stats in result.get("source_stats", {}).items():
+                if "error" not in stats:
+                    logger.info(f"   - {source}: {stats.get('total_saved', 0)} posts")
+                else:
+                    logger.error(f"   - {source}: ERROR - {stats['error']}")
+
             return result
 
         except Exception as e:
@@ -201,6 +237,51 @@ class RedditPainPipeline:
             self.stats["stages_failed"].append("cluster")
             raise
 
+    def run_stage_cross_source_alignment(self) -> Dict[str, Any]:
+        """阶段5.5: 跨源对齐"""
+        logger.info("=" * 50)
+        logger.info("STAGE 5.5: Cross-Source Alignment")
+        logger.info("=" * 50)
+
+        try:
+            # 初始化对齐器
+            llm_client = LLMClient()  # Uses default config path
+            aligner = CrossSourceAligner(db, llm_client)
+
+            # 执行跨源对齐
+            logger.info("Processing cross-source alignment...")
+            aligner.process_alignments()
+
+            # 获取对齐结果
+            aligned_problems = db.get_aligned_problems()
+
+            result = {
+                "aligned_problems_count": len(aligned_problems),
+                "aligned_problems": aligned_problems
+            }
+
+            self.stats["stages_completed"].append("alignment")
+            self.stats["stage_results"]["alignment"] = result
+
+            logger.info(f"✅ Stage 5.5 completed: Found {len(aligned_problems)} aligned problems")
+
+            # 显示对齐摘要
+            if aligned_problems:
+                logger.info("\nAlignment Summary:")
+                logger.info(f"- Total aligned problems: {len(aligned_problems)}")
+                for problem in aligned_problems[:3]:  # 显示前3个
+                    logger.info(f"  {problem['aligned_problem_id']}: {problem['core_problem'][:100]}...")
+                    logger.info(f"  Sources: {', '.join(problem['sources'])}")
+            else:
+                logger.info("No cross-source alignments found in this run")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ Stage 5.5 failed: {e}")
+            self.stats["stages_failed"].append("alignment")
+            raise
+
     def run_stage_map_opportunities(self, limit_clusters: Optional[int] = None) -> Dict[str, Any]:
         """阶段6: 机会映射"""
         logger.info("=" * 50)
@@ -311,23 +392,29 @@ class RedditPainPipeline:
 
     def run_full_pipeline(
         self,
-        limit_subreddits: Optional[int] = None,
+        limit_sources: Optional[int] = None,
         limit_posts: Optional[int] = None,
         limit_events: Optional[int] = None,
         limit_clusters: Optional[int] = None,
         limit_opportunities: Optional[int] = None,
+        sources: Optional[List[str]] = None,
         stop_on_error: bool = False
     ) -> Dict[str, Any]:
         """运行完整pipeline"""
-        logger.info("🚀 Starting Reddit Pain Point Finder Pipeline")
+        logger.info("🚀 Starting Wise Collection Multi-Source Pipeline")
         logger.info(f"⏰ Started at: {self.pipeline_start_time}")
 
+        # 使用指定的数据源，默认为 reddit + hackernews
+        fetch_sources = sources or ['reddit', 'hackernews']
+        logger.info(f"📡 Data sources: {', '.join(fetch_sources)}")
+
         stages = [
-            ("fetch", lambda: self.run_stage_fetch(limit_subreddits)),
+            ("fetch", lambda: self.run_stage_fetch(limit_sources, fetch_sources)),
             ("filter", lambda: self.run_stage_filter(limit_posts)),
             ("extract", lambda: self.run_stage_extract(limit_posts)),
             ("embed", lambda: self.run_stage_embed(limit_events)),
             ("cluster", lambda: self.run_stage_cluster(limit_events)),
+            ("alignment", lambda: self.run_stage_cross_source_alignment()),
             ("map_opportunities", lambda: self.run_stage_map_opportunities(limit_clusters)),
             ("score", lambda: self.run_stage_score(limit_opportunities))
         ]
@@ -351,11 +438,12 @@ class RedditPainPipeline:
     def run_single_stage(self, stage_name: str, **kwargs) -> Dict[str, Any]:
         """运行单个阶段"""
         stage_map = {
-            "fetch": lambda: self.run_stage_fetch(kwargs.get("limit_subreddits")),
+            "fetch": lambda: self.run_stage_fetch(kwargs.get("limit_sources"), kwargs.get("sources")),
             "filter": lambda: self.run_stage_filter(kwargs.get("limit_posts")),
             "extract": lambda: self.run_stage_extract(kwargs.get("limit_posts")),
             "embed": lambda: self.run_stage_embed(kwargs.get("limit_events")),
             "cluster": lambda: self.run_stage_cluster(kwargs.get("limit_events")),
+            "alignment": lambda: self.run_stage_cross_source_alignment(),
             "map": lambda: self.run_stage_map_opportunities(kwargs.get("limit_clusters")),
             "score": lambda: self.run_stage_score(kwargs.get("limit_opportunities"))
         }
@@ -384,14 +472,18 @@ class RedditPainPipeline:
 
 def main():
     """主函数"""
-    parser = argparse.ArgumentParser(description="Reddit Pain Point Finder Pipeline")
+    parser = argparse.ArgumentParser(description="Wise Collection Multi-Source Pipeline")
 
     # 运行模式
-    parser.add_argument("--stage", choices=["fetch", "filter", "extract", "embed", "cluster", "map", "score", "all"],
+    parser.add_argument("--stage", choices=["fetch", "filter", "extract", "embed", "cluster", "alignment", "map", "score", "all"],
                        default="all", help="Which stage to run (default: all)")
 
+    # 数据源选择
+    parser.add_argument("--sources", nargs="+", choices=["reddit", "hackernews"],
+                       default=["reddit", "hackernews"], help="Data sources to fetch (default: reddit hackernews)")
+
     # 限制参数
-    parser.add_argument("--limit-subreddits", type=int, help="Limit number of subreddits to fetch")
+    parser.add_argument("--limit-sources", type=int, help="Limit number of sources to fetch")
     parser.add_argument("--limit-posts", type=int, help="Limit number of posts to process")
     parser.add_argument("--limit-events", type=int, help="Limit number of pain events to process")
     parser.add_argument("--limit-clusters", type=int, help="Limit number of clusters to process")
@@ -406,26 +498,28 @@ def main():
 
     try:
         # 初始化pipeline
-        pipeline = RedditPainPipeline()
+        pipeline = WiseCollectionPipeline()
 
         if args.stage == "all":
             # 运行完整pipeline
             result = pipeline.run_full_pipeline(
-                limit_subreddits=args.limit_subreddits,
+                limit_sources=args.limit_sources,
                 limit_posts=args.limit_posts,
                 limit_events=args.limit_events,
                 limit_clusters=args.limit_clusters,
                 limit_opportunities=args.limit_opportunities,
+                sources=args.sources,
                 stop_on_error=args.stop_on_error
             )
         else:
             # 运行单个阶段
             stage_kwargs = {
-                "limit_subreddits": args.limit_subreddits,
+                "limit_sources": args.limit_sources,
                 "limit_posts": args.limit_posts,
                 "limit_events": args.limit_events,
                 "limit_clusters": args.limit_clusters,
-                "limit_opportunities": args.limit_opportunities
+                "limit_opportunities": args.limit_opportunities,
+                "sources": args.sources
             }
 
             # 只传递相关的参数
@@ -482,6 +576,13 @@ from pathlib import Path
 import logging
 import sys
 
+# 导入统一数据库管理器
+try:
+    from utils.db import WiseCollectionDB
+except ImportError as e:
+    print(f"❌ 无法导入数据库管理器: {e}")
+    sys.exit(1)
+
 # 加载.env文件
 def load_env():
     """加载.env文件"""
@@ -513,9 +614,19 @@ logger.info("环境变量加载完成")
 
 
 class PainPointAnalyzer:
-    def __init__(self):
+    def __init__(self, unified_db: bool = True):
         """初始化分析器"""
         logger.info("初始化 PainPointAnalyzer...")
+
+        # 初始化统一数据库管理器
+        logger.info("初始化数据库管理器...")
+        self.db = WiseCollectionDB(unified=unified_db)
+        self.unified_db = unified_db
+
+        if unified_db:
+            logger.info(f"使用统一数据库模式: {self.db.get_database_path()}")
+        else:
+            logger.info("使用多数据库模式")
 
         self.base_url = os.getenv('Siliconflow_Base_URL', 'https://api.siliconflow.cn/v1')
         self.api_key = os.getenv('Siliconflow_KEY')
@@ -534,25 +645,16 @@ class PainPointAnalyzer:
         logger.info(f"输出目录已创建: {self.output_dir}")
 
         print(f"🔧 初始化分析器")
+        print(f"   • 数据库模式: {'统一数据库' if unified_db else '多数据库文件'}")
+        if unified_db:
+            print(f"   • 数据库路径: {self.db.get_database_path()}")
         print(f"   • API模型: {self.model}")
         print(f"   • 输出目录: {self.output_dir}")
 
-    def get_db_connection(self, db_file: str) -> sqlite3.Connection:
-        """获取数据库连接"""
-        logger.debug(f"尝试连接数据库: {db_file}")
-
-        if not os.path.exists(db_file):
-            logger.error(f"数据库文件不存在: {db_file}")
-            raise FileNotFoundError(f"数据库文件不存在: {db_file}")
-
-        try:
-            conn = sqlite3.connect(db_file)
-            conn.row_factory = sqlite3.Row
-            logger.debug(f"数据库连接成功: {db_file}")
-            return conn
-        except Exception as e:
-            logger.error(f"连接数据库失败: {db_file}, 错误: {e}")
-            raise
+    def get_db_connection(self, db_type: str = "clusters"):
+        """获取数据库连接 - 使用统一数据库管理器"""
+        logger.debug(f"获取数据库连接，类型: {db_type}")
+        return self.db.get_connection(db_type)
 
     def call_llm(self, prompt: str, temperature: float = 0.3, max_retries: int = 3) -> str:
         """调用LLM"""
@@ -635,86 +737,85 @@ class PainPointAnalyzer:
                 return f"LLM调用失败: {str(e)}"
 
     def get_top_clusters(self, min_score: float = 0.8, limit: int = 10) -> List[Dict]:
-        """获取高分聚类"""
+        """获取高分聚类 - 使用统一数据库"""
         logger.info(f"获取高分聚类: min_score={min_score}, limit={limit}")
         clusters = []
 
         try:
-            conn = self.get_db_connection('data/clusters.db')
-            cursor = conn.cursor()
+            with self.get_db_connection("clusters") as conn:
+                cursor = conn.cursor()
 
-            logger.debug("执行聚类查询SQL...")
+                logger.debug("执行聚类查询SQL...")
 
-            cursor.execute("""
-                SELECT c.id, c.cluster_name, c.cluster_description, c.avg_pain_score,
-                       c.cluster_size, c.pain_event_ids,
-                       COUNT(o.id) as opportunity_count,
-                       MAX(o.total_score) as max_opportunity_score,
-                       GROUP_CONCAT(o.opportunity_name, ' | ') as opportunity_names
-                FROM clusters c
-                LEFT JOIN opportunities o ON c.id = o.cluster_id
-                GROUP BY c.id
-                HAVING opportunity_count > 0 AND max_opportunity_score >= ?
-                ORDER BY max_opportunity_score DESC, c.avg_pain_score DESC
-                LIMIT ?
-            """, (min_score, limit))
-
-            logger.debug(f"查询执行完成，开始处理结果...")
-            rows = cursor.fetchall()
-            logger.info(f"查询到 {len(rows)} 个聚类")
-
-            for i, row in enumerate(rows, 1):
-                logger.debug(f"处理第 {i}/{len(rows)} 个聚类: {row['cluster_name'][:50]}...")
-                # 获取该聚类的所有机会
-                logger.debug(f"获取聚类 {row['id']} 的机会数据...")
                 cursor.execute("""
-                    SELECT opportunity_name, description, total_score, recommendation,
-                           current_tools, missing_capability, why_existing_fail,
-                           target_users, killer_risks
-                    FROM opportunities
-                    WHERE cluster_id = ?
-                    ORDER BY total_score DESC
-                """, (row['id'],))
+                    SELECT c.id, c.cluster_name, c.cluster_description, c.avg_pain_score,
+                           c.cluster_size, c.pain_event_ids,
+                           COUNT(o.id) as opportunity_count,
+                           MAX(o.total_score) as max_opportunity_score,
+                           GROUP_CONCAT(o.opportunity_name, ' | ') as opportunity_names
+                    FROM clusters c
+                    LEFT JOIN opportunities o ON c.id = o.cluster_id
+                    GROUP BY c.id
+                    HAVING opportunity_count > 0 AND max_opportunity_score >= ?
+                    ORDER BY max_opportunity_score DESC, c.avg_pain_score DESC
+                    LIMIT ?
+                """, (min_score, limit))
 
-                opportunities = []
-                opp_rows = cursor.fetchall()
-                logger.debug(f"聚类 {row['id']} 有 {len(opp_rows)} 个机会")
+                logger.debug(f"查询执行完成，开始处理结果...")
+                rows = cursor.fetchall()
+                logger.info(f"查询到 {len(rows)} 个聚类")
 
-                for opp_row in opp_rows:
-                    opportunities.append({
-                        'name': opp_row['opportunity_name'],
-                        'description': opp_row['description'],
-                        'score': opp_row['total_score'],
-                        'recommendation': opp_row['recommendation'],
-                        'current_tools': opp_row['current_tools'],
-                        'missing_capability': opp_row['missing_capability'],
-                        'why_existing_fail': opp_row['why_existing_fail'],
-                        'target_users': opp_row['target_users'],
-                        'killer_risks': json.loads(opp_row['killer_risks']) if opp_row['killer_risks'] else []
+                for i, row in enumerate(rows, 1):
+                    logger.debug(f"处理第 {i}/{len(rows)} 个聚类: {row['cluster_name'][:50]}...")
+                    # 获取该聚类的所有机会
+                    logger.debug(f"获取聚类 {row['id']} 的机会数据...")
+                    cursor.execute("""
+                        SELECT opportunity_name, description, total_score, recommendation,
+                               current_tools, missing_capability, why_existing_fail,
+                               target_users, killer_risks
+                        FROM opportunities
+                        WHERE cluster_id = ?
+                        ORDER BY total_score DESC
+                    """, (row['id'],))
+
+                    opportunities = []
+                    opp_rows = cursor.fetchall()
+                    logger.debug(f"聚类 {row['id']} 有 {len(opp_rows)} 个机会")
+
+                    for opp_row in opp_rows:
+                        opportunities.append({
+                            'name': opp_row['opportunity_name'],
+                            'description': opp_row['description'],
+                            'score': opp_row['total_score'],
+                            'recommendation': opp_row['recommendation'],
+                            'current_tools': opp_row['current_tools'],
+                            'missing_capability': opp_row['missing_capability'],
+                            'why_existing_fail': opp_row['why_existing_fail'],
+                            'target_users': opp_row['target_users'],
+                            'killer_risks': json.loads(opp_row['killer_risks']) if opp_row['killer_risks'] else []
+                        })
+
+                    # 获取痛点事件样本
+                    try:
+                        pain_event_ids = json.loads(row['pain_event_ids'])
+                        logger.debug(f"聚类 {row['id']} 痛点事件IDs: {len(pain_event_ids)} 个")
+                        sample_pains = self.get_sample_pain_events(pain_event_ids[:5])
+                    except json.JSONDecodeError as e:
+                        logger.warning(f"聚类 {row['id']} pain_event_ids JSON解析失败: {e}")
+                        sample_pains = []
+
+                    clusters.append({
+                        'id': row['id'],
+                        'name': row['cluster_name'],
+                        'description': row['cluster_description'],
+                        'avg_pain_score': row['avg_pain_score'],
+                        'cluster_size': row['cluster_size'],
+                        'opportunity_count': row['opportunity_count'],
+                        'max_opportunity_score': row['max_opportunity_score'],
+                        'opportunities': opportunities,
+                        'sample_pains': sample_pains
                     })
 
-                # 获取痛点事件样本
-                try:
-                    pain_event_ids = json.loads(row['pain_event_ids'])
-                    logger.debug(f"聚类 {row['id']} 痛点事件IDs: {len(pain_event_ids)} 个")
-                    sample_pains = self.get_sample_pain_events(pain_event_ids[:5])
-                except json.JSONDecodeError as e:
-                    logger.warning(f"聚类 {row['id']} pain_event_ids JSON解析失败: {e}")
-                    sample_pains = []
-
-                clusters.append({
-                    'id': row['id'],
-                    'name': row['cluster_name'],
-                    'description': row['cluster_description'],
-                    'avg_pain_score': row['avg_pain_score'],
-                    'cluster_size': row['cluster_size'],
-                    'opportunity_count': row['opportunity_count'],
-                    'max_opportunity_score': row['max_opportunity_score'],
-                    'opportunities': opportunities,
-                    'sample_pains': sample_pains
-                })
-
-            conn.close()
             logger.info(f"成功获取 {len(clusters)} 个聚类数据")
             return clusters
 
@@ -725,7 +826,7 @@ class PainPointAnalyzer:
             return []
 
     def get_sample_pain_events(self, pain_event_ids: List[int]) -> List[Dict]:
-        """获取痛点事件样本"""
+        """获取痛点事件样本 - 使用统一数据库"""
         logger.debug(f"获取 {len(pain_event_ids)} 个痛点事件样本: {pain_event_ids}")
         pains = []
 
@@ -734,31 +835,30 @@ class PainPointAnalyzer:
             return []
 
         try:
-            conn = self.get_db_connection('data/pain_events.db')
-            cursor = conn.cursor()
+            with self.get_db_connection("pain") as conn:
+                cursor = conn.cursor()
 
-            placeholders = ','.join(['?' for _ in pain_event_ids])
-            logger.debug(f"执行痛点事件查询，IDs: {pain_event_ids}")
+                placeholders = ','.join(['?' for _ in pain_event_ids])
+                logger.debug(f"执行痛点事件查询，IDs: {pain_event_ids}")
 
-            cursor.execute(f"""
-                SELECT problem, current_workaround, frequency, emotional_signal, mentioned_tools
-                FROM pain_events
-                WHERE id IN ({placeholders})
-            """, pain_event_ids)
+                cursor.execute(f"""
+                    SELECT problem, current_workaround, frequency, emotional_signal, mentioned_tools
+                    FROM pain_events
+                    WHERE id IN ({placeholders})
+                """, pain_event_ids)
 
-            rows = cursor.fetchall()
-            logger.debug(f"查询到 {len(rows)} 个痛点事件")
+                rows = cursor.fetchall()
+                logger.debug(f"查询到 {len(rows)} 个痛点事件")
 
-            for row in rows:
-                pains.append({
-                    'problem': row['problem'],
-                    'workaround': row['current_workaround'],
-                    'frequency': row['frequency'],
-                    'emotion': row['emotional_signal'],
-                    'tools': row['mentioned_tools']
-                })
+                for row in rows:
+                    pains.append({
+                        'problem': row['problem'],
+                        'workaround': row['current_workaround'],
+                        'frequency': row['frequency'],
+                        'emotion': row['emotional_signal'],
+                        'tools': row['mentioned_tools']
+                    })
 
-            conn.close()
             logger.debug(f"成功获取 {len(pains)} 个痛点事件")
             return pains
 
@@ -1088,15 +1188,40 @@ class PainPointAnalyzer:
 
 def main():
     """主函数"""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Reddit痛点机会分析器")
+    parser.add_argument("--min-score", type=float, default=0.8, help="最低机会评分")
+    parser.add_argument("--limit", type=int, default=15, help="最大分析数量")
+    parser.add_argument("--legacy-db", action="store_true", help="使用旧的多数据库模式")
+    parser.add_argument("--dry-run", action="store_true", help="试运行模式（仅获取数据，不生成报告）")
+
+    args = parser.parse_args()
+
     logger.info("=" * 50)
     logger.info("痛点分析器开始运行")
+    logger.info(f"数据库模式: {'多数据库文件' if args.legacy_db else '统一数据库'}")
+    logger.info(f"最低评分: {args.min_score}, 最大数量: {args.limit}")
     logger.info("=" * 50)
 
     try:
         logger.info("初始化 PainPointAnalyzer...")
-        analyzer = PainPointAnalyzer()
+        analyzer = PainPointAnalyzer(unified_db=not args.legacy_db)
+
+        if args.dry_run:
+            # 试运行：仅获取数据并显示
+            logger.info("试运行模式：获取聚类数据...")
+            clusters = analyzer.get_top_clusters(min_score=args.min_score, limit=args.limit)
+            logger.info(f"找到 {len(clusters)} 个聚类")
+
+            print(f"\n📊 试运行结果：")
+            print(f"找到 {len(clusters)} 个符合条件的聚类：")
+            for i, cluster in enumerate(clusters, 1):
+                print(f"  {i}. {cluster['name']} (评分: {cluster['max_opportunity_score']:.2f}, 机会数: {cluster['opportunity_count']})")
+            return
+
         logger.info("开始运行分析...")
-        analyzer.run_analysis(min_score=0.8, limit=15)
+        analyzer.run_analysis(min_score=args.min_score, limit=args.limit)
         logger.info("程序执行完成")
     except Exception as e:
         logger.error(f"程序执行失败: {e}")
@@ -1161,6 +1286,311 @@ if __name__ == "__main__":
         print(f"\n❌ 分析失败: {e}")
         import traceback
         traceback.print_exc()
+```
+
+
+================================================================================
+文件: pipeline/align_cross_sources.py
+================================================================================
+
+```python
+"""
+跨源对齐模块
+Cross-Source Alignment Module
+"""
+import json
+import time
+from typing import List, Dict, Any, Optional
+from utils.db import WiseCollectionDB
+from utils.llm_client import LLMClient
+import logging
+
+logger = logging.getLogger(__name__)
+
+class CrossSourceAligner:
+    """跨源对齐器 - 识别不同社区讨论的同一问题"""
+
+    def __init__(self, db: WiseCollectionDB, llm_client: LLMClient):
+        self.db = db
+        self.llm_client = llm_client
+
+    def get_unprocessed_clusters(self) -> List[Dict]:
+        """获取未处理的聚类数据"""
+        try:
+            with self.db.get_connection("clusters") as conn:
+                cursor = conn.execute("""
+                    SELECT cluster_name, source_type, centroid_summary,
+                           common_pain, pain_event_ids, cluster_size
+                    FROM clusters
+                    WHERE alignment_status = 'unprocessed'
+                    AND cluster_size >= 3
+                    ORDER BY cluster_size DESC
+                """)
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Failed to get unprocessed clusters: {e}")
+            return []
+
+    def prepare_cluster_for_alignment(self, cluster: Dict) -> Dict:
+        """为LLM对齐准备聚类数据"""
+        try:
+            # 提取workaround信息
+            typical_workaround = self._extract_workarounds(cluster["common_pain"])
+
+            return {
+                "source_type": cluster["source_type"],
+                "cluster_summary": cluster["centroid_summary"],
+                "typical_workaround": typical_workaround,
+                "context": f"Cluster size: {cluster['cluster_size']}, "
+                          f"Pain events: {len(json.loads(cluster['pain_event_ids']))}"
+            }
+        except Exception as e:
+            logger.error(f"Failed to prepare cluster {cluster.get('cluster_name')}: {e}")
+            return {}
+
+    def align_clusters_across_sources(self, clusters: List[Dict]) -> List[Dict]:
+        """使用LLM跨源对齐聚类"""
+        if len(clusters) < 2:
+            logger.info("Not enough clusters for cross-source alignment")
+            return []
+
+        try:
+            # 按源类型分组
+            source_groups = {}
+            for cluster in clusters:
+                source_type = cluster["source_type"]
+                if source_type not in source_groups:
+                    source_groups[source_type] = []
+
+                prepared_cluster = self.prepare_cluster_for_alignment(cluster)
+                if prepared_cluster:  # Only add if preparation succeeded
+                    source_groups[source_type].append(prepared_cluster)
+
+            # 跳过如果只有一种源类型
+            if len(source_groups) < 2:
+                logger.info("Only one source type found, skipping cross-source alignment")
+                return []
+
+            # 构建对齐prompt
+            alignment_prompt = self._build_alignment_prompt(source_groups)
+
+            # 调用LLM
+            logger.info(f"Running cross-source alignment for {len(source_groups)} source types")
+            messages = [{"role": "user", "content": alignment_prompt}]
+            response = self.llm_client.chat_completion(
+                messages=messages,
+                model_type="main",
+                max_tokens=2000,
+                temperature=0.1
+            )
+
+            # 解析响应 - chat_completion返回字典格式
+            if isinstance(response, dict):
+                response_content = response.get('content', '')
+            else:
+                response_content = str(response)
+
+            alignments = self._parse_alignment_response(response_content, clusters)
+            logger.info(f"Found {len(alignments)} cross-source alignments")
+
+            return alignments
+
+        except Exception as e:
+            logger.error(f"Failed to align clusters across sources: {e}")
+            return []
+
+    def _extract_workarounds(self, common_pain: str) -> str:
+        """从common_pain中提取workaround信息"""
+        # 简单实现：如果提到workaround或solution，提取相关部分
+        if not common_pain:
+            return "No specific workaround mentioned"
+
+        # 查找包含workaround、solution等关键词的句子
+        pain_lower = common_pain.lower()
+        workaround_keywords = ['workaround', 'solution', 'fix', 'solve', 'currently using', 'temporary']
+
+        for keyword in workaround_keywords:
+            if keyword in pain_lower:
+                # 返回包含关键词的部分文本
+                sentences = common_pain.split('.')
+                for sentence in sentences:
+                    if keyword in sentence.lower():
+                        return sentence.strip()
+
+        return "No explicit workaround mentioned"
+
+    def _build_alignment_prompt(self, source_groups: Dict) -> str:
+        """构建跨源对齐的LLM prompt"""
+        prompt = """You are analyzing problem summaries from different online communities to identify when they're discussing the same underlying issue.
+
+You will receive multiple problem clusters grouped by community type:
+"""
+
+        # 添加每个源组
+        for source_type, clusters in source_groups.items():
+            prompt += f"\n## {source_type.upper()} Communities:\n\n"
+            for i, cluster in enumerate(clusters, 1):
+                prompt += f"Cluster {i}:\n"
+                prompt += f"- Summary: {cluster['cluster_summary']}\n"
+                prompt += f"- Typical workaround: {cluster['typical_workaround']}\n"
+                prompt += f"- Context: {cluster['context']}\n\n"
+
+        prompt += """
+## Task
+
+Identify which clusters from different communities describe the SAME underlying problem.
+
+Rules:
+1. Ignore differences in tone, maturity level, or solution sophistication
+2. Focus on the core problem being described
+3. Consider workarounds and context as evidence
+4. Only align clusters from DIFFERENT source types
+5. Be conservative - only align when you're confident it's the same problem
+
+## Output Format
+
+For each alignment discovered, output a JSON object with this structure:
+{
+  "aligned_problem_id": "AP_XX",
+  "sources": ["source_type_1", "source_type_2"],
+  "core_problem": "Clear description of the shared underlying problem",
+  "why_they_look_different": "Explanation of how the same problem appears different across communities",
+  "evidence": [
+    {
+      "source": "hn_ask",
+      "cluster_summary": "...",
+      "evidence_quote": "Specific evidence from the cluster summary"
+    },
+    {
+      "source": "reddit",
+      "cluster_summary": "...",
+      "evidence_quote": "Specific evidence from the cluster summary"
+    }
+  ],
+  "original_cluster_ids": ["cluster_id_1", "cluster_id_2"]
+}
+
+Return only valid JSON arrays of alignment objects. If no alignments exist, return an empty array.
+"""
+
+        return prompt
+
+    def _parse_alignment_response(self, response: str, original_clusters: List[Dict]) -> List[Dict]:
+        """解析LLM响应为对齐问题"""
+        try:
+            # 提取JSON部分
+            json_start = response.find('[')
+            json_end = response.rfind(']') + 1
+
+            if json_start == -1 or json_end == 0:
+                logger.warning("No JSON array found in alignment response")
+                return []
+
+            json_str = response[json_start:json_end]
+            alignments = json.loads(json_str)
+
+            # 验证和丰富对齐结果
+            validated_alignments = []
+
+            for alignment in alignments:
+                # 验证必需字段
+                required_fields = [
+                    'aligned_problem_id', 'sources', 'core_problem',
+                    'why_they_look_different', 'evidence'
+                ]
+
+                if not all(field in alignment for field in required_fields):
+                    logger.warning(f"Alignment missing required fields: {alignment}")
+                    continue
+
+                # 处理cluster_ids字段
+                if 'original_cluster_ids' not in alignment:
+                    alignment['cluster_ids'] = []
+                else:
+                    alignment['cluster_ids'] = alignment['original_cluster_ids']
+
+                # 验证sources格式
+                if not isinstance(alignment['sources'], list) or len(alignment['sources']) < 2:
+                    logger.warning(f"Invalid sources in alignment: {alignment['sources']}")
+                    continue
+
+                validated_alignments.append(alignment)
+
+            return validated_alignments
+
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"Error parsing alignment response: {e}")
+            return []
+
+    def process_alignments(self):
+        """处理所有跨源对齐的主要方法"""
+        logger.info("Starting cross-source alignment...")
+
+        # 获取未处理的聚类
+        clusters = self.get_unprocessed_clusters()
+        logger.info(f"Found {len(clusters)} clusters to analyze")
+
+        if not clusters:
+            logger.info("No unprocessed clusters found")
+            return
+
+        # 执行对齐
+        alignments = self.align_clusters_across_sources(clusters)
+        logger.info(f"Found {len(alignments)} cross-source alignments")
+
+        # 保存对齐结果到数据库
+        for alignment in alignments:
+            try:
+                # 生成唯一ID
+                alignment['id'] = f"aligned_{alignment['aligned_problem_id']}_{int(time.time())}"
+
+                # 插入对齐问题
+                self._insert_aligned_problem(alignment)
+
+                # 更新聚类状态
+                for cluster_id in alignment['cluster_ids']:
+                    self._update_cluster_alignment_status(
+                        cluster_id,
+                        'aligned',
+                        alignment['aligned_problem_id']
+                    )
+
+            except Exception as e:
+                logger.error(f"Failed to save alignment {alignment.get('aligned_problem_id')}: {e}")
+
+        # 标记剩余聚类为已处理但未对齐
+        aligned_cluster_ids = []
+        for alignment in alignments:
+            aligned_cluster_ids.extend(alignment['cluster_ids'])
+
+        for cluster in clusters:
+            if cluster['cluster_name'] not in aligned_cluster_ids:
+                try:
+                    self._update_cluster_alignment_status(
+                        cluster['cluster_name'],
+                        'processed',
+                        None
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to update cluster {cluster['cluster_name']}: {e}")
+
+        logger.info("Cross-source alignment completed!")
+
+    def _insert_aligned_problem(self, alignment_data: Dict):
+        """插入对齐问题到数据库"""
+        try:
+            self.db.insert_aligned_problem(alignment_data)
+        except Exception as e:
+            logger.error(f"Failed to insert aligned problem: {e}")
+            raise
+
+    def _update_cluster_alignment_status(self, cluster_name: str, status: str, aligned_problem_id: str = None):
+        """更新聚类对齐状态"""
+        try:
+            self.db.update_cluster_alignment_status(cluster_name, status, aligned_problem_id)
+        except Exception as e:
+            logger.error(f"Failed to update cluster alignment status: {e}")
+            raise
 ```
 
 
@@ -1329,11 +1759,16 @@ class PainEventClusterer:
     def _save_cluster_to_database(self, cluster_data: Dict[str, Any]) -> Optional[int]:
         """保存聚类到数据库"""
         try:
-            # 准备聚类数据
+            # 准备聚类数据 - 支持新的source-aware字段
             cluster_record = {
                 "cluster_name": cluster_data["cluster_name"],
                 "cluster_description": cluster_data["cluster_description"],
-                "pain_event_ids": json.dumps(cluster_data["pain_event_ids"]),
+                "source_type": cluster_data.get("source_type", ""),
+                "centroid_summary": cluster_data.get("centroid_summary", ""),
+                "common_pain": cluster_data.get("common_pain", ""),
+                "common_context": cluster_data.get("common_context", ""),
+                "example_events": cluster_data.get("example_events", []),
+                "pain_event_ids": cluster_data["pain_event_ids"],
                 "cluster_size": cluster_data["cluster_size"],
                 "avg_pain_score": cluster_data.get("avg_pain_score", 0.0),
                 "workflow_confidence": cluster_data.get("workflow_confidence", 0.0)
@@ -1347,110 +1782,81 @@ class PainEventClusterer:
             return None
 
     def cluster_pain_events(self, limit: int = 200) -> Dict[str, Any]:
-        """聚类痛点事件"""
-        logger.info(f"Starting clustering of up to {limit} pain events")
+        """聚类痛点事件 - 按source分组聚类"""
+        logger.info(f"Starting source-aware clustering of up to {limit} pain events")
 
         start_time = time.time()
 
         try:
-            # 获取所有有嵌入向量的痛点事件
-            pain_events = db.get_all_pain_events_with_embeddings()
+            # 获取所有有嵌入向量的痛点事件，并包含source信息
+            pain_events = self._get_pain_events_with_source_and_embeddings()
 
-            if len(pain_events) < 2:
-                logger.info("Not enough pain events for clustering")
+            if len(pain_events) < 4:
+                logger.info("Not enough pain events for clustering (need at least 4)")
                 return {"clusters_created": 0, "events_processed": 0}
 
             # 限制处理数量
             if len(pain_events) > limit:
                 pain_events = pain_events[:limit]
 
-            logger.info(f"Processing {len(pain_events)} pain events for clustering")
+            logger.info(f"Processing {len(pain_events)} pain events for source-aware clustering")
 
-            # 使用向量聚类
-            vector_clusters = pain_clustering.cluster_pain_events(pain_events)
+            # 按source类型分组
+            source_groups = self._group_events_by_source(pain_events)
+            logger.info(f"Found {len(source_groups)} source groups: {list(source_groups.keys())}")
 
-            if not vector_clusters:
-                logger.info("No clusters found")
-                return {"clusters_created": 0, "events_processed": len(pain_events)}
-
-            logger.info(f"Found {len(vector_clusters)} vector clusters")
-
-            # 验证和优化聚类
+            # 对每个source组分别聚类
             final_clusters = []
-            validated_clusters = 0
+            total_validated_clusters = 0
 
-            for i, cluster in enumerate(vector_clusters):
-                logger.info(f"Validating cluster {i+1}/{len(vector_clusters)} (size: {cluster['cluster_size']})")
-
-                # 获取聚类中的事件
-                cluster_events = cluster["events"]
-
-                # 跳过太小的聚类
-                if len(cluster_events) < 2:
-                    logger.debug(f"Skipping cluster {i+1}: too small ({len(cluster_events)} events)")
+            for source_type, events_in_source in source_groups.items():
+                if len(events_in_source) < 4:
+                    logger.info(f"Skipping source {source_type}: not enough events ({len(events_in_source)} < 4)")
                     continue
 
-                # 对于大聚类，采样前20个事件进行验证
-                events_for_validation = cluster_events
-                if len(cluster_events) > 20:
-                    events_for_validation = cluster_events[:20]
-                    logger.info(f"Sampling first 20 events from large cluster of {len(cluster_events)} for validation")
+                logger.info(f"\n=== Processing source: {source_type} ({len(events_in_source)} events) ===")
 
-                # 使用LLM验证聚类
-                validation_result = self._validate_cluster_with_llm(events_for_validation)
-                self.stats["llm_validations"] += 1
+                # 使用向量聚类
+                vector_clusters = pain_clustering.cluster_pain_events(events_in_source)
 
-                if validation_result["is_valid_cluster"]:
-                    # 创建聚类摘要
-                    cluster_summary = self._create_cluster_summary(cluster_events)
+                if not vector_clusters:
+                    logger.info(f"No clusters found for source {source_type}")
+                    continue
 
-                    # 准备最终聚类数据
-                    final_cluster = {
-                        "cluster_name": validation_result["cluster_name"],
-                        "cluster_description": validation_result["cluster_description"],
-                        "pain_event_ids": [event["id"] for event in cluster_events],
-                        "cluster_size": len(cluster_events),
-                        "workflow_confidence": validation_result["confidence"],
-                        "cluster_summary": cluster_summary,
-                        "validation_reasoning": validation_result["reasoning"]
-                    }
+                logger.info(f"Found {len(vector_clusters)} vector clusters for source {source_type}")
 
-                    # 保存到数据库
-                    cluster_id = self._save_cluster_to_database(final_cluster)
-                    if cluster_id:
-                        final_cluster["cluster_id"] = cluster_id
-                        final_clusters.append(final_cluster)
-                        validated_clusters += 1
+                # 验证和优化聚类
+                source_clusters = self._process_source_clusters(
+                    vector_clusters, source_type
+                )
 
-                        logger.info(f"Saved cluster: {validation_result['cluster_name']} ({len(cluster_events)} events)")
-                else:
-                    logger.warning(f"Cluster {i+1} rejected by LLM: {validation_result['reasoning']}")
+                final_clusters.extend(source_clusters)
+                total_validated_clusters += len(source_clusters)
 
-                # 添加延迟避免API限制
-                time.sleep(1)
+                logger.info(f"Source {source_type}: {len(source_clusters)} validated clusters")
 
             # 更新统计信息
             processing_time = time.time() - start_time
             self.stats["total_events_processed"] = len(pain_events)
-            self.stats["clusters_created"] = validated_clusters
+            self.stats["clusters_created"] = total_validated_clusters
             self.stats["processing_time"] = processing_time
 
-            if validated_clusters > 0:
-                self.stats["avg_cluster_size"] = sum(len(cluster["pain_event_ids"]) for cluster in final_clusters) / validated_clusters
+            if total_validated_clusters > 0:
+                self.stats["avg_cluster_size"] = sum(len(cluster["pain_event_ids"]) for cluster in final_clusters) / total_validated_clusters
 
             logger.info(f"""
-=== Clustering Summary ===
+=== Source-Aware Clustering Summary ===
 Pain events processed: {len(pain_events)}
-Vector clusters found: {len(vector_clusters)}
-Validated clusters created: {validated_clusters}
+Source groups processed: {len(source_groups)}
+Validated clusters created: {total_validated_clusters}
 Average cluster size: {self.stats['avg_cluster_size']:.1f}
 Processing time: {processing_time:.2f}s
 """)
 
             return {
-                "clusters_created": validated_clusters,
+                "clusters_created": total_validated_clusters,
                 "events_processed": len(pain_events),
-                "vector_clusters": len(vector_clusters),
+                "source_groups": len(source_groups),
                 "final_clusters": final_clusters,
                 "clustering_stats": self.get_statistics()
             }
@@ -1458,6 +1864,135 @@ Processing time: {processing_time:.2f}s
         except Exception as e:
             logger.error(f"Failed to cluster pain events: {e}")
             raise
+
+    def _get_pain_events_with_source_and_embeddings(self) -> List[Dict[str, Any]]:
+        """获取有嵌入向量和source信息的痛点事件"""
+        try:
+            import pickle
+            with db.get_connection("pain") as conn:
+                # 如果是统一数据库，可以从posts表获取source信息
+                if db.is_unified():
+                    cursor = conn.execute("""
+                        SELECT p.*, e.embedding_vector, e.embedding_model,
+                               COALESCE(po.source, 'reddit') as source_type
+                        FROM pain_events p
+                        JOIN pain_embeddings e ON p.id = e.pain_event_id
+                        LEFT JOIN filtered_posts fp ON p.post_id = fp.id
+                        LEFT JOIN posts po ON p.post_id = po.id
+                        ORDER BY p.extracted_at DESC
+                    """)
+                else:
+                    # 多数据库模式，默认为reddit
+                    cursor = conn.execute("""
+                        SELECT p.*, e.embedding_vector, e.embedding_model,
+                               'reddit' as source_type
+                        FROM pain_events p
+                        JOIN pain_embeddings e ON p.id = e.pain_event_id
+                        ORDER BY p.extracted_at DESC
+                    """)
+
+                results = []
+                for row in cursor.fetchall():
+                    event_data = dict(row)
+                    # 反序列化嵌入向量
+                    if event_data["embedding_vector"]:
+                        event_data["embedding_vector"] = pickle.loads(event_data["embedding_vector"])
+                    results.append(event_data)
+                return results
+        except Exception as e:
+            logger.error(f"Failed to get pain events with source and embeddings: {e}")
+            return []
+
+    def _group_events_by_source(self, pain_events: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+        """按source类型分组痛点事件"""
+        source_groups = {}
+        for event in pain_events:
+            source = event.get('source_type', 'reddit')
+            if source not in source_groups:
+                source_groups[source] = []
+            source_groups[source].append(event)
+        return source_groups
+
+    def _process_source_clusters(self, vector_clusters: List[Dict[str, Any]], source_type: str) -> List[Dict[str, Any]]:
+        """处理单个source的聚类"""
+        final_clusters = []
+        cluster_counter = 1
+
+        for i, cluster in enumerate(vector_clusters):
+            logger.info(f"Validating {source_type} cluster {i+1}/{len(vector_clusters)} (size: {cluster['cluster_size']})")
+
+            # 获取聚类中的事件
+            cluster_events = cluster["events"]
+
+            # 严格的跳过规则：至少4个事件
+            if len(cluster_events) < 4:
+                logger.debug(f"Skipping cluster {i+1}: too small ({len(cluster_events)} < 4 events)")
+                continue
+
+            # 对于大聚类，采样前20个事件进行验证和摘要
+            events_for_processing = cluster_events
+            if len(cluster_events) > 20:
+                events_for_processing = cluster_events[:20]
+                logger.info(f"Sampling first 20 events from large cluster of {len(cluster_events)} for processing")
+
+            # 使用LLM验证聚类
+            validation_result = self._validate_cluster_with_llm(events_for_processing)
+            self.stats["llm_validations"] += 1
+
+            if validation_result["is_valid_cluster"]:
+                # 使用Cluster Summarizer生成source内摘要
+                summary_result = self._summarize_source_cluster(events_for_processing, source_type)
+
+                # 生成标准化cluster ID
+                cluster_id = f"{source_type.replace('-', '_')}_{cluster_counter:02d}"
+                cluster_counter += 1
+
+                # 准备最终聚类数据
+                final_cluster = {
+                    "cluster_name": f"{source_type}: {validation_result['cluster_name']}",
+                    "cluster_description": validation_result["cluster_description"],
+                    "source_type": source_type,
+                    "cluster_id": cluster_id,
+                    "centroid_summary": summary_result.get("centroid_summary", ""),
+                    "common_pain": summary_result.get("common_pain", ""),
+                    "common_context": summary_result.get("common_context", ""),
+                    "example_events": summary_result.get("example_events", []),
+                    "pain_event_ids": [event["id"] for event in cluster_events],
+                    "cluster_size": len(cluster_events),
+                    "workflow_confidence": validation_result["confidence"],
+                    "validation_reasoning": validation_result["reasoning"]
+                }
+
+                # 保存到数据库
+                saved_cluster_id = self._save_cluster_to_database(final_cluster)
+                if saved_cluster_id:
+                    final_cluster["saved_cluster_id"] = saved_cluster_id
+                    final_clusters.append(final_cluster)
+
+                    logger.info(f"✅ Saved {cluster_id}: {validation_result['cluster_name']} ({len(cluster_events)} events)")
+            else:
+                logger.warning(f"❌ Cluster {i+1} rejected by LLM: {validation_result['reasoning']}")
+
+            # 添加延迟避免API限制
+            time.sleep(1)
+
+        return final_clusters
+
+    def _summarize_source_cluster(self, pain_events: List[Dict[str, Any]], source_type: str) -> Dict[str, Any]:
+        """使用Cluster Summarizer生成source内聚类摘要"""
+        try:
+            response = llm_client.summarize_source_cluster(pain_events, source_type)
+            return response.get("content", {})
+        except Exception as e:
+            logger.error(f"Failed to summarize source cluster: {e}")
+            return {
+                "centroid_summary": "",
+                "common_pain": "",
+                "common_context": "",
+                "example_events": [],
+                "coherence_score": 0.0,
+                "reasoning": f"Summary failed: {e}"
+            }
 
     def get_cluster_analysis(self, cluster_id: int) -> Optional[Dict[str, Any]]:
         """获取聚类详细分析"""
@@ -1920,8 +2455,9 @@ class PainPointExtractor:
             "processing_time": 0.0
         }
 
-    def _extract_from_single_post(self, post_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _extract_from_single_post(self, post_data: Dict[str, Any], retry_count: int = 0) -> List[Dict[str, Any]]:
         """从单个帖子抽取痛点事件"""
+        max_retries = 2
         try:
             title = post_data.get("title", "")
             body = post_data.get("body", "")
@@ -1958,9 +2494,17 @@ class PainPointExtractor:
             return pain_events
 
         except Exception as e:
-            logger.error(f"Failed to extract pain from post {post_data.get('id')}: {e}")
-            self.stats["extraction_errors"] += 1
-            return []
+            error_msg = f"Failed to extract pain from post {post_data.get('id')}: {e}"
+
+            # 如果是超时错误且还有重试机会
+            if "timeout" in str(e).lower() and retry_count < max_retries:
+                logger.warning(f"{error_msg} (retry {retry_count + 1}/{max_retries})")
+                time.sleep(5)  # 等待5秒后重试
+                return self._extract_from_single_post(post_data, retry_count + 1)
+            else:
+                logger.error(error_msg)
+                self.stats["extraction_errors"] += 1
+                return []
 
     def _validate_pain_event(self, pain_event: Dict[str, Any]) -> bool:
         """验证痛点事件的质量"""
@@ -2106,7 +2650,7 @@ class PainPointExtractor:
                     all_pain_events.append(enhanced_event)
 
             # 添加延迟避免API限制
-            time.sleep(0.5)
+            time.sleep(2.0)  # 增加到2秒间隔
 
         # 更新统计信息
         processing_time = time.time() - start_time
@@ -2167,17 +2711,52 @@ class PainPointExtractor:
 
             logger.info(f"Found {len(unextracted_posts)} posts to extract from")
 
-            # 抽取痛点事件
-            pain_events = self.extract_from_posts_batch(unextracted_posts)
+            # 记录失败的帖子ID，用于后续跳过
+            failed_posts = []
 
-            # 保存到数据库
+            # 抽取痛点事件（带失败恢复）
+            pain_events = []
+            for i, post in enumerate(unextracted_posts):
+                if i % 10 == 0:
+                    logger.info(f"Processed {i}/{len(unextracted_posts)} posts")
+
+                try:
+                    # 尝试抽取单个帖子
+                    post_events = self._extract_from_single_post(post)
+
+                    # 验证和增强每个痛点事件
+                    for event in post_events:
+                        if self._validate_pain_event(event):
+                            enhanced_event = self._enhance_pain_event(event, post)
+                            pain_events.append(enhanced_event)
+
+                    logger.debug(f"Successfully processed post {post.get('id')}")
+
+                except Exception as e:
+                    logger.error(f"Failed to process post {post.get('id')}: {e}")
+                    failed_posts.append(post.get('id'))
+                    self.stats["extraction_errors"] += 1
+                    continue
+
+                # 添加延迟避免API限制，使用动态延迟
+                delay = 3.0 + (i % 5)  # 3-7秒动态延迟
+                logger.debug(f"Waiting {delay:.1f}s before next post...")
+                time.sleep(delay)
+
+            # 保存成功处理的痛点事件
             saved_count = self.save_pain_events(pain_events)
 
+            # 记录失败统计
+            if failed_posts:
+                logger.warning(f"Failed to process {len(failed_posts)} posts: {failed_posts}")
+
             return {
-                "processed": len(unextracted_posts),
+                "processed": len(unextracted_posts) - len(failed_posts),
+                "failed": len(failed_posts),
                 "pain_events_extracted": len(pain_events),
                 "pain_events_saved": saved_count,
-                "extraction_stats": self.get_statistics()
+                "extraction_stats": self.get_statistics(),
+                "failed_posts": failed_posts
             }
 
         except Exception as e:
@@ -2274,7 +2853,7 @@ try:
 except ImportError:
     logger.warning("Could not import db utility, will use local file storage")
 
-class RedditPainFetcher:
+class RedditSourceFetcher:
     """Reddit痛点数据抓取器"""
 
     def __init__(self, config_path: str = "config/subreddits.yaml"):
@@ -2328,14 +2907,21 @@ class RedditPainFetcher:
             raise
 
     def _load_processed_posts(self):
-        """加载已处理的帖子ID"""
+        """加载已处理的帖子ID（支持新旧ID格式）"""
         try:
             # 尝试从数据库加载
             if 'db' in globals():
                 # 从数据库获取已处理的帖子ID
                 with db.get_connection("raw") as conn:
-                    cursor = conn.execute("SELECT id FROM posts")
+                    cursor = conn.execute("SELECT id, source FROM posts")
                     self.processed_posts = {row[0] for row in cursor.fetchall()}
+
+                    # 统计各种数据源
+                    source_counts = {}
+                    cursor = conn.execute("SELECT source, COUNT(*) as count FROM posts GROUP BY source")
+                    for row in cursor.fetchall():
+                        source_counts[row[0]] = row[1]
+                    logger.info(f"Loaded posts by source: {source_counts}")
             else:
                 # 从文件加载（备用方案）
                 processed_file = "data/processed_posts.json"
@@ -2459,7 +3045,7 @@ class RedditPainFetcher:
         return False
 
     def _extract_post_data(self, submission, subreddit_config: Dict[str, Any]) -> Dict[str, Any]:
-        """提取帖子数据"""
+        """提取帖子数据（支持多数据源schema）"""
         try:
             # 获取评论
             comments = []
@@ -2479,18 +3065,36 @@ class RedditPainFetcher:
             # 计算痛点分数
             pain_score = self._calculate_pain_score(submission, subreddit_config)
 
-            return {
-                "id": submission.id,
-                "title": submission.title,
-                "body": submission.selftext,
+            # Reddit特有数据存储在platform_data中
+            platform_data = {
                 "subreddit": subreddit_config["name"],
-                "category": subreddit_config["category"],
-                "url": submission.url,
-                "score": submission.score,
-                "num_comments": submission.num_comments,
                 "upvote_ratio": getattr(submission, 'upvote_ratio', 0.0),
                 "is_self": getattr(submission, 'is_self', False),
-                "created_utc": submission.created_utc,
+                "reddit_url": f"https://reddit.com{submission.permalink}",
+                "flair": getattr(submission, 'link_flair_text', None)
+            }
+
+            # 生成统一ID和标准化时间
+            reddit_source_id = submission.id
+            unified_id = f"reddit_{reddit_source_id}"
+            created_at = datetime.fromtimestamp(submission.created_utc).isoformat() + "Z"
+
+            return {
+                "id": unified_id,                           # 新的统一ID
+                "source": "reddit",                         # 数据源标识
+                "source_id": reddit_source_id,              # Reddit原始ID
+                "title": submission.title,
+                "body": submission.selftext,
+                "subreddit": subreddit_config["name"],     # 保持向后兼容
+                "category": subreddit_config["category"],
+                "url": submission.url,
+                "platform_data": platform_data,             # Reddit特有数据
+                "score": submission.score,
+                "num_comments": submission.num_comments,
+                "upvote_ratio": getattr(submission, 'upvote_ratio', 0.0),  # 向后兼容
+                "is_self": getattr(submission, 'is_self', False),          # 向后兼容
+                "created_utc": submission.created_utc,        # 向后兼容
+                "created_at": created_at,                    # 新的标准化时间
                 "author": submission.author.name if submission.author else "[deleted]",
                 "comments": comments,
                 "pain_score": pain_score,
@@ -2504,8 +3108,9 @@ class RedditPainFetcher:
     def _process_submission(self, submission, subreddit_config: Dict[str, Any]) -> bool:
         """处理单个帖子"""
         try:
-            # 检查是否已处理
-            if submission.id in self.processed_posts:
+            # 检查是否已处理（使用统一ID）
+            unified_id = f"reddit_{submission.id}"
+            if unified_id in self.processed_posts:
                 return False
 
             # 检查是否为痛点帖子
@@ -2527,7 +3132,7 @@ class RedditPainFetcher:
                 success = self._save_post_to_file(post_data)
 
             if success:
-                self.processed_posts.add(submission.id)
+                self.processed_posts.add(unified_id)  # 使用统一ID
                 self.stats["total_saved"] += 1
                 logger.info(f"Saved post: {submission.title[:60]}... (Score: {submission.score}, Pain: {post_data['pain_score']:.2f})")
                 return True
@@ -2620,11 +3225,11 @@ class RedditPainFetcher:
             logger.error(f"Failed to fetch subreddit r/{subreddit_name}: {e}")
             return 0
 
-    def fetch_all(self, limit_subreddits: Optional[int] = None) -> Dict[str, Any]:
+    def fetch_all(self, limit_sources: Optional[int] = None) -> Dict[str, Any]:
         """抓取所有配置的子版块"""
         self.stats["start_time"] = datetime.now()
 
-        logger.info("Starting Reddit pain point fetching...")
+        logger.info("Starting Wise Collection posts fetching...")
 
         # 加载已处理的帖子
         self._load_processed_posts()
@@ -2651,8 +3256,8 @@ class RedditPainFetcher:
                         subreddits.append(subreddit_data)
 
         # 如果指定了限制，则截取列表
-        if limit_subreddits:
-            subreddits = subreddits[:limit_subreddits]
+        if limit_sources:
+            subreddits = subreddits[:limit_sources]
 
         logger.info(f"Will fetch from {len(subreddits)} subreddits")
 
@@ -2686,18 +3291,108 @@ Posts per minute: {self.stats["total_saved"] / max(runtime.total_seconds() / 60,
 
         return self.stats.copy()
 
+class HackerNewsSourceFetcher:
+    """Hacker News痛点数据抓取器"""
+
+    def __init__(self):
+        """初始化抓取器"""
+        # 导入HN抓取器
+        from .hn_fetch import HackerNewsFetcher
+        self.hn_fetcher = HackerNewsFetcher()
+
+    def fetch_all(self) -> Dict[str, Any]:
+        """抓取HN数据（兼容现有接口）"""
+        return self.hn_fetcher.fetch_all()
+
+
+class MultiSourceFetcher:
+    """多数据源抓取器"""
+
+    def __init__(self, sources: List[str] = None, config_path: str = "config/subreddits.yaml"):
+        """初始化抓取器
+
+        Args:
+            sources: 要抓取的数据源列表，如 ['reddit', 'hackernews']
+            config_path: Reddit配置文件路径
+        """
+        self.sources = sources or ['reddit', 'hackernews']
+        self.fetchers = {}
+
+        # 初始化各个抓取器
+        if 'reddit' in self.sources:
+            self.fetchers['reddit'] = RedditSourceFetcher(config_path)
+        if 'hackernews' in self.sources:
+            self.fetchers['hackernews'] = HackerNewsSourceFetcher()
+
+    def fetch_all(self, limit_sources: Optional[int] = None) -> Dict[str, Any]:
+        """抓取所有配置的数据源"""
+        overall_stats = {
+            "sources_processed": [],
+            "total_saved": 0,
+            "total_filtered": 0,
+            "total_errors": 0,
+            "source_stats": {},
+            "runtime_seconds": 0
+        }
+
+        start_time = datetime.now()
+
+        for source_name in self.sources:
+            if source_name in self.fetchers:
+                logger.info(f"Fetching from {source_name}...")
+                try:
+                    stats = self.fetchers[source_name].fetch_all()
+                    overall_stats["sources_processed"].append(source_name)
+                    overall_stats["total_saved"] += stats.get("total_saved", 0)
+                    overall_stats["total_filtered"] += stats.get("filtered_out", 0)
+                    overall_stats["total_errors"] += stats.get("errors", 0)
+                    overall_stats["source_stats"][source_name] = stats
+
+                except Exception as e:
+                    logger.error(f"Failed to fetch from {source_name}: {e}")
+                    overall_stats["total_errors"] += 1
+                    overall_stats["source_stats"][source_name] = {"error": str(e)}
+
+        # 计算总运行时间
+        runtime = datetime.now() - start_time
+        overall_stats["runtime_seconds"] = runtime.total_seconds()
+
+        # 输出总结
+        logger.info(f"""
+=== Multi-Source Fetch Summary ===
+Sources processed: {overall_stats["sources_processed"]}
+Total posts saved: {overall_stats["total_saved"]}
+Total posts filtered: {overall_stats["total_filtered"]}
+Total errors: {overall_stats["total_errors"]}
+Runtime: {runtime}
+Posts per minute: {overall_stats["total_saved"] / max(runtime.total_seconds() / 60, 1):.1f}
+""")
+
+        # 输出各数据源统计
+        for source, stats in overall_stats.get("source_stats", {}).items():
+            if "error" not in stats:
+                logger.info(f"   - {source}: {stats.get('total_saved', 0)} saved, {stats.get('filtered_out', 0)} filtered")
+            else:
+                logger.error(f"   - {source}: ERROR - {stats['error']}")
+
+        return overall_stats
+
+
 def main():
     """主函数"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Fetch Reddit posts for pain point discovery")
-    parser.add_argument("--limit", type=int, help="Limit number of subreddits to process")
-    parser.add_argument("--config", default="config/subreddits.yaml", help="Config file path")
+    parser = argparse.ArgumentParser(description="Fetch posts for pain point discovery")
+    parser.add_argument("--limit", type=int, help="Limit number of sources to process")
+    parser.add_argument("--config", default="config/subreddits.yaml", help="Reddit config file path")
+    parser.add_argument("--sources", nargs="+", choices=["reddit", "hackernews"],
+                       default=["reddit", "hackernews"], help="Data sources to fetch")
     args = parser.parse_args()
 
     try:
-        fetcher = RedditPainFetcher(args.config)
-        stats = fetcher.fetch_all(limit_subreddits=args.limit)
+        # 使用新的多数据源抓取器
+        fetcher = MultiSourceFetcher(sources=args.sources, config_path=args.config)
+        stats = fetcher.fetch_all(limit_sources=args.limit)
 
         # 输出JSON格式的统计信息（用于脚本集成）
         print(json.dumps(stats, indent=2))
@@ -3159,6 +3854,238 @@ if __name__ == "__main__":
 
 
 ================================================================================
+文件: pipeline/hn_fetch.py
+================================================================================
+
+```python
+"""
+Hacker News 数据抓取器
+基于 HN API v0，只抓取 Ask HN、Show HN 和高评论故事
+"""
+import requests
+import json
+import time
+import logging
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
+class HackerNewsFetcher:
+    """Hacker News 数据抓取器"""
+
+    def __init__(self):
+        self.base_url = "https://hacker-news.firebaseio.com/v0"
+        self.processed_ids = set()
+        self.stats = {
+            "total_fetched": 0,
+            "total_saved": 0,
+            "filtered_out": 0,
+            "errors": 0,
+            "start_time": None
+        }
+
+    def _is_pain_story(self, item: Dict[str, Any]) -> bool:
+        """判断是否为痛点相关故事"""
+        # 只抓三类内容:
+        # 1. Ask HN
+        # 2. Show HN
+        # 3. 普通故事但评论数 > 10
+
+        title = item.get("title", "").lower()
+
+        # Ask HN / Show HN 直接收录
+        if "ask hn" in title or "show hn" in title:
+            return True
+
+        # 普通故事需要评论数 > 10
+        if item.get("descendants", 0) > 10:
+            return True
+
+        return False
+
+    def _extract_story_data(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        """提取故事数据为统一格式"""
+        hn_id = item["id"]
+        unified_id = f"hackernews_{hn_id}"
+
+        # 获取评论（简化版，只获取前10条）
+        comments = []
+        kids = item.get("kids", [])
+
+        for kid_id in kids[:10]:  # 只获取前10条评论
+            try:
+                comment_url = f"{self.base_url}/item/{kid_id}.json"
+                comment_resp = requests.get(comment_url, timeout=10)
+                if comment_resp.status_code == 200:
+                    comment_data = comment_resp.json()
+                    if comment_data and comment_data.get("type") == "comment":
+                        comments.append({
+                            "author": comment_data.get("by", ""),
+                            "body": comment_data.get("text", ""),
+                            "score": 0  # HN评论没有score
+                        })
+            except Exception as e:
+                logger.warning(f"Failed to fetch comment {kid_id}: {e}")
+
+        # 确定source_type
+        title_lower = item.get("title", "").lower()
+        if "ask hn" in title_lower:
+            source_type = "HN_ASK"
+        elif "show hn" in title_lower:
+            source_type = "HN_SHOW"
+        else:
+            source_type = "HN_STORY"
+
+        # HN特有的platform_data
+        platform_data = {
+            "hn_id": hn_id,
+            "type": item.get("type", "story"),
+            "descendants": item.get("descendants", 0),
+            "hn_url": f"https://news.ycombinator.com/item?id={hn_id}"
+        }
+
+        created_at = datetime.fromtimestamp(item.get("time", 0)).isoformat() + "Z"
+
+        return {
+            "id": unified_id,
+            "source": "hackernews",
+            "source_id": str(hn_id),
+            "title": item.get("title", ""),
+            "body": item.get("text", ""),
+            "subreddit": source_type,  # 复用subreddit字段存储source_type
+            "category": "hackernews",
+            "url": item.get("url", f"https://news.ycombinator.com/item?id={hn_id}"),
+            "platform_data": platform_data,
+            "score": item.get("score", 0),
+            "num_comments": item.get("descendants", 0),
+            "upvote_ratio": 1.0,  # HN没有upvote_ratio，设为1.0
+            "is_self": 1 if item.get("text") else 0,
+            "created_utc": item.get("time", 0),
+            "created_at": created_at,
+            "author": item.get("by", ""),
+            "comments": comments,
+            "pain_score": 0.5,  # 默认pain_score，后续pipeline会重新计算
+            "collected_at": datetime.now().isoformat()
+        }
+
+    def fetch_from_endpoint(self, endpoint: str, limit: int = 50) -> int:
+        """从特定端点抓取数据"""
+        try:
+            # 获取故事ID列表
+            url = f"{self.base_url}/{endpoint}.json"
+            resp = requests.get(url, timeout=10)
+            if resp.status_code != 200:
+                logger.error(f"Failed to fetch {endpoint}: {resp.status_code}")
+                return 0
+
+            story_ids = resp.json()[:limit] if limit else resp.json()
+            saved_count = 0
+
+            for story_id in story_ids:
+                try:
+                    # 获取故事详情
+                    item_url = f"{self.base_url}/item/{story_id}.json"
+                    item_resp = requests.get(item_url, timeout=10)
+                    if item_resp.status_code != 200:
+                        continue
+
+                    item = item_resp.json()
+                    if not item or item.get("type") != "story":
+                        continue
+
+                    # 检查是否已处理
+                    unified_id = f"hackernews_{story_id}"
+                    if unified_id in self.processed_ids:
+                        continue
+
+                    # 检查是否为痛点内容
+                    if not self._is_pain_story(item):
+                        self.stats["filtered_out"] += 1
+                        continue
+
+                    # 提取并保存数据
+                    story_data = self._extract_story_data(item)
+
+                    # 调用现有的db.insert_raw_post
+                    try:
+                        from utils.db import db
+                        if db.insert_raw_post(story_data):
+                            self.processed_ids.add(unified_id)
+                            self.stats["total_saved"] += 1
+                            saved_count += 1
+                            logger.info(f"Saved HN story: {item.get('title', '')[:60]}... (ID: {story_id})")
+                        else:
+                            self.stats["errors"] += 1
+                    except Exception as db_e:
+                        logger.error(f"Failed to save HN story {story_id}: {db_e}")
+                        self.stats["errors"] += 1
+
+                    # 避免请求过快
+                    time.sleep(0.1)
+
+                except Exception as e:
+                    logger.error(f"Error processing story {story_id}: {e}")
+                    self.stats["errors"] += 1
+
+            return saved_count
+
+        except Exception as e:
+            logger.error(f"Error fetching from {endpoint}: {e}")
+            return 0
+
+    def fetch_all(self) -> Dict[str, Any]:
+        """抓取所有HN数据"""
+        from datetime import datetime
+        self.stats["start_time"] = datetime.now()
+
+        logger.info("Starting Hacker News data fetching...")
+
+        # 加载已处理的帖子ID
+        try:
+            from utils.db import db
+            with db.get_connection("raw") as conn:
+                cursor = conn.execute("SELECT id FROM posts WHERE source = 'hackernews'")
+                self.processed_ids = {row['id'] for row in cursor.fetchall()}
+            logger.info(f"Loaded {len(self.processed_ids)} previously processed HN posts")
+        except Exception as e:
+            logger.error(f"Failed to load processed posts: {e}")
+            self.processed_ids = set()
+
+        # 抓取三类内容
+        endpoints = [
+            ("askstories", 25),    # Ask HN - 抓取25条
+            ("showstories", 25),   # Show HN - 抓取25条
+            ("topstories", 50)     # Top Stories - 抓取50条，过滤评论数>10的
+        ]
+
+        total_saved = 0
+        for endpoint, limit in endpoints:
+            logger.info(f"Fetching from {endpoint}...")
+            saved = self.fetch_from_endpoint(endpoint, limit)
+            total_saved += saved
+            logger.info(f"Saved {saved} stories from {endpoint}")
+
+        self.stats["total_fetched"] = total_saved
+
+        # 计算运行时间
+        runtime = datetime.now() - self.stats["start_time"]
+        self.stats["runtime_seconds"] = runtime.total_seconds()
+
+        logger.info(f"""
+=== HN Fetch Summary ===
+Total stories saved: {total_saved}
+Posts filtered out: {self.stats["filtered_out"]}
+Errors encountered: {self.stats["errors"]}
+Runtime: {runtime}
+Posts per minute: {self.stats["total_saved"] / max(runtime.total_seconds() / 60, 1):.1f}
+""")
+
+        return self.stats.copy()
+```
+
+
+================================================================================
 文件: pipeline/map_opportunity.py
 ================================================================================
 
@@ -3309,7 +4236,8 @@ class OpportunityMapper:
 
             # 检查是否找到机会
             if "opportunity" in opportunity_data and opportunity_data["opportunity"]:
-                return opportunity_data
+                # 为了保持一致性，包装在content中
+                return {"content": opportunity_data}
             else:
                 logger.info(f"No viable opportunity found for cluster {cluster_data['cluster_name']}")
                 return None
@@ -3321,7 +4249,11 @@ class OpportunityMapper:
     def _evaluate_opportunity_quality(self, opportunity_data: Dict[str, Any], cluster_data: Dict[str, Any]) -> Dict[str, Any]:
         """评估机会质量"""
         try:
-            opportunity = opportunity_data.get("opportunity", {})
+            # 处理可能的数据结构差异
+            if "content" in opportunity_data:
+                opportunity = opportunity_data["content"].get("opportunity", {})
+            else:
+                opportunity = opportunity_data.get("opportunity", {})
 
             if not opportunity:
                 return {"is_viable": False, "reason": "No opportunity data"}
@@ -3410,19 +4342,88 @@ class OpportunityMapper:
             logger.error(f"Failed to evaluate opportunity quality: {e}")
             return {"is_viable": False, "reason": f"Evaluation error: {e}"}
 
+    def _process_aligned_cluster(self, aligned_cluster: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """处理对齐问题聚类"""
+        try:
+            # 获取支持聚类信息
+            supporting_clusters = db.get_clusters_for_aligned_problem(
+                aligned_cluster['cluster_name']
+            )
+
+            # 创建多源验证的机会
+            opportunity_data = {
+                "content": {
+                    "opportunity": {
+                        "name": f"Multi-Source: {aligned_cluster['centroid_summary'][:50]}...",
+                        "description": f"This opportunity is validated by multiple communities across different platforms. Core problem: {aligned_cluster['centroid_summary']}",
+                        "target_users": f"Users from {len(supporting_clusters)} different communities",
+                        "pain_frequency": 9,  # High frequency due to multi-source validation
+                        "market_size": 9,  # Large market due to cross-platform demand
+                        "mvp_complexity": 6,  # Moderate complexity
+                        "competition_risk": 4,  # Lower risk due to validated demand
+                        "integration_complexity": 5,  # Moderate integration complexity
+                        "source_diversity": len(supporting_clusters),
+                        "platform_insights": self._extract_platform_insights(supporting_clusters),
+                        "current_tools": self._aggregate_current_tools(supporting_clusters),
+                        "missing_capability": aligned_cluster['centroid_summary']
+                    }
+                }
+            }
+
+            logger.info(f"Created multi-source opportunity for aligned problem {aligned_cluster['cluster_name']}")
+            return opportunity_data
+
+        except Exception as e:
+            logger.error(f"Failed to process aligned cluster {aligned_cluster['cluster_name']}: {e}")
+            return None
+
+    def _extract_platform_insights(self, supporting_clusters: List[Dict]) -> List[str]:
+        """提取平台洞察"""
+        insights = []
+        for cluster in supporting_clusters:
+            source_type = cluster.get('source_type', 'unknown')
+            summary = cluster.get('centroid_summary', '')[:100]
+            insights.append(f"{source_type}: {summary}")
+        return insights
+
+    def _aggregate_current_tools(self, supporting_clusters: List[Dict]) -> List[str]:
+        """聚合当前工具"""
+        tools = set()
+        for cluster in supporting_clusters:
+            common_pain = cluster.get('common_pain', '')
+            # 简单的工具提取逻辑
+            if 'slack' in common_pain.lower():
+                tools.add('Slack')
+            if 'email' in common_pain.lower():
+                tools.add('Email')
+            if 'discord' in common_pain.lower():
+                tools.add('Discord')
+        return list(tools)
+
     def _save_opportunity_to_database(self, cluster_id: int, opportunity_data: Dict[str, Any], quality_result: Dict[str, Any]) -> Optional[int]:
         """保存机会到数据库"""
         try:
-            opportunity = opportunity_data.get("opportunity", {})
+            # 处理可能的数据结构差异
+            if "content" in opportunity_data:
+                content = opportunity_data["content"]
+                opportunity = content.get("opportunity", {})
+                current_tools = content.get("current_tools", [])
+                missing_capability = content.get("missing_capability", "")
+                why_existing_fail = content.get("why_existing_fail", "")
+            else:
+                opportunity = opportunity_data.get("opportunity", {})
+                current_tools = opportunity_data.get("current_tools", [])
+                missing_capability = opportunity_data.get("missing_capability", "")
+                why_existing_fail = opportunity_data.get("why_existing_fail", "")
 
             # 准备机会数据
             opportunity_record = {
                 "cluster_id": cluster_id,
                 "opportunity_name": opportunity.get("name", ""),
                 "description": opportunity.get("description", ""),
-                "current_tools": json.dumps(opportunity_data.get("current_tools", [])),
-                "missing_capability": opportunity_data.get("missing_capability", ""),
-                "why_existing_fail": opportunity_data.get("why_existing_fail", ""),
+                "current_tools": json.dumps(current_tools),
+                "missing_capability": missing_capability,
+                "why_existing_fail": why_existing_fail,
                 "target_users": opportunity.get("target_users", ""),
                 "pain_frequency_score": opportunity.get("pain_frequency", 0),
                 "market_size_score": opportunity.get("market_size", 0),
@@ -3448,14 +4449,12 @@ class OpportunityMapper:
         start_time = time.time()
 
         try:
-            # 获取聚类
-            with db.get_connection("clusters") as conn:
-                cursor = conn.execute("""
-                    SELECT * FROM clusters
-                    ORDER BY cluster_size DESC, workflow_confidence DESC
-                    LIMIT ?
-                """, (limit,))
-                clusters = [dict(row) for row in cursor.fetchall()]
+            # 获取聚类（包括对齐的虚拟聚类）
+            clusters = db.get_clusters_for_opportunity_mapping()
+
+            # 如果有指定限制，截取
+            if limit and len(clusters) > limit:
+                clusters = clusters[:limit]
 
             if not clusters:
                 logger.info("No clusters found for opportunity mapping")
@@ -3470,29 +4469,47 @@ class OpportunityMapper:
                 logger.info(f"Processing cluster {i+1}/{len(clusters)}: {cluster['cluster_name']}")
 
                 try:
-                    # 丰富聚类数据
-                    enriched_cluster = self._enrich_cluster_data(cluster)
-
-                    # 使用LLM映射机会
-                    opportunity_data = self._map_opportunity_with_llm(enriched_cluster)
+                    # 检查是否是对齐的虚拟聚类
+                    if cluster.get('source_type') == 'aligned':
+                        # 处理对齐问题聚类
+                        opportunity_data = self._process_aligned_cluster(cluster)
+                    else:
+                        # 原始聚类处理
+                        enriched_cluster = self._enrich_cluster_data(cluster)
+                        opportunity_data = self._map_opportunity_with_llm(enriched_cluster)
 
                     if opportunity_data:
                         # 评估机会质量
-                        quality_result = self._evaluate_opportunity_quality(opportunity_data, enriched_cluster)
+                        if cluster.get('source_type') == 'aligned':
+                            # 对齐聚类使用预设的高质量评分
+                            quality_result = {
+                                "is_viable": True,
+                                "quality_score": 0.95,  # 高质量评分
+                                "quality_reasons": [
+                                    "Multi-source validation",
+                                    "Large market size",
+                                    "High pain frequency",
+                                    "Moderate competition"
+                                ]
+                            }
+                        else:
+                            # 原始聚类使用标准评估
+                            quality_result = self._evaluate_opportunity_quality(opportunity_data, enriched_cluster)
 
                         if quality_result["is_viable"]:
                             # 保存到数据库
+                            cluster_id = cluster.get("id", 0)  # 对齐聚类可能没有id
                             opportunity_id = self._save_opportunity_to_database(
-                                cluster["id"], opportunity_data, quality_result
+                                cluster_id, opportunity_data, quality_result
                             )
 
                             if opportunity_id:
                                 opportunity_summary = {
                                     "opportunity_id": opportunity_id,
-                                    "cluster_id": cluster["id"],
+                                    "cluster_id": cluster_id,
                                     "cluster_name": cluster["cluster_name"],
-                                    "opportunity_name": opportunity_data["opportunity"]["name"],
-                                    "opportunity_description": opportunity_data["opportunity"]["description"],
+                                    "opportunity_name": opportunity_data["content"]["opportunity"]["name"],
+                                    "opportunity_description": opportunity_data["content"]["opportunity"]["description"],
                                     "quality_score": quality_result["quality_score"],
                                     "quality_reasons": quality_result["quality_reasons"]
                                 }
@@ -3500,7 +4517,7 @@ class OpportunityMapper:
                                 opportunities_created.append(opportunity_summary)
                                 viable_opportunities += 1
 
-                                logger.info(f"Created opportunity: {opportunity_data['opportunity']['name']} (Score: {quality_result['quality_score']:.2f})")
+                                logger.info(f"Created opportunity: {opportunity_data['content']['opportunity']['name']} (Score: {quality_result['quality_score']:.2f})")
                         else:
                             logger.debug(f"Opportunity not viable: {quality_result.get('reason', 'Unknown')}")
                     else:
@@ -3644,6 +4661,8 @@ import logging
 import time
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+import yaml
+from pathlib import Path
 
 from utils.llm_client import llm_client
 from utils.db import db
@@ -3661,8 +4680,273 @@ class ViabilityScorer:
             "good_opportunities": 0,
             "excellent_opportunities": 0,
             "processing_time": 0.0,
-            "avg_total_score": 0.0
+            "avg_total_score": 0.0,
+            "skipped_clusters": 0
         }
+
+        # 加载配置
+        self.config = self._load_config()
+        self.filtering_rules = self.config.get("filtering_rules", {})
+
+        logger.info(f"ViabilityScorer initialized with filtering rules enabled: {self.filtering_rules.get('enabled', False)}")
+
+    def _load_config(self) -> Dict[str, Any]:
+        """加载配置文件"""
+        try:
+            config_path = Path(__file__).parent.parent / "config" / "thresholds.yaml"
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            logger.info(f"Configuration loaded from {config_path}")
+            return config
+        except Exception as e:
+            logger.error(f"Failed to load configuration: {e}")
+            return {"filtering_rules": {"enabled": False}}
+
+    def _calculate_unique_authors(self, pain_event_ids: List[int]) -> int:
+        """计算独立作者数量"""
+        if not pain_event_ids:
+            return 0
+
+        try:
+            with db.get_connection("pain") as conn:
+                placeholders = ','.join(['?' for _ in pain_event_ids])
+                cursor = conn.execute(f"""
+                    SELECT COUNT(DISTINCT fp.author) as unique_count
+                    FROM pain_events pe
+                    JOIN filtered_posts fp ON pe.post_id = fp.id
+                    WHERE pe.id IN ({placeholders})
+                """, pain_event_ids)
+                result = cursor.fetchone()
+                return result['unique_count'] if result else 0
+        except Exception as e:
+            logger.error(f"Failed to calculate unique authors: {e}")
+            return 0
+
+    def _calculate_cross_subreddit_count(self, pain_event_ids: List[int]) -> int:
+        """计算跨子版块数量"""
+        if not pain_event_ids:
+            return 0
+
+        try:
+            with db.get_connection("pain") as conn:
+                placeholders = ','.join(['?' for _ in pain_event_ids])
+                cursor = conn.execute(f"""
+                    SELECT COUNT(DISTINCT fp.subreddit) as subreddit_count
+                    FROM pain_events pe
+                    JOIN filtered_posts fp ON pe.post_id = fp.id
+                    WHERE pe.id IN ({placeholders})
+                """, pain_event_ids)
+                result = cursor.fetchone()
+                return result['subreddit_count'] if result else 0
+        except Exception as e:
+            logger.error(f"Failed to calculate cross-subreddit count: {e}")
+            return 0
+
+    def _calculate_avg_frequency_score(self, pain_event_ids: List[int]) -> float:
+        """计算平均频率评分"""
+        if not pain_event_ids:
+            return 0.0
+
+        try:
+            with db.get_connection("pain") as conn:
+                placeholders = ','.join(['?' for _ in pain_event_ids])
+                cursor = conn.execute(f"""
+                    SELECT pe.frequency
+                    FROM pain_events pe
+                    WHERE pe.id IN ({placeholders})
+                """, pain_event_ids)
+
+                frequencies = [row['frequency'] or '' for row in cursor.fetchall()]
+                return self._frequency_to_score(frequencies)
+        except Exception as e:
+            logger.error(f"Failed to calculate average frequency score: {e}")
+            return 0.0
+
+    def _frequency_to_score(self, frequencies: List[str]) -> float:
+        """将频率文本转换为评分"""
+        if not frequencies:
+            return 0.0
+
+        score_map = self.filtering_rules.get("frequency_score_mapping", {
+            'daily': 10, '每天': 10, 'day': 9,
+            'weekly': 8, '每周': 8, 'week': 7,
+            'monthly': 6, '每月': 6, 'month': 5,
+            'often': 7, '经常': 7, 'frequently': 8,
+            'sometimes': 5, '有时': 5, 'occasionally': 4,
+            'rarely': 3, '很少': 3, 'seldom': 2,
+            'always': 9, '总是': 9, 'constantly': 8,
+            'never': 1, '从不': 1, 'default': 4
+        })
+
+        scores = []
+        for freq in frequencies:
+            if not freq:
+                scores.append(score_map.get('default', 4))
+                continue
+
+            freq_lower = freq.lower()
+            matched = False
+            for key, score in score_map.items():
+                if key == 'default':
+                    continue
+                if key in freq_lower:
+                    scores.append(score)
+                    matched = True
+                    break
+
+            if not matched:
+                scores.append(score_map.get('default', 4))
+
+        return sum(scores) / len(scores) if scores else 0.0
+
+    def should_skip_solution_design(self, cluster_data: Dict[str, Any]) -> tuple[bool, str]:
+        """判断是否应该跳过解决方案设计"""
+        if not self.filtering_rules.get("enabled", False):
+            return False, ""
+
+        # 1. 检查聚类大小
+        cluster_size = cluster_data.get('cluster_size', 0)
+        min_cluster_size = self.filtering_rules.get("min_cluster_size", 8)
+        if cluster_size < min_cluster_size:
+            reason = self.filtering_rules.get("skip_reasons", {}).get("cluster_size",
+                    f"聚类规模过小 ({cluster_size} < {min_cluster_size})")
+            formatted_reason = reason.format(actual=cluster_size, required=min_cluster_size)
+            if self.filtering_rules.get("log_skipped_clusters", True):
+                logger.info(f"Skipping cluster due to size: {formatted_reason}")
+            return True, formatted_reason
+
+        # 2. 检查独立作者数
+        pain_event_ids = cluster_data.get('pain_event_ids', [])
+        if isinstance(pain_event_ids, str):
+            import json
+            try:
+                pain_event_ids = json.loads(pain_event_ids)
+            except:
+                pain_event_ids = []
+
+        unique_authors = self._calculate_unique_authors(pain_event_ids)
+        min_unique_authors = self.filtering_rules.get("min_unique_authors", 5)
+        if unique_authors < min_unique_authors:
+            reason = self.filtering_rules.get("skip_reasons", {}).get("unique_authors",
+                    f"独立作者不足 ({unique_authors} < {min_unique_authors})")
+            formatted_reason = reason.format(actual=unique_authors, required=min_unique_authors)
+            if self.filtering_rules.get("log_skipped_clusters", True):
+                logger.info(f"Skipping cluster due to unique authors: {formatted_reason}")
+            return True, formatted_reason
+
+        # 3. 检查跨子版块数量
+        cross_subreddit_count = self._calculate_cross_subreddit_count(pain_event_ids)
+        min_cross_subreddit_count = self.filtering_rules.get("min_cross_subreddit_count", 2)
+        if cross_subreddit_count < min_cross_subreddit_count:
+            reason = self.filtering_rules.get("skip_reasons", {}).get("cross_subreddit",
+                    f"跨子版块数量不足 ({cross_subreddit_count} < {min_cross_subreddit_count})")
+            formatted_reason = reason.format(actual=cross_subreddit_count, required=min_cross_subreddit_count)
+            if self.filtering_rules.get("log_skipped_clusters", True):
+                logger.info(f"Skipping cluster due to cross-subreddit: {formatted_reason}")
+            return True, formatted_reason
+
+        # 4. 检查平均频率评分
+        avg_frequency_score = self._calculate_avg_frequency_score(pain_event_ids)
+        min_avg_frequency_score = self.filtering_rules.get("min_avg_frequency_score", 6)
+        if avg_frequency_score < min_avg_frequency_score:
+            reason = self.filtering_rules.get("skip_reasons", {}).get("frequency_score",
+                    f"痛点频率不够高 ({avg_frequency_score:.1f} < {min_avg_frequency_score})")
+            formatted_reason = reason.format(actual=avg_frequency_score, required=min_avg_frequency_score)
+            if self.filtering_rules.get("log_skipped_clusters", True):
+                logger.info(f"Skipping cluster due to frequency score: {formatted_reason}")
+            return True, formatted_reason
+
+        if self.filtering_rules.get("log_detailed_metrics", False):
+            logger.info(f"Cluster passed filtering checks - size: {cluster_size}, "
+                       f"authors: {unique_authors}, subreddits: {cross_subreddit_count}, "
+                       f"frequency: {avg_frequency_score:.1f}")
+
+        return False, ""
+
+    def _update_opportunities_recommendation(self, cluster_id: int, recommendation: str, skip_reason: str = "") -> bool:
+        """更新聚类下所有机会的推荐状态"""
+        try:
+            with db.get_connection("clusters") as conn:
+                # 获取所有相关机会
+                cursor = conn.execute("""
+                    SELECT id FROM opportunities WHERE cluster_id = ?
+                """, (cluster_id,))
+                opportunity_ids = [row['id'] for row in cursor.fetchall()]
+
+                # 更新每个机会的推荐
+                for opp_id in opportunity_ids:
+                    full_recommendation = f"abandon - {skip_reason}" if skip_reason else recommendation
+                    conn.execute("""
+                        UPDATE opportunities
+                        SET recommendation = ?
+                        WHERE id = ?
+                    """, (full_recommendation, opp_id))
+
+                conn.commit()
+                logger.info(f"Updated {len(opportunity_ids)} opportunities with recommendation: {full_recommendation}")
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to update opportunities recommendation: {e}")
+            return False
+
+    def _apply_filtering_rules(self, opportunities: List[Dict[str, Any]], processed_clusters: set) -> List[Dict[str, Any]]:
+        """应用过滤规则"""
+        filtered_opportunities = []
+        skipped_count = 0
+
+        for opportunity in opportunities:
+            cluster_id = opportunity["cluster_id"]
+
+            # 避免重复处理同一个聚类
+            if cluster_id in processed_clusters:
+                filtered_opportunities.append(opportunity)
+                continue
+
+            # 获取聚类数据
+            try:
+                with db.get_connection("clusters") as conn:
+                    cursor = conn.execute("""
+                        SELECT * FROM clusters WHERE id = ?
+                    """, (cluster_id,))
+                    cluster_data = cursor.fetchone()
+                    cluster_data = dict(cluster_data) if cluster_data else None
+
+                if cluster_data:
+                    # 检查过滤规则
+                    should_skip, skip_reason = self.should_skip_solution_design(cluster_data)
+
+                    if should_skip:
+                        # 跳过该聚类的所有机会
+                        self._update_opportunities_recommendation(cluster_id, "abandon", skip_reason)
+                        processed_clusters.add(cluster_id)
+                        skipped_count += 1
+                        self.stats["skipped_clusters"] += 1
+
+                        # 统计跳过的机会数量
+                        with db.get_connection("clusters") as conn:
+                            cursor = conn.execute("""
+                                SELECT COUNT(*) as count FROM opportunities WHERE cluster_id = ?
+                            """, (cluster_id,))
+                            opp_count = cursor.fetchone()['count']
+                            logger.info(f"Skipped {opp_count} opportunities from cluster {cluster_id}: {skip_reason}")
+
+                        continue
+                    else:
+                        # 聚类通过过滤，保留其机会
+                        processed_clusters.add(cluster_id)
+                        filtered_opportunities.append(opportunity)
+                        logger.info(f"Cluster {cluster_id} passed filtering checks")
+                else:
+                    logger.warning(f"Cluster {cluster_id} not found, including opportunity")
+                    filtered_opportunities.append(opportunity)
+
+            except Exception as e:
+                logger.error(f"Error processing cluster {cluster_id}: {e}")
+                filtered_opportunities.append(opportunity)
+
+        logger.info(f"Filtering applied: {skipped_count} clusters skipped, {len(filtered_opportunities)} opportunities remaining")
+        return filtered_opportunities
 
     def _enhance_opportunity_data(self, opportunity_data: Dict[str, Any]) -> Dict[str, Any]:
         """增强机会数据"""
@@ -4073,6 +5357,12 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
 
             logger.info(f"Found {len(opportunities)} opportunities to score")
 
+            # 如果启用了过滤规则，首先检查聚类
+            processed_clusters = set()
+            if self.filtering_rules.get("enabled", False):
+                logger.info("Filtering rules enabled, checking clusters first...")
+                opportunities = self._apply_filtering_rules(opportunities, processed_clusters)
+
             scored_opportunities = []
             viable_count = 0
             good_count = 0
@@ -4254,7 +5544,7 @@ if __name__ == "__main__":
 
 ```python
 """
-Database utilities for Reddit Pain Point Finder
+Database utilities for Wise Collection
 SQLite数据库操作工具
 """
 import sqlite3
@@ -4267,19 +5557,29 @@ import os
 
 logger = logging.getLogger(__name__)
 
-class PainPointDB:
-    """Reddit痛点发现系统数据库管理器"""
+class WiseCollectionDB:
+    """Wise Collection系统数据库管理器"""
 
-    def __init__(self, db_dir: str = "data"):
+    def __init__(self, db_dir: str = "data", unified: bool = True):
         """初始化数据库连接"""
         self.db_dir = db_dir
+        self.unified = unified  # 是否使用统一数据库
         os.makedirs(db_dir, exist_ok=True)
 
-        # 数据库文件路径
-        self.raw_db_path = os.path.join(db_dir, "raw_posts.db")
-        self.filtered_db_path = os.path.join(db_dir, "filtered_posts.db")
-        self.pain_db_path = os.path.join(db_dir, "pain_events.db")
-        self.clusters_db_path = os.path.join(db_dir, "clusters.db")
+        if unified:
+            # 使用统一数据库文件
+            self.unified_db_path = os.path.join(db_dir, "wise_collection.db")
+            # 兼容性：保持原有路径变量
+            self.raw_db_path = self.unified_db_path
+            self.filtered_db_path = self.unified_db_path
+            self.pain_db_path = self.unified_db_path
+            self.clusters_db_path = self.unified_db_path
+        else:
+            # 使用多个数据库文件（原有模式）
+            self.raw_db_path = os.path.join(db_dir, "raw_posts.db")
+            self.filtered_db_path = os.path.join(db_dir, "filtered_posts.db")
+            self.pain_db_path = os.path.join(db_dir, "pain_events.db")
+            self.clusters_db_path = os.path.join(db_dir, "clusters.db")
 
         # 初始化所有数据库
         self._init_databases()
@@ -4287,19 +5587,25 @@ class PainPointDB:
     @contextmanager
     def get_connection(self, db_type: str = "raw"):
         """获取数据库连接的上下文管理器"""
-        db_paths = {
-            "raw": self.raw_db_path,
-            "filtered": self.filtered_db_path,
-            "pain": self.pain_db_path,
-            "clusters": self.clusters_db_path
-        }
+        if self.unified:
+            # 统一数据库模式：所有连接都指向同一个文件
+            db_path = self.unified_db_path
+        else:
+            # 多数据库模式：根据db_type选择不同的文件
+            db_paths = {
+                "raw": self.raw_db_path,
+                "filtered": self.filtered_db_path,
+                "pain": self.pain_db_path,
+                "clusters": self.clusters_db_path
+            }
 
-        if db_type not in db_paths:
-            raise ValueError(f"Invalid db_type: {db_type}")
+            if db_type not in db_paths:
+                raise ValueError(f"Invalid db_type: {db_type}")
+            db_path = db_paths[db_type]
 
         conn = None
         try:
-            conn = sqlite3.connect(db_paths[db_type])
+            conn = sqlite3.connect(db_path)
             conn.row_factory = sqlite3.Row
             yield conn
         except Exception as e:
@@ -4313,10 +5619,187 @@ class PainPointDB:
 
     def _init_databases(self):
         """初始化所有数据库表结构"""
-        self._init_raw_posts_db()
-        self._init_filtered_posts_db()
-        self._init_pain_events_db()
-        self._init_clusters_db()
+        if self.unified:
+            self._init_unified_database()
+        else:
+            self._init_raw_posts_db()
+            self._init_filtered_posts_db()
+            self._init_pain_events_db()
+            self._init_clusters_db()
+
+    def _init_unified_database(self):
+        """初始化统一数据库，包含所有表"""
+        with self.get_connection("raw") as conn:
+            # 创建原始帖子表（升级版 - 支持多数据源）
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS posts (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    body TEXT,
+                    subreddit TEXT,
+                    url TEXT NOT NULL,
+                    source TEXT NOT NULL DEFAULT 'reddit',
+                    source_id TEXT NOT NULL,
+                    platform_data TEXT,
+                    score INTEGER NOT NULL,
+                    num_comments INTEGER NOT NULL,
+                    upvote_ratio REAL,
+                    is_self INTEGER,
+                    created_utc REAL NOT NULL,
+                    created_at TIMESTAMP NOT NULL,
+                    author TEXT,
+                    category TEXT,
+                    collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    raw_data TEXT,  -- 原始JSON数据
+                    UNIQUE(source, source_id)
+                )
+            """)
+
+            # 创建过滤帖子表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS filtered_posts (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    body TEXT,
+                    subreddit TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    score INTEGER NOT NULL,
+                    num_comments INTEGER NOT NULL,
+                    upvote_ratio REAL NOT NULL,
+                    pain_score REAL NOT NULL,
+                    pain_keywords TEXT,
+                    filtered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    filter_reason TEXT
+                )
+            """)
+
+            # 创建痛点事件表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS pain_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    post_id TEXT NOT NULL,
+                    actor TEXT,
+                    context TEXT,
+                    problem TEXT NOT NULL,
+                    current_workaround TEXT,
+                    frequency TEXT,
+                    emotional_signal TEXT,
+                    mentioned_tools TEXT,
+                    extraction_confidence REAL,
+                    extracted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (post_id) REFERENCES filtered_posts(id)
+                )
+            """)
+
+            # 创建嵌入向量表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS pain_embeddings (
+                    pain_event_id INTEGER PRIMARY KEY,
+                    embedding_vector BLOB NOT NULL,
+                    embedding_model TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (pain_event_id) REFERENCES pain_events(id)
+                )
+            """)
+
+            # 创建聚类表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS clusters (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    cluster_name TEXT NOT NULL,
+                    cluster_description TEXT,
+                    source_type TEXT,  -- 新增：数据源类型 (hn_ask, hn_show, reddit, etc.)
+                    centroid_summary TEXT,  -- 新增：聚类中心摘要
+                    common_pain TEXT,  -- 新增：共同痛点
+                    common_context TEXT,  -- 新增：共同上下文
+                    example_events TEXT,  -- 新增：代表性事件 (JSON数组)
+                    pain_event_ids TEXT NOT NULL,  -- JSON数组
+                    cluster_size INTEGER NOT NULL,
+                    avg_pain_score REAL,
+                    workflow_confidence REAL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            # 创建机会表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS opportunities (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    cluster_id INTEGER NOT NULL,
+                    opportunity_name TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    current_tools TEXT,
+                    missing_capability TEXT,
+                    why_existing_fail TEXT,
+                    target_users TEXT,
+                    pain_frequency_score REAL,
+                    market_size_score REAL,
+                    mvp_complexity_score REAL,
+                    competition_risk_score REAL,
+                    integration_complexity_score REAL,
+                    total_score REAL,
+                    killer_risks TEXT,  -- JSON数组
+                    recommendation TEXT,  -- AI建议：pursue/modify/abandon with reason
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (cluster_id) REFERENCES clusters(id)
+                )
+            """)
+
+            # 创建跨源对齐问题表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS aligned_problems (
+                    id TEXT PRIMARY KEY,  -- aligned_AP_XX_timestamp format
+                    aligned_problem_id TEXT UNIQUE,  -- AP_XX format
+                    sources TEXT,  -- JSON array of source types
+                    core_problem TEXT,
+                    why_they_look_different TEXT,
+                    evidence TEXT,  -- JSON array of evidence objects
+                    cluster_ids TEXT,  -- JSON array of original cluster IDs
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            # 创建所有索引
+            # posts表索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_subreddit ON posts(subreddit)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_score ON posts(score)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_collected_at ON posts(collected_at)")
+
+            # 检查新列是否存在，然后创建相应索引
+            cursor = conn.execute("PRAGMA table_info(posts)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            if 'source' in existing_columns:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_source ON posts(source)")
+
+            if 'created_at' in existing_columns:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_source_created ON posts(source, created_at)")
+
+            if 'source' in existing_columns and 'source_id' in existing_columns:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_unique_source ON posts(source, source_id)")
+
+            # filtered_posts表索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_pain_score ON filtered_posts(pain_score)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_subreddit ON filtered_posts(subreddit)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_at ON filtered_posts(filtered_at)")
+
+            # pain_events表索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_pain_post_id ON pain_events(post_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_pain_problem ON pain_events(problem)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_pain_extracted_at ON pain_events(extracted_at)")
+
+            # clusters表索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_clusters_size ON clusters(cluster_size)")
+
+            # opportunities表索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_score ON opportunities(total_score)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_cluster_id ON opportunities(cluster_id)")
+
+            # 添加对齐跟踪列到clusters表（如果不存在）
+            self._add_alignment_columns_to_clusters(conn)
+
+            conn.commit()
+            logger.info("Unified database initialized successfully")
 
     def _init_raw_posts_db(self):
         """初始化原始帖子数据库"""
@@ -4326,17 +5809,22 @@ class PainPointDB:
                     id TEXT PRIMARY KEY,
                     title TEXT NOT NULL,
                     body TEXT,
-                    subreddit TEXT NOT NULL,
+                    subreddit TEXT,
                     url TEXT NOT NULL,
+                    source TEXT NOT NULL DEFAULT 'reddit',
+                    source_id TEXT NOT NULL,
+                    platform_data TEXT,
                     score INTEGER NOT NULL,
                     num_comments INTEGER NOT NULL,
-                    upvote_ratio REAL NOT NULL,
-                    is_self INTEGER NOT NULL,
+                    upvote_ratio REAL,
+                    is_self INTEGER,
                     created_utc REAL NOT NULL,
+                    created_at TIMESTAMP NOT NULL,
                     author TEXT,
                     category TEXT,
                     collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    raw_data TEXT  -- 原始JSON数据
+                    raw_data TEXT,  -- 原始JSON数据
+                    UNIQUE(source, source_id)
                 )
             """)
 
@@ -4344,6 +5832,19 @@ class PainPointDB:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_subreddit ON posts(subreddit)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_score ON posts(score)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_collected_at ON posts(collected_at)")
+
+            # 检查新列是否存在，然后创建相应索引
+            cursor = conn.execute("PRAGMA table_info(posts)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            if 'source' in existing_columns:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_source ON posts(source)")
+
+            if 'created_at' in existing_columns:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_source_created ON posts(source, created_at)")
+
+            if 'source' in existing_columns and 'source_id' in existing_columns:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_unique_source ON posts(source, source_id)")
             conn.commit()
 
     def _init_filtered_posts_db(self):
@@ -4417,6 +5918,11 @@ class PainPointDB:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     cluster_name TEXT NOT NULL,
                     cluster_description TEXT,
+                    source_type TEXT,  -- 新增：数据源类型 (hn_ask, hn_show, reddit, etc.)
+                    centroid_summary TEXT,  -- 新增：聚类中心摘要
+                    common_pain TEXT,  -- 新增：共同痛点
+                    common_context TEXT,  -- 新增：共同上下文
+                    example_events TEXT,  -- 新增：代表性事件 (JSON数组)
                     pain_event_ids TEXT NOT NULL,  -- JSON数组
                     cluster_size INTEGER NOT NULL,
                     avg_pain_score REAL,
@@ -4449,33 +5955,86 @@ class PainPointDB:
                 )
             """)
 
+            # 创建跨源对齐问题表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS aligned_problems (
+                    id TEXT PRIMARY KEY,  -- aligned_AP_XX_timestamp format
+                    aligned_problem_id TEXT UNIQUE,  -- AP_XX format
+                    sources TEXT,  -- JSON array of source types
+                    core_problem TEXT,
+                    why_they_look_different TEXT,
+                    evidence TEXT,  -- JSON array of evidence objects
+                    cluster_ids TEXT,  -- JSON array of original cluster IDs
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
             # 创建索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_clusters_size ON clusters(cluster_size)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_score ON opportunities(total_score)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_cluster_id ON opportunities(cluster_id)")
+
+            # 添加对齐跟踪列到clusters表（如果不存在）
+            self._add_alignment_columns_to_clusters(conn)
+
             conn.commit()
+
+    def _add_alignment_columns_to_clusters(self, conn):
+        """为clusters表添加对齐跟踪列（如果不存在）"""
+        try:
+            # 检查列是否存在
+            cursor = conn.execute("PRAGMA table_info(clusters)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            # 添加alignment_status列（如果不存在）
+            if 'alignment_status' not in existing_columns:
+                conn.execute("""
+                    ALTER TABLE clusters
+                    ADD COLUMN alignment_status TEXT DEFAULT 'unprocessed'
+                """)
+                logger.info("Added alignment_status column to clusters table")
+
+            # 添加aligned_problem_id列（如果不存在）
+            if 'aligned_problem_id' not in existing_columns:
+                conn.execute("""
+                    ALTER TABLE clusters
+                    ADD COLUMN aligned_problem_id TEXT
+                """)
+                logger.info("Added aligned_problem_id column to clusters table")
+
+            # 创建相关索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_clusters_alignment_status ON clusters(alignment_status)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_clusters_aligned_problem_id ON clusters(aligned_problem_id)")
+
+        except Exception as e:
+            logger.error(f"Failed to add alignment columns to clusters table: {e}")
 
     # Raw posts operations
     def insert_raw_post(self, post_data: Dict[str, Any]) -> bool:
-        """插入原始帖子数据"""
+        """插入原始帖子数据（支持多数据源）"""
         try:
             with self.get_connection("raw") as conn:
                 conn.execute("""
                     INSERT OR REPLACE INTO posts
-                    (id, title, body, subreddit, url, score, num_comments,
-                     upvote_ratio, is_self, created_utc, author, category, raw_data)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, title, body, subreddit, url, source, source_id, platform_data,
+                     score, num_comments, upvote_ratio, is_self, created_utc, created_at,
+                     author, category, raw_data)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    post_data["id"],
+                    post_data.get("id"),                    # 统一ID (兼容旧数据)
                     post_data["title"],
                     post_data.get("body", ""),
-                    post_data["subreddit"],
+                    post_data.get("subreddit", "unknown"),   # 兼容性：如果没有subreddit，使用unknown
                     post_data["url"],
+                    post_data.get("source", "reddit"),      # 新字段，默认为reddit
+                    post_data.get("source_id"),             # 新字段
+                    json.dumps(post_data.get("platform_data", {})),  # 新字段
                     post_data["score"],
                     post_data["num_comments"],
-                    post_data.get("upvote_ratio", 0.0),
-                    int(post_data.get("is_self", False)),
+                    post_data.get("upvote_ratio"),          # 可能为None (新字段)
+                    post_data.get("is_self"),               # 可能为None (新字段)
                     post_data.get("created_utc", 0),
+                    post_data.get("created_at", datetime.now().isoformat()),  # 新字段
                     post_data.get("author", ""),
                     post_data.get("category", ""),
                     json.dumps(post_data)
@@ -4515,6 +6074,39 @@ class PainPointDB:
                 return [dict(row) for row in cursor.fetchall()]
         except Exception as e:
             logger.error(f"Failed to get unprocessed posts: {e}")
+            return []
+
+    def get_unprocessed_posts_by_source(self, source: str, limit: int = 100) -> List[Dict]:
+        """获取未处理的帖子，支持按数据源过滤"""
+        try:
+            # 首先获取所有已处理的帖子ID
+            with self.get_connection("filtered") as conn:
+                cursor = conn.execute("SELECT id FROM filtered_posts")
+                processed_ids = {row['id'] for row in cursor.fetchall()}
+
+            # 然后获取未处理的帖子，按数据源过滤
+            with self.get_connection("raw") as conn:
+                if processed_ids:
+                    # 如果有已处理的帖子，排除它们
+                    placeholders = ','.join('?' * len(processed_ids))
+                    cursor = conn.execute(f"""
+                        SELECT * FROM posts
+                        WHERE source = ?
+                        AND id NOT IN ({placeholders})
+                        ORDER BY collected_at DESC
+                        LIMIT ?
+                    """, [source] + list(processed_ids) + [limit])
+                else:
+                    # 如果没有已处理的帖子，直接获取
+                    cursor = conn.execute("""
+                        SELECT * FROM posts
+                        WHERE source = ?
+                        ORDER BY collected_at DESC
+                        LIMIT ?
+                    """, (source, limit))
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Failed to get unprocessed posts for source {source}: {e}")
             return []
 
     # Filtered posts operations
@@ -4671,12 +6263,18 @@ class PainPointDB:
             with self.get_connection("clusters") as conn:
                 cursor = conn.execute("""
                     INSERT INTO clusters
-                    (cluster_name, cluster_description, pain_event_ids, cluster_size,
+                    (cluster_name, cluster_description, source_type, centroid_summary,
+                     common_pain, common_context, example_events, pain_event_ids, cluster_size,
                      avg_pain_score, workflow_confidence)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     cluster_data["cluster_name"],
                     cluster_data.get("cluster_description", ""),
+                    cluster_data.get("source_type", ""),
+                    cluster_data.get("centroid_summary", ""),
+                    cluster_data.get("common_pain", ""),
+                    cluster_data.get("common_context", ""),
+                    json.dumps(cluster_data.get("example_events", [])),
                     json.dumps(cluster_data["pain_event_ids"]),
                     cluster_data["cluster_size"],
                     cluster_data.get("avg_pain_score", 0.0),
@@ -4772,13 +6370,237 @@ class PainPointDB:
                 cursor = conn.execute("SELECT COUNT(*) as count FROM opportunities")
                 stats["opportunities_count"] = cursor.fetchone()["count"]
 
+                # 对齐统计
+                cursor = conn.execute("SELECT COUNT(*) as count FROM aligned_problems")
+                stats["aligned_problems_count"] = cursor.fetchone()["count"]
+
+                cursor = conn.execute("""
+                    SELECT alignment_status, COUNT(*) as count
+                    FROM clusters
+                    WHERE alignment_status IS NOT NULL
+                    GROUP BY alignment_status
+                """)
+                stats["clusters_by_alignment_status"] = {
+                    row['alignment_status']: row['count']
+                    for row in cursor.fetchall()
+                }
+
+            # 按数据源统计原始帖子
+            with self.get_connection("raw") as conn:
+                cursor = conn.execute("""
+                    SELECT source, COUNT(*) as count
+                    FROM posts
+                    GROUP BY source
+                """)
+                stats["posts_by_source"] = {row['source']: row['count'] for row in cursor.fetchall()}
+
         except Exception as e:
             logger.error(f"Failed to get statistics: {e}")
 
         return stats
 
-# 全局数据库实例
-db = PainPointDB()
+# 添加一些便利方法
+    def is_unified(self) -> bool:
+        """检查是否使用统一数据库"""
+        return self.unified
+
+    def get_database_path(self) -> str:
+        """获取当前使用的数据库路径"""
+        return self.unified_db_path if self.unified else "Multiple DB files"
+
+    def switch_to_unified(self):
+        """切换到统一数据库模式（需要重启应用）"""
+        if not self.unified:
+            logger.warning("Switch to unified database mode requires application restart")
+
+    # 跨源对齐相关方法
+    def get_aligned_problems(self) -> List[Dict]:
+        """获取所有对齐问题"""
+        try:
+            with self.get_connection("clusters") as conn:
+                cursor = conn.execute("""
+                    SELECT id, aligned_problem_id, sources, core_problem,
+                           why_they_look_different, evidence, cluster_ids, created_at
+                    FROM aligned_problems
+                    ORDER BY created_at DESC
+                """)
+
+                results = []
+                for row in cursor.fetchall():
+                    result = dict(row)
+                    result['sources'] = json.loads(result['sources'])
+                    result['evidence'] = json.loads(result['evidence'])
+                    result['cluster_ids'] = json.loads(result['cluster_ids'])
+                    results.append(result)
+
+                return results
+
+        except Exception as e:
+            logger.error(f"Failed to get aligned problems: {e}")
+            return []
+
+    def update_cluster_alignment_status(self, cluster_name: str, status: str, aligned_problem_id: str = None):
+        """更新聚类对齐状态"""
+        try:
+            with self.get_connection("clusters") as conn:
+                conn.execute("""
+                    UPDATE clusters
+                    SET alignment_status = ?, aligned_problem_id = ?
+                    WHERE cluster_name = ?
+                """, (status, aligned_problem_id, cluster_name))
+                conn.commit()
+        except Exception as e:
+            logger.error(f"Failed to update cluster alignment status: {e}")
+            raise
+
+    def insert_aligned_problem(self, aligned_problem_data: Dict):
+        """插入新的对齐问题"""
+        try:
+            with self.get_connection("clusters") as conn:
+                conn.execute("""
+                    INSERT OR REPLACE INTO aligned_problems
+                    (id, aligned_problem_id, sources, core_problem,
+                     why_they_look_different, evidence, cluster_ids)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    aligned_problem_data['id'],
+                    aligned_problem_data['aligned_problem_id'],
+                    json.dumps(aligned_problem_data['sources']),
+                    aligned_problem_data['core_problem'],
+                    aligned_problem_data['why_they_look_different'],
+                    json.dumps(aligned_problem_data['evidence']),
+                    json.dumps(aligned_problem_data['cluster_ids'])
+                ))
+                conn.commit()
+        except Exception as e:
+            logger.error(f"Failed to insert aligned problem: {e}")
+            raise
+
+    def get_clusters_for_opportunity_mapping(self) -> List[Dict]:
+        """获取用于机会映射的聚类（包括对齐问题）"""
+        try:
+            with self.get_connection("clusters") as conn:
+                # 获取未对齐的原始聚类
+                cursor = conn.execute("""
+                    SELECT id, cluster_name, source_type, centroid_summary,
+                           common_pain, pain_event_ids, cluster_size,
+                           cluster_description, workflow_confidence, created_at
+                    FROM clusters
+                    WHERE alignment_status IN ('unprocessed', 'processed')
+                    OR alignment_status IS NULL
+                """)
+
+                clusters = [dict(row) for row in cursor.fetchall()]
+
+                # 获取对齐问题作为"虚拟聚类"，在Python中计算cluster_size
+                cursor = conn.execute("""
+                    SELECT aligned_problem_id as cluster_name,
+                           'aligned' as source_type,
+                           core_problem as centroid_summary,
+                           '' as common_pain,
+                           '[]' as pain_event_ids,
+                           cluster_ids
+                    FROM aligned_problems
+                """)
+
+                aligned_clusters = []
+                for row in cursor.fetchall():
+                    cluster_dict = dict(row)
+                    # 在Python中计算JSON数组的长度
+                    cluster_ids = json.loads(cluster_dict['cluster_ids'])
+                    cluster_dict['cluster_size'] = len(cluster_ids)
+                    aligned_clusters.append(cluster_dict)
+
+                # 合并结果
+                return clusters + aligned_clusters
+
+        except Exception as e:
+            logger.error(f"Failed to get clusters for opportunity mapping: {e}")
+            return []
+
+    def get_clusters_for_aligned_problem(self, aligned_problem_id: str) -> List[Dict]:
+        """获取对齐问题的支持聚类"""
+        try:
+            with self.get_connection("clusters") as conn:
+                # 首先获取对齐问题的cluster_ids
+                cursor = conn.execute("""
+                    SELECT cluster_ids
+                    FROM aligned_problems
+                    WHERE aligned_problem_id = ?
+                """, (aligned_problem_id,))
+
+                result = cursor.fetchone()
+                if not result:
+                    return []
+
+                cluster_ids = json.loads(result['cluster_ids'])
+
+                # 获取这些聚类的详细信息
+                if not cluster_ids:
+                    return []
+
+                placeholders = ','.join(['?' for _ in cluster_ids])
+                cursor = conn.execute(f"""
+                    SELECT cluster_name, source_type, centroid_summary,
+                           common_pain, cluster_size
+                    FROM clusters
+                    WHERE cluster_name IN ({placeholders})
+                """, cluster_ids)
+
+                return [dict(row) for row in cursor.fetchall()]
+
+        except Exception as e:
+            logger.error(f"Failed to get clusters for aligned problem {aligned_problem_id}: {e}")
+            return []
+
+    def get_cross_table_stats(self) -> Dict[str, Any]:
+        """获取跨表统计信息（仅在统一模式下有效）"""
+        if not self.unified:
+            logger.warning("Cross-table stats only available in unified mode")
+            return {}
+
+        stats = {}
+        try:
+            with self.get_connection("raw") as conn:
+                # 获取各表的记录数
+                tables = ['posts', 'filtered_posts', 'pain_events', 'clusters', 'opportunities']
+                for table in tables:
+                    cursor = conn.execute(f"SELECT COUNT(*) as count FROM {table}")
+                    stats[f"{table}_count"] = cursor.fetchone()["count"]
+
+                # 获取一些跨表的关联统计
+                # 有多少filtered_posts有对应的pain_events
+                cursor = conn.execute("""
+                    SELECT COUNT(DISTINCT p.id) as count
+                    FROM filtered_posts p
+                    JOIN pain_events pe ON p.id = pe.post_id
+                """)
+                stats["filtered_with_pain_events"] = cursor.fetchone()["count"]
+
+                # 平均每个cluster有多少opportunities
+                cursor = conn.execute("""
+                    SELECT AVG(opp_count) as avg_opportunities
+                    FROM (
+                        SELECT COUNT(o.id) as opp_count
+                        FROM clusters c
+                        LEFT JOIN opportunities o ON c.id = o.cluster_id
+                        GROUP BY c.id
+                    )
+                """)
+                result = cursor.fetchone()
+                stats["avg_opportunities_per_cluster"] = result["avg_opportunities"] or 0
+
+        except Exception as e:
+            logger.error(f"Failed to get cross-table stats: {e}")
+
+        return stats
+
+
+# 全局数据库实例（使用统一数据库）
+db = WiseCollectionDB(unified=True)
+
+# 保持向后兼容的多数据库实例
+db_multi = WiseCollectionDB(unified=False)
 ```
 
 
@@ -5250,13 +7072,6 @@ class LLMClient:
         # 默认返回main模型配置
         return self.config["models"]["main"].copy()
 
-    @backoff.on_exception(
-        backoff.expo,
-        Exception,
-        max_tries=3,
-        base=1,
-        max_value=60
-    )
     def chat_completion(
         self,
         messages: List[Dict[str, str]],
@@ -5266,68 +7081,85 @@ class LLMClient:
         json_mode: bool = False
     ) -> Dict[str, Any]:
         """聊天补全请求"""
-        try:
-            model_config = self.get_model_config(model_type)
-            model_name = self.get_model_name(model_type)
 
-            # 参数配置
-            params = {
-                "model": model_name,
-                "messages": messages,
-                "temperature": temperature if temperature is not None else model_config.get("temperature", 0.1),
-                "max_tokens": max_tokens if max_tokens is not None else model_config.get("max_tokens", 2000),
-                "timeout": model_config.get("timeout", 30)
-            }
+        max_retries = 5
+        base_delay = 1
+        max_delay = 120
 
-            # JSON模式
-            if json_mode:
-                params["response_format"] = {"type": "json_object"}
+        for attempt in range(max_retries):
+            try:
+                model_config = self.get_model_config(model_type)
+                model_name = self.get_model_name(model_type)
 
-            # 记录请求开始时间
-            start_time = time.time()
+                # 参数配置
+                params = {
+                    "model": model_name,
+                    "messages": messages,
+                    "temperature": temperature if temperature is not None else model_config.get("temperature", 0.1),
+                    "max_tokens": max_tokens if max_tokens is not None else model_config.get("max_tokens", 2000),
+                    "timeout": model_config.get("timeout", 180)
+                }
 
-            # 发送请求
-            response = self.client.chat.completions.create(**params)
+                # JSON模式
+                if json_mode:
+                    params["response_format"] = {"type": "json_object"}
 
-            # 计算请求时间
-            request_time = time.time() - start_time
+                # 记录请求开始时间
+                start_time = time.time()
 
-            # 更新统计信息
-            self.stats["requests"] += 1
-            if hasattr(response.usage, 'total_tokens'):
-                self.stats["tokens_used"] += response.usage.total_tokens
+                logger.info(f"LLM Request {attempt + 1}/{max_retries}: model={model_name}, timeout={params['timeout']}s")
 
-            # 提取响应内容
-            content = response.choices[0].message.content
+                # 发送请求
+                response = self.client.chat.completions.create(**params)
 
-            # 如果是JSON模式，尝试解析
-            if json_mode:
-                try:
-                    content = json.loads(content)
-                except json.JSONDecodeError as e:
-                    logger.error(f"Failed to parse JSON response: {e}")
-                    logger.error(f"Raw content: {content}")
-                    # 尝试修复JSON
-                    content = self._try_fix_json(content)
+                # 计算请求时间
+                request_time = time.time() - start_time
 
-            result = {
-                "content": content,
-                "model": model_name,
-                "usage": {
-                    "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
-                    "completion_tokens": response.usage.completion_tokens if response.usage else 0,
-                    "total_tokens": response.usage.total_tokens if response.usage else 0
-                },
-                "request_time": request_time
-            }
+                # 更新统计信息
+                self.stats["requests"] += 1
+                if hasattr(response.usage, 'total_tokens'):
+                    self.stats["tokens_used"] += response.usage.total_tokens
 
-            logger.info(f"LLM request completed: {result['usage']['total_tokens']} tokens in {request_time:.2f}s")
-            return result
+                # 提取响应内容
+                content = response.choices[0].message.content
 
-        except Exception as e:
-            self.stats["errors"] += 1
-            logger.error(f"LLM request failed: {e}")
-            raise
+                # 如果是JSON模式，尝试解析
+                if json_mode:
+                    try:
+                        content = json.loads(content)
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Failed to parse JSON response: {e}")
+                        logger.error(f"Raw content: {content}")
+                        # 尝试修复JSON
+                        content = self._try_fix_json(content)
+
+                result = {
+                    "content": content,
+                    "model": model_name,
+                    "usage": {
+                        "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
+                        "completion_tokens": response.usage.completion_tokens if response.usage else 0,
+                        "total_tokens": response.usage.total_tokens if response.usage else 0
+                    },
+                    "request_time": request_time
+                }
+
+                logger.info(f"✅ LLM request {attempt + 1}/{max_retries} completed: {result['usage']['total_tokens']} tokens in {request_time:.2f}s")
+                return result
+
+            except Exception as e:
+                error_msg = f"❌ LLM request {attempt + 1}/{max_retries} failed: {e}"
+                self.stats["errors"] += 1
+
+                if attempt < max_retries - 1:
+                    # 计算退避延迟
+                    delay = min(base_delay * (2 ** attempt), max_delay)
+                    logger.warning(f"{error_msg} - Retrying in {delay:.2f}s...")
+                    time.sleep(delay)
+                    continue
+                else:
+                    logger.error(f"{error_msg} - Max retries exceeded")
+                    raise
 
     def _try_fix_json(self, content: str) -> Dict[str, Any]:
         """尝试修复损坏的JSON"""
@@ -5393,6 +7225,31 @@ Comments: {comments_count}
         return self.chat_completion(
             messages=messages,
             model_type="clustering",
+            json_mode=True
+        )
+
+    def summarize_source_cluster(
+        self,
+        pain_events: List[Dict[str, Any]],
+        source_type: str
+    ) -> Dict[str, Any]:
+        """为同一source的聚类生成摘要"""
+        prompt = self._get_cluster_summarizer_prompt()
+
+        # 构建痛点事件文本，重点关注问题和上下文
+        events_text = "\n\n".join([
+            f"Event {i+1}:\nProblem: {event.get('problem', '')}\nContext: {event.get('context', '')}\nWorkaround: {event.get('current_workaround', '')}\n"
+            for i, event in enumerate(pain_events[:10])  # 最多处理10个事件以控制token长度
+        ])
+
+        messages = [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": f"Source Type: {source_type}\n\nPain Events:\n{events_text}"}
+        ]
+
+        return self.chat_completion(
+            messages=messages,
+            model_type="cluster_summarizer",
             json_mode=True
         )
 
@@ -5598,6 +7455,36 @@ Return JSON only with this format:
 
 Be realistic and conservative in scoring."""
 
+    def _get_cluster_summarizer_prompt(self) -> str:
+        """获取聚类摘要提示"""
+        return """You are a cluster summarizer for pain events.
+
+These pain events come from the same source and discourse style.
+Your task is to summarize the SHARED UNDERLYING PROBLEM, ignoring emotional tone and individual details.
+
+Focus on:
+1. What is the common problem across all these events?
+2. What shared context or workflow is involved?
+3. What is the essential pain point, stripped of emotional language?
+4. Provide 2-3 representative examples that capture the essence
+
+BE CONSERVATIVE - only identify patterns that truly exist across multiple events.
+
+Return JSON only with this format:
+{
+  "centroid_summary": "brief summary of the core shared problem",
+  "common_pain": "the main difficulty or challenge (technical language)",
+  "common_context": "the shared workflow or situation where this occurs",
+  "example_events": [
+    "Event 1: representative problem description",
+    "Event 2: representative problem description"
+  ],
+  "coherence_score": 0.8,  # how well do these events belong together (0-1)
+  "reasoning": "brief explanation of why these belong together"
+}
+
+Do not exaggerate similarities. Be literal and precise."""
+
     def _get_signal_validation_prompt(self) -> str:
         """获取信号验证提示"""
         return """You are a pain signal validator.
@@ -5643,4 +7530,4 @@ llm_client = LLMClient()
 ================================================================================
 提取完成
 ================================================================================
-总共提取了 13 个文件
+总共提取了 15 个文件

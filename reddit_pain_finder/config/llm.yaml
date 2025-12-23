@@ -96,6 +96,12 @@ task_mapping:
     temperature: 0.0
     max_tokens: 400
 
+  # 聚类摘要 - 使用中型模型
+  cluster_summarizer:
+    model: "medium"
+    temperature: 0.1
+    max_tokens: 1200
+
 # API调用配置
 api_settings:
   # 重试配置

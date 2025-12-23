@@ -173,6 +173,7 @@ class WiseCollectionDB:
                     cluster_size INTEGER NOT NULL,
                     avg_pain_score REAL,
                     workflow_confidence REAL,
+                    workflow_similarity REAL DEFAULT 0.0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -256,6 +257,9 @@ class WiseCollectionDB:
 
             # 添加trust_level列到posts表（如果不存在）
             self._add_trust_level_column(conn)
+
+            # 添加workflow_similarity列到clusters表（如果不存在）
+            self._add_workflow_similarity_column(conn)
 
             conn.commit()
             logger.info("Unified database initialized successfully")
@@ -391,6 +395,7 @@ class WiseCollectionDB:
                     cluster_size INTEGER NOT NULL,
                     avg_pain_score REAL,
                     workflow_confidence REAL,
+                    workflow_similarity REAL DEFAULT 0.0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -440,6 +445,9 @@ class WiseCollectionDB:
 
             # 添加对齐跟踪列到clusters表（如果不存在）
             self._add_alignment_columns_to_clusters(conn)
+
+            # 添加workflow_similarity列到clusters表（如果不存在）
+            self._add_workflow_similarity_column(conn)
 
             conn.commit()
 
@@ -505,6 +513,30 @@ class WiseCollectionDB:
 
         except Exception as e:
             logger.error(f"Failed to add trust_level column: {e}")
+
+    def _add_workflow_similarity_column(self, conn):
+        """Add workflow_similarity column to clusters table if not exists"""
+        try:
+            cursor = conn.execute("PRAGMA table_info(clusters)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            if 'workflow_similarity' not in existing_columns:
+                conn.execute("""
+                    ALTER TABLE clusters
+                    ADD COLUMN workflow_similarity REAL DEFAULT 0.0
+                """)
+                logger.info("Added workflow_similarity column to clusters table")
+
+                # For existing clusters, migrate workflow_confidence to workflow_similarity
+                conn.execute("""
+                    UPDATE clusters
+                    SET workflow_similarity = workflow_confidence
+                    WHERE workflow_confidence IS NOT NULL
+                """)
+                logger.info("Migrated workflow_confidence to workflow_similarity")
+
+        except Exception as e:
+            logger.error(f"Failed to add workflow_similarity column: {e}")
 
     # Raw posts operations
     def insert_raw_post(self, post_data: Dict[str, Any]) -> bool:
@@ -763,8 +795,8 @@ class WiseCollectionDB:
                     INSERT INTO clusters
                     (cluster_name, cluster_description, source_type, centroid_summary,
                      common_pain, common_context, example_events, pain_event_ids, cluster_size,
-                     avg_pain_score, workflow_confidence)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     avg_pain_score, workflow_confidence, workflow_similarity)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     cluster_data["cluster_name"],
                     cluster_data.get("cluster_description", ""),
@@ -776,7 +808,8 @@ class WiseCollectionDB:
                     json.dumps(cluster_data["pain_event_ids"]),
                     cluster_data["cluster_size"],
                     cluster_data.get("avg_pain_score", 0.0),
-                    cluster_data.get("workflow_confidence", 0.0)
+                    cluster_data.get("workflow_confidence", 0.0),
+                    cluster_data.get("workflow_similarity", 0.0)
                 ))
                 cluster_id = cursor.lastrowid
                 conn.commit()

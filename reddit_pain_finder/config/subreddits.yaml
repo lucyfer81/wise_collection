@@ -2,6 +2,7 @@
 # Core: 必抓（高痛点密度）
 # =========================
 core:
+  trust_level: 0.9
   SideProject:
     min_upvotes: 5
     min_comments: 3
@@ -27,6 +28,7 @@ core:
 # Secondary: 补充视角
 # =========================
 secondary:
+  trust_level: 0.7
   IndieHackers:
     min_upvotes: 5
     min_comments: 3
@@ -49,9 +51,10 @@ secondary:
       Only keep long-form posts with active OP replies.
 
 # =========================
-# Vertical: 
+# Vertical:
 # =========================
 verticals:
+  trust_level: 0.6
   freelance:
     min_upvotes: 5
     min_comments: 3
@@ -77,6 +80,7 @@ verticals:
 # Experimental: 低频探索
 # =========================
 experimental:
+  trust_level: 0.4
   devops:
     min_upvotes: 10
     min_comments: 5

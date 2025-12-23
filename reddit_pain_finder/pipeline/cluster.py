@@ -15,6 +15,9 @@ from utils.db import db
 
 logger = logging.getLogger(__name__)
 
+# Hardcoded threshold for cluster validation
+WORKFLOW_SIMILARITY_THRESHOLD = 0.7
+
 class PainEventClusterer:
     """痛点事件聚类器"""
 
@@ -55,32 +58,32 @@ class PainEventClusterer:
         pain_events: List[Dict[str, Any]],
         cluster_name: str = None
     ) -> Dict[str, Any]:
-        """使用LLM验证聚类是否属于同一工作流"""
+        """Use LLM to validate cluster with continuous scoring"""
         try:
-            # 调用LLM进行聚类验证
+            # Call LLM for cluster validation
             response = llm_client.cluster_pain_events(pain_events)
-
             validation_result = response["content"]
 
-            # 检查LLM是否认为这些事件属于同一工作流
-            if validation_result.get("same_workflow", False):
-                return {
-                    "is_valid_cluster": True,
-                    "cluster_name": validation_result.get("workflow_name", "Unnamed Cluster"),
-                    "cluster_description": validation_result.get("workflow_description", ""),
-                    "confidence": validation_result.get("confidence", 0.0),
-                    "reasoning": validation_result.get("reasoning", "")
-                }
-            else:
-                return {
-                    "is_valid_cluster": False,
-                    "reasoning": validation_result.get("reasoning", "Not same workflow")
-                }
+            # Extract workflow_similarity score
+            workflow_similarity = validation_result.get("workflow_similarity", 0.0)
+
+            # Use hardcoded threshold for decision
+            is_valid_cluster = workflow_similarity >= WORKFLOW_SIMILARITY_THRESHOLD
+
+            return {
+                "is_valid_cluster": is_valid_cluster,
+                "workflow_similarity": workflow_similarity,  # NEW: Store raw score
+                "cluster_name": validation_result.get("workflow_name", "Unnamed Cluster"),
+                "cluster_description": validation_result.get("workflow_description", ""),
+                "confidence": validation_result.get("confidence", 0.0),
+                "reasoning": validation_result.get("reasoning", "")
+            }
 
         except Exception as e:
             logger.error(f"Failed to validate cluster with LLM: {e}")
             return {
                 "is_valid_cluster": False,
+                "workflow_similarity": 0.0,
                 "reasoning": f"Validation error: {e}"
             }
 
@@ -170,7 +173,8 @@ class PainEventClusterer:
                 "pain_event_ids": cluster_data["pain_event_ids"],
                 "cluster_size": cluster_data["cluster_size"],
                 "avg_pain_score": cluster_data.get("avg_pain_score", 0.0),
-                "workflow_confidence": cluster_data.get("workflow_confidence", 0.0)
+                "workflow_confidence": cluster_data.get("workflow_confidence", 0.0),
+                "workflow_similarity": cluster_data.get("workflow_similarity", 0.0)
             }
 
             cluster_id = db.insert_cluster(cluster_record)
@@ -338,6 +342,10 @@ Processing time: {processing_time:.2f}s
             validation_result = self._validate_cluster_with_llm(events_for_processing)
             self.stats["llm_validations"] += 1
 
+            # Log workflow_similarity score
+            workflow_similarity = validation_result.get("workflow_similarity", 0.0)
+            logger.info(f"Workflow similarity score: {workflow_similarity:.2f} (threshold: {WORKFLOW_SIMILARITY_THRESHOLD})")
+
             if validation_result["is_valid_cluster"]:
                 # 使用Cluster Summarizer生成source内摘要
                 summary_result = self._summarize_source_cluster(events_for_processing, source_type)
@@ -359,6 +367,7 @@ Processing time: {processing_time:.2f}s
                     "pain_event_ids": [event["id"] for event in cluster_events],
                     "cluster_size": len(cluster_events),
                     "workflow_confidence": validation_result["confidence"],
+                    "workflow_similarity": workflow_similarity,
                     "validation_reasoning": validation_result["reasoning"]
                 }
 
@@ -368,9 +377,9 @@ Processing time: {processing_time:.2f}s
                     final_cluster["saved_cluster_id"] = saved_cluster_id
                     final_clusters.append(final_cluster)
 
-                    logger.info(f"✅ Saved {cluster_id}: {validation_result['cluster_name']} ({len(cluster_events)} events)")
+                    logger.info(f"✅ Saved {cluster_id}: {validation_result['cluster_name']} ({len(cluster_events)} events, similarity: {workflow_similarity:.2f})")
             else:
-                logger.warning(f"❌ Cluster {i+1} rejected by LLM: {validation_result['reasoning']}")
+                logger.warning(f"❌ Cluster {i+1} rejected by LLM: {validation_result['reasoning']} (similarity: {workflow_similarity:.2f})")
 
             # 添加延迟避免API限制
             time.sleep(1)

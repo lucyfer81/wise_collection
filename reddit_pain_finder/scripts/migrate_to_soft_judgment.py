@@ -37,8 +37,8 @@ def migrate_posts_trust_level():
             }
 
             for category, level in category_trust.items():
-                conn.execute("UPDATE posts SET trust_level = ? WHERE category = ?", (level, category))
-                affected = conn.total_changes
+                cursor = conn.execute("UPDATE posts SET trust_level = ? WHERE category = ?", (level, category))
+                affected = cursor.rowcount
                 logger.info(f"Set trust_level={level} for {affected} posts in category '{category}'")
 
             conn.commit()
@@ -59,12 +59,12 @@ def migrate_clusters_workflow_similarity():
             logger.info("Added workflow_similarity column to clusters table")
 
             # Migrate from workflow_confidence for existing clusters
-            conn.execute("""
+            cursor = conn.execute("""
                 UPDATE clusters
                 SET workflow_similarity = COALESCE(workflow_confidence, 0.0)
                 WHERE workflow_similarity = 0.0
             """)
-            affected = conn.total_changes
+            affected = cursor.rowcount
             logger.info(f"Migrated {affected} clusters from workflow_confidence to workflow_similarity")
 
             conn.commit()
@@ -85,12 +85,12 @@ def migrate_aligned_problems_alignment_score():
             logger.info("Added alignment_score column to aligned_problems table")
 
             # Set default high score for existing manually validated alignments
-            conn.execute("""
+            cursor = conn.execute("""
                 UPDATE aligned_problems
                 SET alignment_score = 0.85
                 WHERE alignment_score = 0.0
             """)
-            affected = conn.total_changes
+            affected = cursor.rowcount
             logger.info(f"Set default alignment_score=0.85 for {affected} existing aligned problems")
 
             conn.commit()

@@ -40,6 +40,7 @@ def test_posts_have_trust_level():
     print("\nTesting trust_level in posts table...")
     import sqlite3
     conn = sqlite3.connect(db.unified_db_path)
+    conn.row_factory = sqlite3.Row
     cursor = conn.execute("PRAGMA table_info(posts)")
     columns = {row['name'] for row in cursor.fetchall()}
     conn.close()
@@ -66,6 +67,7 @@ def test_clusters_have_workflow_similarity():
     print("\nTesting workflow_similarity in clusters table...")
     import sqlite3
     conn = sqlite3.connect(db.unified_db_path)
+    conn.row_factory = sqlite3.Row
     cursor = conn.execute("PRAGMA table_info(clusters)")
     columns = {row['name'] for row in cursor.fetchall()}
     conn.close()
@@ -97,6 +99,7 @@ def test_aligned_problems_have_alignment_score():
     print("\nTesting alignment_score in aligned_problems table...")
     import sqlite3
     conn = sqlite3.connect(db.unified_db_path)
+    conn.row_factory = sqlite3.Row
     cursor = conn.execute("PRAGMA table_info(aligned_problems)")
     columns = {row['name'] for row in cursor.fetchall()}
     conn.close()

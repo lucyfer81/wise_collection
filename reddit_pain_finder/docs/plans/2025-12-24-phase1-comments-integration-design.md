@@ -213,16 +213,16 @@ LIMIT 20;
 
 ## Implementation Checklist
 
-- [ ] Add `comments` table to `utils/db.py::_init_unified_database()`
-- [ ] Create indexes for `comments` table
-- [ ] Implement `insert_comments()` method in `utils/db.py`
-- [ ] Update `pipeline/fetch.py::_process_submission()` to call `insert_comments()`
-- [ ] Update `pipeline/hn_fetch.py::fetch_from_endpoint()` to call `insert_comments()`
-- [ ] Create `scripts/backfill_comments.py`
-- [ ] Run backfill in dry-run mode
-- [ ] Execute backfill migration
-- [ ] Run verification SQL queries
-- [ ] Update documentation
+- [x] Add `comments` table to `utils/db.py::_init_unified_database()`
+- [x] Create indexes for `comments` table
+- [x] Implement `insert_comments()` method in `utils/db.py`
+- [x] Update `pipeline/fetch.py::_process_submission()` to call `insert_comments()`
+- [x] Update `pipeline/hn_fetch.py::fetch_from_endpoint()` to call `insert_comments()`
+- [x] Create `scripts/backfill_comments.py`
+- [x] Run backfill in dry-run mode
+- [x] Execute backfill migration
+- [x] Run verification SQL queries
+- [x] Update documentation
 
 ## Phase Boundaries
 

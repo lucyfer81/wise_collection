@@ -5,6 +5,7 @@ SQLite数据库操作工具
 import sqlite3
 import json
 import logging
+import hashlib
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from contextlib import contextmanager
@@ -700,7 +701,7 @@ class WiseCollectionDB:
             source: 数据源 ('reddit' 或 'hackernews')
 
         Returns:
-            成功插入的评论数量
+            成功处理的评论数量（注意：由于使用 INSERT OR IGNORE，重复的评论会被跳过）
         """
         try:
             with self.get_connection("raw") as conn:
@@ -715,8 +716,9 @@ class WiseCollectionDB:
                             f"Author: {comment.get('author', 'unknown')}. "
                             f"Generating fallback ID."
                         )
-                        # Fallback ID
-                        comment_id = f"{source}_{comment.get('author', 'unknown')}_{hash(comment.get('body', ''))}"
+                        # Fallback ID - use deterministic MD5 hash instead of Python's hash()
+                        body_hash = hashlib.md5(comment.get('body', '').encode('utf-8')).hexdigest()[:12]
+                        comment_id = f"{source}_{comment.get('author', 'unknown')}_{body_hash}"
 
                     conn.execute("""
                         INSERT OR IGNORE INTO comments
@@ -732,7 +734,7 @@ class WiseCollectionDB:
                         comment.get("created_utc"),
                         comment.get("created_at")
                     ))
-                    # Count the comment as inserted (INSERT OR IGNORE will silently skip duplicates)
+                    # Count the comment as processed (INSERT OR IGNORE silently skips duplicates)
                     inserted_count += 1
                 conn.commit()
                 return inserted_count

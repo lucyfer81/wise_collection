@@ -247,9 +247,12 @@ class RedditSourceFetcher:
                 for comment in submission.comments.list()[:20]:  # 获取前20条评论
                     if hasattr(comment, 'author') and comment.author:
                         comments.append({
+                            "id": comment.id,  # 添加评论ID
                             "author": comment.author.name,
                             "body": comment.body,
-                            "score": comment.score
+                            "score": comment.score,
+                            "created_utc": getattr(comment, 'created_utc', None),  # 添加时间戳
+                            "created_at": datetime.fromtimestamp(getattr(comment, 'created_utc', 0)).isoformat() + "Z" if hasattr(comment, 'created_utc') else None
                         })
             except Exception as e:
                 logger.warning(f"Failed to fetch comments for {submission.id}: {e}")
@@ -328,6 +331,17 @@ class RedditSourceFetcher:
                 self.processed_posts.add(unified_id)  # 使用统一ID
                 self.stats["total_saved"] += 1
                 logger.info(f"Saved post: {submission.title[:60]}... (Score: {submission.score}, Pain: {post_data['pain_score']:.2f})")
+
+                # 保存评论到独立的 comments 表
+                comments = post_data.get("comments", [])
+                if comments and 'db' in globals():
+                    try:
+                        comment_count = db.insert_comments(unified_id, comments, "reddit")
+                        if comment_count > 0:
+                            logger.info(f"Saved {comment_count} comments for post {unified_id}")
+                    except Exception as e:
+                        logger.error(f"Failed to save comments for {unified_id}: {e}")
+
                 return True
             else:
                 self.stats["errors"] += 1

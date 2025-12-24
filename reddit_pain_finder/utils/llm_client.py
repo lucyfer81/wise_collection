@@ -405,21 +405,24 @@ Return JSON only with this format:
 Be precise with your similarity score - use the full 0.0-1.0 range."""
 
     def _get_opportunity_mapping_prompt(self) -> str:
-        """获取机会映射提示"""
-        return """You are a brutally practical product thinker for solo founders.
+        """获取机会映射提示 - Phase 3 简化版（仅定性描述）"""
+        return """You are a practical product thinker for solo founders.
 
-Given a cluster of pain events that belong to the same workflow:
+Given a cluster of pain events from the same workflow:
 
-1. Identify what tools people CURRENTLY use to survive this problem
-2. Identify what capability is missing
-3. Explain why existing tools fail (too heavy, too generic, etc.)
+1. Identify what tools people CURRENTLY use to cope with this problem
+2. Identify what capability is MISSING that would solve it
+3. Explain WHY existing tools fail (too complex, too expensive, wrong focus, etc.)
 4. Propose ONE narrow micro-tool opportunity
 
+Focus on:
+- Specific, actionable problems with clear user context
+- Narrow scope suitable for solo founder MVP (1-3 months)
+- Concrete user needs, not abstract concepts
+
 Rules:
-- No platforms (unless you can justify the MVP)
-- No marketplaces
-- Assume a solo founder building an MVP in 1-3 months
-- Focus on specific, painful problems with clear solutions
+- No platforms (unless you can justify the MVP scope)
+- No marketplaces or two-sided markets
 - If no viable tool opportunity exists, say so
 
 Return JSON only with this format:
@@ -429,17 +432,12 @@ Return JSON only with this format:
   "why_existing_fail": "why current solutions don't work well",
   "opportunity": {
     "name": "short descriptive name",
-    "description": "what the micro-tool does",
-    "target_users": "who would use this",
-    "pain_frequency": "how often this pain occurs (1-10)",
-    "market_size": "how many people have this problem (1-10)",
-    "mvp_complexity": "how hard to build MVP (1-10, lower is better)",
-    "competition_risk": "risk of competitors (1-10, lower is better)",
-    "integration_complexity": "how hard to integrate (1-10, lower is better)"
+    "description": "what the micro-tool does in 1-2 sentences",
+    "target_users": "who would use this (be specific about role/context)"
   }
 }
 
-Focus on narrow, specific problems that a solo founder can actually solve."""
+NO quantitative scores - focus on clear, specific descriptions that capture the essence of the problem and solution."""
 
     def _get_viability_scoring_prompt(self) -> str:
         """获取可行性评分提示"""

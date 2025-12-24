@@ -154,8 +154,8 @@ class OpportunityMapper:
             logger.error(f"Failed to map opportunity with LLM: {e}")
             return None
 
-    def _evaluate_opportunity_quality(self, opportunity_data: Dict[str, Any], cluster_data: Dict[str, Any]) -> Dict[str, Any]:
-        """评估机会质量"""
+    def _validate_opportunity_data(self, opportunity_data: Dict[str, Any]) -> Dict[str, Any]:
+        """验证机会数据（Phase 3：只做基础验证，不评分）"""
         try:
             # 处理可能的数据结构差异
             if "content" in opportunity_data:
@@ -164,91 +164,34 @@ class OpportunityMapper:
                 opportunity = opportunity_data.get("opportunity", {})
 
             if not opportunity:
-                return {"is_viable": False, "reason": "No opportunity data"}
+                return {"is_valid": False, "reason": "No opportunity data"}
 
-            # 基础质量检查
+            # 基础字段验证
             required_fields = ["name", "description", "target_users"]
             for field in required_fields:
                 if not opportunity.get(field):
-                    return {"is_viable": False, "reason": f"Missing required field: {field}"}
+                    return {"is_valid": False, "reason": f"Missing required field: {field}"}
 
-            # 质量评分
-            quality_score = 0.0
-            reasons = []
+            # 简单质量检查：描述长度
+            description = opportunity.get("description", "")
+            if len(description) < 20:
+                return {"is_valid": False, "reason": f"Description too short ({len(description)} < 20 chars)"}
 
-            # 痛点频率 (20%)
-            pain_frequency = opportunity.get("pain_frequency", 0)
-            if pain_frequency >= 7:
-                quality_score += 0.2
-                reasons.append("High pain frequency")
-            elif pain_frequency >= 5:
-                quality_score += 0.1
-                reasons.append("Medium pain frequency")
+            # 名称长度检查
+            name = opportunity.get("name", "")
+            if len(name) < 3:
+                return {"is_valid": False, "reason": f"Name too short ({len(name)} < 3 chars)"}
 
-            # 市场规模 (20%)
-            market_size = opportunity.get("market_size", 0)
-            if market_size >= 7:
-                quality_score += 0.2
-                reasons.append("Large market size")
-            elif market_size >= 5:
-                quality_score += 0.1
-                reasons.append("Medium market size")
+            # 目标用户长度检查
+            target_users = opportunity.get("target_users", "")
+            if len(target_users) < 10:
+                return {"is_valid": False, "reason": f"Target users too short ({len(target_users)} < 10 chars)"}
 
-            # MVP复杂度 (25%) - 越低越好
-            mvp_complexity = opportunity.get("mvp_complexity", 10)
-            if mvp_complexity <= 4:
-                quality_score += 0.25
-                reasons.append("Simple MVP")
-            elif mvp_complexity <= 6:
-                quality_score += 0.15
-                reasons.append("Moderate MVP complexity")
-
-            # 竞争风险 (20%) - 越低越好
-            competition_risk = opportunity.get("competition_risk", 10)
-            if competition_risk <= 4:
-                quality_score += 0.2
-                reasons.append("Low competition")
-            elif competition_risk <= 6:
-                quality_score += 0.1
-                reasons.append("Moderate competition")
-
-            # 集成难度 (15%) - 越低越好
-            integration_complexity = opportunity.get("integration_complexity", 10)
-            if integration_complexity <= 5:
-                quality_score += 0.15
-                reasons.append("Easy integration")
-            elif integration_complexity <= 7:
-                quality_score += 0.08
-                reasons.append("Moderate integration")
-
-            # 聚类大小加分
-            cluster_size = cluster_data.get("cluster_size", 0)
-            if cluster_size >= 10:
-                quality_score += 0.1
-                reasons.append("Large cluster size")
-
-            # 总分范围：0-1
-            total_score = min(quality_score, 1.0)
-
-            # 判断是否可行
-            is_viable = total_score >= 0.4  # 40%以上认为可行
-
-            return {
-                "is_viable": is_viable,
-                "quality_score": total_score,
-                "quality_reasons": reasons,
-                "detailed_scores": {
-                    "pain_frequency": pain_frequency,
-                    "market_size": market_size,
-                    "mvp_complexity": mvp_complexity,
-                    "competition_risk": competition_risk,
-                    "integration_complexity": integration_complexity
-                }
-            }
+            return {"is_valid": True, "reason": "Valid opportunity structure"}
 
         except Exception as e:
-            logger.error(f"Failed to evaluate opportunity quality: {e}")
-            return {"is_viable": False, "reason": f"Evaluation error: {e}"}
+            logger.error(f"Failed to validate opportunity: {e}")
+            return {"is_valid": False, "reason": f"Validation error: {e}"}
 
     def _process_aligned_cluster(self, aligned_cluster: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """处理对齐问题聚类"""
@@ -308,8 +251,8 @@ class OpportunityMapper:
                 tools.add('Discord')
         return list(tools)
 
-    def _save_opportunity_to_database(self, cluster_id: int, opportunity_data: Dict[str, Any], quality_result: Dict[str, Any]) -> Optional[int]:
-        """保存机会到数据库"""
+    def _save_opportunity_to_database(self, cluster_id: int, opportunity_data: Dict[str, Any]) -> Optional[int]:
+        """保存机会到数据库（Phase 3：评分字段设为占位符，由score_viability.py计算）"""
         try:
             # 处理可能的数据结构差异
             if "content" in opportunity_data:
@@ -324,7 +267,7 @@ class OpportunityMapper:
                 missing_capability = opportunity_data.get("missing_capability", "")
                 why_existing_fail = opportunity_data.get("why_existing_fail", "")
 
-            # 准备机会数据
+            # 准备机会数据 - 评分字段使用占位符值
             opportunity_record = {
                 "cluster_id": cluster_id,
                 "opportunity_name": opportunity.get("name", ""),
@@ -333,14 +276,15 @@ class OpportunityMapper:
                 "missing_capability": missing_capability,
                 "why_existing_fail": why_existing_fail,
                 "target_users": opportunity.get("target_users", ""),
-                "pain_frequency_score": opportunity.get("pain_frequency", 0),
-                "market_size_score": opportunity.get("market_size", 0),
-                "mvp_complexity_score": opportunity.get("mvp_complexity", 0),
-                "competition_risk_score": opportunity.get("competition_risk", 0),
-                "integration_complexity_score": opportunity.get("integration_complexity", 0),
-                "total_score": quality_result["quality_score"],
-                "killer_risks": json.dumps([]),  # 稍后在viability scoring中填充
-                "recommendation": ""  # 稍后在viability scoring中填充
+                # 占位符值：由 score_viability.py 计算并更新
+                "pain_frequency_score": 0.0,
+                "market_size_score": 0.0,
+                "mvp_complexity_score": 0.0,
+                "competition_risk_score": 0.0,
+                "integration_complexity_score": 0.0,
+                "total_score": 0.0,
+                "killer_risks": json.dumps([]),
+                "recommendation": ""
             }
 
             opportunity_id = db.insert_opportunity(opportunity_record)
@@ -387,28 +331,19 @@ class OpportunityMapper:
                         opportunity_data = self._map_opportunity_with_llm(enriched_cluster)
 
                     if opportunity_data:
-                        # 评估机会质量
+                        # 验证机会数据（Phase 3：只验证结构，不评分）
                         if cluster.get('source_type') == 'aligned':
-                            # 对齐聚类使用预设的高质量评分
-                            quality_result = {
-                                "is_viable": True,
-                                "quality_score": 0.95,  # 高质量评分
-                                "quality_reasons": [
-                                    "Multi-source validation",
-                                    "Large market size",
-                                    "High pain frequency",
-                                    "Moderate competition"
-                                ]
-                            }
+                            # 对齐聚群默认通过验证
+                            validation_result = {"is_valid": True, "reason": "Aligned cluster auto-pass"}
                         else:
-                            # 原始聚类使用标准评估
-                            quality_result = self._evaluate_opportunity_quality(opportunity_data, enriched_cluster)
+                            # 原始聚类使用标准验证
+                            validation_result = self._validate_opportunity_data(opportunity_data)
 
-                        if quality_result["is_viable"]:
+                        if validation_result["is_valid"]:
                             # 保存到数据库
                             cluster_id = cluster.get("id", 0)  # 对齐聚类可能没有id
                             opportunity_id = self._save_opportunity_to_database(
-                                cluster_id, opportunity_data, quality_result
+                                cluster_id, opportunity_data
                             )
 
                             if opportunity_id:
@@ -418,16 +353,15 @@ class OpportunityMapper:
                                     "cluster_name": cluster["cluster_name"],
                                     "opportunity_name": opportunity_data["content"]["opportunity"]["name"],
                                     "opportunity_description": opportunity_data["content"]["opportunity"]["description"],
-                                    "quality_score": quality_result["quality_score"],
-                                    "quality_reasons": quality_result["quality_reasons"]
+                                    "validation_reason": validation_result.get("reason", "")
                                 }
 
                                 opportunities_created.append(opportunity_summary)
                                 viable_opportunities += 1
 
-                                logger.info(f"Created opportunity: {opportunity_data['content']['opportunity']['name']} (Score: {quality_result['quality_score']:.2f})")
+                                logger.info(f"Created opportunity: {opportunity_data['content']['opportunity']['name']}")
                         else:
-                            logger.debug(f"Opportunity not viable: {quality_result.get('reason', 'Unknown')}")
+                            logger.debug(f"Opportunity validation failed: {validation_result.get('reason', 'Unknown')}")
                     else:
                         logger.debug(f"No opportunity found for cluster {cluster['cluster_name']}")
 

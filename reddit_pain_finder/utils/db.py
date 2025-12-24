@@ -273,6 +273,9 @@ class WiseCollectionDB:
             # 添加Phase 2字段到filtered_posts表（如果不存在）
             self._add_phase2_filtered_posts_columns(conn)
 
+            # 添加Phase 3字段到opportunities表（如果不存在）
+            self._add_phase3_opportunities_columns(conn)
+
             conn.commit()
             logger.info("Unified database initialized successfully")
 
@@ -465,6 +468,9 @@ class WiseCollectionDB:
             # 添加alignment_score列到aligned_problems表（如果不存在）
             self._add_alignment_score_column(conn)
 
+            # 添加Phase 3字段到opportunities表（如果不存在）
+            self._add_phase3_opportunities_columns(conn)
+
             conn.commit()
 
     def _add_alignment_columns_to_clusters(self, conn):
@@ -601,6 +607,29 @@ class WiseCollectionDB:
 
         except Exception as e:
             logger.error(f"Failed to add Phase 2 columns to filtered_posts table: {e}")
+
+    def _add_phase3_opportunities_columns(self, conn):
+        """Add Phase 3 scoring columns to opportunities table if not exist"""
+        try:
+            cursor = conn.execute("PRAGMA table_info(opportunities)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            new_columns = {
+                'raw_total_score': 'REAL DEFAULT 0.0',
+                'trust_level': 'REAL DEFAULT 0.5',
+                'scoring_breakdown': 'TEXT'  # JSON格式存储详细计算过程
+            }
+
+            for column_name, column_def in new_columns.items():
+                if column_name not in existing_columns:
+                    conn.execute(f"""
+                        ALTER TABLE opportunities
+                        ADD COLUMN {column_name} {column_def}
+                    """)
+                    logger.info(f"Added {column_name} column to opportunities table")
+
+        except Exception as e:
+            logger.error(f"Failed to add Phase 3 columns to opportunities table: {e}")
 
     # Raw posts operations
     def insert_raw_post(self, post_data: Dict[str, Any]) -> bool:

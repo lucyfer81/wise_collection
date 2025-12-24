@@ -108,6 +108,26 @@ class ViabilityScorer:
             logger.error(f"Failed to calculate average frequency score: {e}")
             return 0.0
 
+    def _calculate_cluster_trust_level(self, pain_event_ids: List[int]) -> float:
+        """计算聚类中所有帖子的平均信任度"""
+        if not pain_event_ids:
+            return 0.5  # 默认中等信任度
+
+        try:
+            with db.get_connection("pain") as conn:
+                placeholders = ','.join(['?' for _ in pain_event_ids])
+                cursor = conn.execute(f"""
+                    SELECT AVG(fp.trust_level) as avg_trust
+                    FROM pain_events pe
+                    JOIN filtered_posts fp ON pe.post_id = fp.id
+                    WHERE pe.id IN ({placeholders})
+                """, pain_event_ids)
+                result = cursor.fetchone()
+                return result['avg_trust'] if result and result['avg_trust'] else 0.5
+        except Exception as e:
+            logger.error(f"Failed to calculate cluster trust level: {e}")
+            return 0.5
+
     def _frequency_to_score(self, frequencies: List[str]) -> float:
         """将频率文本转换为评分"""
         if not frequencies:
@@ -208,6 +228,34 @@ class ViabilityScorer:
                        f"frequency: {avg_frequency_score:.1f}")
 
         return False, ""
+
+    def _calculate_market_size_score(self, pain_event_ids: List[int]) -> float:
+        """基于硬数据计算市场规模评分 (0-10)"""
+        try:
+            # 1. 获取独立作者数
+            unique_authors = self._calculate_unique_authors(pain_event_ids)
+
+            # 2. 获取涉及的subreddit数量
+            cross_subreddit = self._calculate_cross_subreddit_count(pain_event_ids)
+
+            # 3. 基于作者数和subreddit数计算评分
+            # 作者数评分 (最高5分)
+            author_score = min(unique_authors / 10, 5.0)  # 10+作者=5分
+
+            # 跨度评分 (最高5分)
+            subreddit_score = min(cross_subreddit * 1.5, 5.0)  # 3+subreddit=5分
+
+            total_score = author_score + subreddit_score
+            return min(total_score, 10.0)
+
+        except Exception as e:
+            logger.error(f"Failed to calculate market size score: {e}")
+            return 3.0  # 默认中等偏下
+
+    def _calculate_pain_frequency_score_data_driven(self, pain_event_ids: List[int]) -> float:
+        """基于频率数据计算痛点频率评分 (0-10) - 数据驱动"""
+        # 直接复用现有的 _calculate_avg_frequency_score
+        return self._calculate_avg_frequency_score(pain_event_ids)
 
     def _update_opportunities_recommendation(self, cluster_id: int, recommendation: str, skip_reason: str = "") -> bool:
         """更新聚类下所有机会的推荐状态"""
@@ -519,61 +567,58 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
             return None
 
     def _combine_scores(self, llm_scores: Dict[str, Any], opportunity_data: Dict[str, Any]) -> Dict[str, Any]:
-        """结合LLM评分和规则评分"""
+        """结合LLM评分和规则评分（Phase 3：添加trust_level加权）"""
         try:
-            # LLM评分
+            # 获取聚类信息和信任度
+            cluster_info = opportunity_data.get("cluster_info", {})
+            pain_events = cluster_info.get("pain_events", [])
+            pain_event_ids = [pe['id'] for pe in pain_events]
+
+            cluster_trust_level = self._calculate_cluster_trust_level(pain_event_ids)
+
+            # LLM评分（主观维度）
             llm_component_scores = llm_scores.get("scores", {})
             llm_total_score = llm_scores.get("total_score", 0.0)
+
+            # 数据驱动评分
+            data_driven_scores = {
+                "pain_frequency": self._calculate_pain_frequency_score_data_driven(pain_event_ids),
+                "market_size": self._calculate_market_size_score(pain_event_ids),
+            }
 
             # 规则评分
             market_analysis = opportunity_data.get("market_analysis", {})
             competition_analysis = opportunity_data.get("competition_analysis", {})
-
-            # 市场规模评分 (0-10)
-            market_tier = market_analysis.get("market_tier", "niche")
-            market_score_by_tier = {
-                "large": 9,
-                "medium": 7,
-                "small": 5,
-                "niche": 3
-            }
-            market_score = market_score_by_tier.get(market_tier, 3)
 
             # 竞争评分 (0-10, 越低越好)
             competition_score = competition_analysis.get("competition_score", 8)
             competition_normalized = max(10 - competition_score, 1)  # 转换为越高越好
 
             # 聚类大小评分 (0-10)
-            cluster_info = opportunity_data.get("cluster_info", {})
             cluster_size = cluster_info.get("cluster_size", 0)
-            cluster_score = min(cluster_size, 10)  # 每个事件1分，最多10分
-
-            # 工作流置信度评分 (0-10)
-            workflow_confidence = cluster_info.get("workflow_confidence", 0.0)
-            workflow_score = workflow_confidence * 10
+            cluster_score = min(cluster_size, 10)
 
             # 综合评分计算
             final_component_scores = {
-                "pain_frequency": llm_component_scores.get("pain_frequency", 5),
-                "clear_buyer": llm_component_scores.get("clear_buyer", 5),
+                **data_driven_scores,  # 数据驱动评分
+                "clear_buyer": llm_component_scores.get("pain_frequency", 5),  # LLM评分
                 "mvp_buildable": llm_component_scores.get("mvp_buildable", 5),
                 "crowded_market": competition_normalized,
                 "integration": llm_component_scores.get("integration", 5),
-                "market_size": market_score,
                 "cluster_strength": cluster_score,
-                "workflow_confidence": workflow_score
+                "trust_level": cluster_trust_level * 10  # 转换为0-10分
             }
 
             # 计算加权总分
             weights = {
                 "pain_frequency": 0.15,
+                "market_size": 0.15,
                 "clear_buyer": 0.15,
                 "mvp_buildable": 0.20,
                 "crowded_market": 0.15,
                 "integration": 0.10,
-                "market_size": 0.10,
-                "cluster_strength": 0.10,
-                "workflow_confidence": 0.05
+                "cluster_strength": 0.10
+                # trust_level 通过加权因子体现，不直接参与权重
             }
 
             weighted_total = sum(
@@ -581,15 +626,20 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
                 for component, weight in weights.items()
             )
 
-            # 确保分数在0-10范围内
-            final_total_score = min(max(weighted_total, 0), 10)
+            # 应用trust_level加权
+            trust_weighted_total = weighted_total * cluster_trust_level
 
-            # 生成杀手风险
-            killer_risks = self._generate_killer_risks(final_component_scores, opportunity_data)
+            # 确保分数在0-10范围内
+            final_total_score = min(max(trust_weighted_total, 0), 10)
+
+            # 生成杀手风险（包含trust_level风险）
+            killer_risks = self._generate_killer_risks(final_component_scores, opportunity_data, cluster_trust_level)
 
             return {
                 "component_scores": final_component_scores,
                 "total_score": final_total_score,
+                "raw_total_score": weighted_total,  # 加权前的原始分数
+                "trust_level": cluster_trust_level,
                 "llm_total_score": llm_total_score,
                 "killer_risks": killer_risks,
                 "recommendation": self._generate_recommendation(final_total_score, killer_risks)
@@ -599,8 +649,8 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
             logger.error(f"Failed to combine scores: {e}")
             return {"total_score": 0.0, "component_scores": {}, "killer_risks": [], "recommendation": "Error in scoring"}
 
-    def _generate_killer_risks(self, component_scores: Dict[str, Any], opportunity_data: Dict[str, Any]) -> List[str]:
-        """生成杀手风险"""
+    def _generate_killer_risks(self, component_scores: Dict[str, Any], opportunity_data: Dict[str, Any], trust_level: float = 0.5) -> List[str]:
+        """生成杀手风险（Phase 3：考虑trust_level）"""
         risks = []
 
         # 基于分项评分生成风险
@@ -621,6 +671,12 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
 
         if component_scores.get("integration", 0) < 4:
             risks.append("Difficult integration with existing workflows")
+
+        # Phase 3: 新增trust_level风险
+        if trust_level < 0.5:
+            risks.append(f"Low trust data sources (trust_level: {trust_level:.2f}) - signals may not be reliable")
+        elif trust_level < 0.7:
+            risks.append(f"Moderate trust data sources (trust_level: {trust_level:.2f}) - validate with additional research")
 
         # 基于竞争分析生成风险
         competition_analysis = opportunity_data.get("competition_analysis", {})
@@ -648,10 +704,15 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
             return "abandon - Too many risks or unclear value proposition"
 
     def _update_opportunity_in_database(self, opportunity_id: int, scoring_result: Dict[str, Any]) -> bool:
-        """更新数据库中的机会评分"""
+        """更新数据库中的机会评分（Phase 3：支持raw_total_score和trust_level）"""
         try:
             with db.get_connection("clusters") as conn:
-                conn.execute("""
+                # 检查是否存在新列
+                cursor = conn.execute("PRAGMA table_info(opportunities)")
+                existing_columns = {row['name'] for row in cursor.fetchall()}
+
+                # 基础更新语句（适用于旧schema）
+                update_sql = """
                     UPDATE opportunities
                     SET pain_frequency_score = ?,
                         market_size_score = ?,
@@ -661,8 +722,9 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
                         total_score = ?,
                         killer_risks = ?,
                         recommendation = ?
-                    WHERE id = ?
-                """, (
+                """
+
+                update_values = [
                     scoring_result["component_scores"].get("pain_frequency", 0),
                     scoring_result["component_scores"].get("market_size", 0),
                     scoring_result["component_scores"].get("mvp_buildable", 0),
@@ -671,8 +733,30 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
                     scoring_result["total_score"],
                     json.dumps(scoring_result["killer_risks"]),
                     scoring_result.get("recommendation", ""),
-                    opportunity_id
-                ))
+                ]
+
+                # 如果存在新列，添加到更新语句
+                if "raw_total_score" in existing_columns:
+                    update_sql = update_sql.rstrip() + ",\nraw_total_score = ?"
+                    update_values.append(scoring_result.get("raw_total_score", scoring_result["total_score"]))
+
+                if "trust_level" in existing_columns:
+                    update_sql = update_sql.rstrip() + ",\ntrust_level = ?"
+                    update_values.append(scoring_result.get("trust_level", 0.5))
+
+                if "scoring_breakdown" in existing_columns:
+                    update_sql = update_sql.rstrip() + ",\nscoring_breakdown = ?"
+                    breakdown = {
+                        "component_scores": scoring_result["component_scores"],
+                        "raw_total_score": scoring_result.get("raw_total_score", scoring_result["total_score"]),
+                        "trust_level": scoring_result.get("trust_level", 0.5)
+                    }
+                    update_values.append(json.dumps(breakdown))
+
+                update_sql = update_sql.rstrip() + "\nWHERE id = ?"
+                update_values.append(opportunity_id)
+
+                conn.execute(update_sql, tuple(update_values))
                 conn.commit()
                 return True
 

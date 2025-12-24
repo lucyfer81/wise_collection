@@ -330,6 +330,10 @@ class PainSignalFilter:
         has_keywords, matched_keywords, keyword_score = self._check_pain_keywords(post_data)
         filter_result["matched_keywords"] = matched_keywords
 
+        # 3.5 愿望关键词检查
+        has_aspiration, matched_aspirations, aspiration_score = self._check_aspiration_keywords(post_data)
+        filter_result["matched_aspirations"] = matched_aspirations
+
         # 4. 痛点句式检查
         has_patterns, matched_patterns = self._check_pain_patterns(post_data)
         filter_result["matched_patterns"] = matched_patterns
@@ -346,6 +350,37 @@ class PainSignalFilter:
             filter_result["reasons"].append(type_reason)
             filter_result["filter_summary"] = {"reason": "type_specific", "details": type_reason}
             return False, filter_result
+
+        # 6.5 基于信任度的动态阈值检查
+        trust_thresholds = self._get_trust_based_thresholds(post_data)
+        min_comments = trust_thresholds["min_comments"]
+        min_upvotes = trust_thresholds["min_upvotes"]
+        min_engagement_score = trust_thresholds["min_engagement_score"]
+
+        # 计算参与度分数
+        engagement_score = min(
+            (post_data.get("score", 0) / min_upvotes + post_data.get("num_comments", 0) / min_comments) / 2.0,
+            1.0
+        )
+
+        # 对于低信任度板块，必须满足参与度要求
+        if post_data.get("trust_level", 0.5) < 0.5 and engagement_score < min_engagement_score:
+            self.stats["filtered_out"] += 1
+            failure_reason = f"Low trust post with insufficient engagement: {engagement_score:.2f} < {min_engagement_score}"
+            self.stats["filter_reasons"][failure_reason] = self.stats["filter_reasons"].get(failure_reason, 0) + 1
+            filter_result["reasons"].append(failure_reason)
+            filter_result["filter_summary"] = {
+                "reason": "trust_based_engagement",
+                "details": {
+                    "trust_level": post_data.get("trust_level", 0.5),
+                    "engagement_score": engagement_score,
+                    "min_required": min_engagement_score
+                }
+            }
+            return False, filter_result
+
+        filter_result["engagement_score"] = engagement_score
+        filter_result["trust_level"] = post_data.get("trust_level", 0.5)
 
         # 计算综合痛点分数
         pain_score = 0.0
@@ -376,13 +411,29 @@ class PainSignalFilter:
         min_keyword_matches = pain_config.get("keyword_match", {}).get("min_matches", 1)
         min_emotional_intensity = pain_config.get("emotional_intensity", {}).get("min_score", 0.3)
 
-        # 最终判断
-        passed = (
-            has_keywords and
+        # 最终判断 - 支持愿望信号通过
+        passed = False
+
+        # Set default pass_type if not already set
+        if "pass_type" not in filter_result:
+            filter_result["pass_type"] = "pain"
+
+        # 路径1: 强痛点信号（原有逻辑）
+        if (has_keywords and
             len(matched_keywords) >= min_keyword_matches and
             emotional_intensity >= min_emotional_intensity and
-            pain_score >= 0.3  # 综合分数阈值
-        )
+            pain_score >= 0.3):
+            passed = True
+
+        # 路径2: 愿望信号 + 高参与度（新增逻辑）
+        elif (has_aspiration and
+              engagement_score >= min_engagement_score and
+              aspiration_score >= 0.4):
+            passed = True
+            filter_result["pass_type"] = "aspiration"
+            filter_result["aspiration_score"] = aspiration_score
+        else:
+            filter_result["pass_type"] = "pain"
 
         if passed:
             self.stats["passed_filter"] += 1

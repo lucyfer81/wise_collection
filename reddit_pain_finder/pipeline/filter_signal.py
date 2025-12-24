@@ -482,7 +482,12 @@ class PainSignalFilter:
                     "pain_keywords": result["matched_keywords"],
                     "pain_patterns": result["matched_patterns"],
                     "emotional_intensity": result["emotional_intensity"],
-                    "filter_reason": "pain_signal_passed"
+                    "filter_reason": "pain_signal_passed",
+                    "aspiration_keywords": result.get("matched_aspirations", []),
+                    "aspiration_score": result.get("aspiration_score", 0.0),
+                    "pass_type": result.get("pass_type", "pain"),
+                    "engagement_score": result.get("engagement_score", 0.0),
+                    "trust_level": result.get("trust_level", 0.5)
                 })
                 filtered_posts.append(filtered_post)
 

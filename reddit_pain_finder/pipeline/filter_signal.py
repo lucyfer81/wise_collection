@@ -250,6 +250,49 @@ class PainSignalFilter:
 
         return True, f"Type {post_type} check passed"
 
+    def _get_trust_based_thresholds(self, post_data: Dict[str, Any]) -> Dict[str, int]:
+        """根据帖子所属subreddit的trust_level返回动态阈值"""
+        subreddit = post_data.get("subreddit", "").lower()
+
+        # 查找subreddit所属category及其trust_level
+        trust_level = 0.5  # 默认值
+        for category_name, category_config in self.subreddits_config.get("categories", {}).items():
+            if isinstance(category_config, dict):
+                # 检查category级别的trust_level
+                if "trust_level" in category_config:
+                    category_trust = category_config["trust_level"]
+                    # 检查subreddit是否在这个category下
+                    for sub_name in category_config.keys():
+                        if sub_name.lower() == subreddit and sub_name != "trust_level":
+                            trust_level = category_trust
+                            break
+
+        # 从posts表获取trust_level（如果有）
+        post_trust_level = post_data.get("trust_level", trust_level)
+
+        # 根据trust_level返回阈值
+        if post_trust_level < 0.5:
+            # 低信任度板块 - 更严格的标准
+            return {
+                "min_comments": 20,
+                "min_upvotes": 50,
+                "min_engagement_score": 0.6
+            }
+        elif post_trust_level < 0.7:
+            # 中等信任度板块 - 中等标准
+            return {
+                "min_comments": 10,
+                "min_upvotes": 25,
+                "min_engagement_score": 0.4
+            }
+        else:
+            # 高信任度板块 - 标准阈值
+            return {
+                "min_comments": 5,
+                "min_upvotes": 10,
+                "min_engagement_score": 0.2
+            }
+
     def filter_post(self, post_data: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
         """过滤单个帖子"""
         self.stats["total_processed"] += 1

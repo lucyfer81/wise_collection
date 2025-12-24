@@ -125,7 +125,12 @@ class WiseCollectionDB:
                     pain_score REAL NOT NULL,
                     pain_keywords TEXT,
                     filtered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    filter_reason TEXT
+                    filter_reason TEXT,
+                    aspiration_keywords TEXT,
+                    aspiration_score REAL DEFAULT 0.0,
+                    pass_type TEXT DEFAULT 'pain',
+                    engagement_score REAL DEFAULT 0.0,
+                    trust_level REAL DEFAULT 0.5
                 )
             """)
 
@@ -264,6 +269,9 @@ class WiseCollectionDB:
 
             # 添加alignment_score列到aligned_problems表（如果不存在）
             self._add_alignment_score_column(conn)
+
+            # 添加Phase 2字段到filtered_posts表（如果不存在）
+            self._add_phase2_filtered_posts_columns(conn)
 
             conn.commit()
             logger.info("Unified database initialized successfully")
@@ -569,6 +577,31 @@ class WiseCollectionDB:
         except Exception as e:
             logger.error(f"Failed to add alignment_score column: {e}")
 
+    def _add_phase2_filtered_posts_columns(self, conn):
+        """Add Phase 2 aspiration and trust columns to filtered_posts table if not exist"""
+        try:
+            cursor = conn.execute("PRAGMA table_info(filtered_posts)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            new_columns = {
+                'aspiration_keywords': 'TEXT',
+                'aspiration_score': 'REAL DEFAULT 0.0',
+                'pass_type': 'TEXT DEFAULT \'pain\'',
+                'engagement_score': 'REAL DEFAULT 0.0',
+                'trust_level': 'REAL DEFAULT 0.5'
+            }
+
+            for column_name, column_def in new_columns.items():
+                if column_name not in existing_columns:
+                    conn.execute(f"""
+                        ALTER TABLE filtered_posts
+                        ADD COLUMN {column_name} {column_def}
+                    """)
+                    logger.info(f"Added {column_name} column to filtered_posts table")
+
+        except Exception as e:
+            logger.error(f"Failed to add Phase 2 columns to filtered_posts table: {e}")
+
     # Raw posts operations
     def insert_raw_post(self, post_data: Dict[str, Any]) -> bool:
         """插入原始帖子数据（支持多数据源）"""
@@ -678,8 +711,9 @@ class WiseCollectionDB:
                 conn.execute("""
                     INSERT OR REPLACE INTO filtered_posts
                     (id, title, body, subreddit, url, score, num_comments,
-                     upvote_ratio, pain_score, pain_keywords, filter_reason)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     upvote_ratio, pain_score, pain_keywords, filter_reason,
+                     aspiration_keywords, aspiration_score, pass_type, engagement_score, trust_level)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     post_data["id"],
                     post_data["title"],
@@ -691,7 +725,12 @@ class WiseCollectionDB:
                     post_data.get("upvote_ratio", 0.0),
                     post_data.get("pain_score", 0.0),
                     json.dumps(post_data.get("pain_keywords", [])),
-                    post_data.get("filter_reason", "")
+                    post_data.get("filter_reason", ""),
+                    json.dumps(post_data.get("aspiration_keywords", [])),
+                    post_data.get("aspiration_score", 0.0),
+                    post_data.get("pass_type", "pain"),
+                    post_data.get("engagement_score", 0.0),
+                    post_data.get("trust_level", 0.5)
                 ))
                 conn.commit()
                 return True

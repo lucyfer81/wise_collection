@@ -222,6 +222,24 @@ class WiseCollectionDB:
                 )
             """)
 
+            # 创建评论表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS comments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    post_id TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    source_comment_id TEXT NOT NULL,
+                    author TEXT,
+                    body TEXT NOT NULL,
+                    score INTEGER DEFAULT 0,
+                    created_utc REAL,
+                    created_at TIMESTAMP,
+                    collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+                    UNIQUE(source, source_comment_id)
+                )
+            """)
+
             # 创建所有索引
             # posts表索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_subreddit ON posts(subreddit)")
@@ -257,6 +275,11 @@ class WiseCollectionDB:
             # opportunities表索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_score ON opportunities(total_score)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_cluster_id ON opportunities(cluster_id)")
+
+            # comments表索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_comments_post_id_score ON comments(post_id, score DESC)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_comments_source ON comments(source)")
 
             # 添加对齐跟踪列到clusters表（如果不存在）
             self._add_alignment_columns_to_clusters(conn)

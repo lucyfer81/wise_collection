@@ -95,6 +95,39 @@ experimental:
       Tool fatigue is extreme. Only focus on repeated manual workflows.
 
 # =========================
+# Noisy Tech: 高噪音但有价值
+# =========================
+noisy_tech:
+  trust_level: 0.4
+  programming:
+    min_upvotes: 20
+    min_comments: 10
+    notes: >
+      High volume, low signal-to-noise. Requires strict filtering.
+      Look for specific pain points, not general discussions.
+
+  learnprogramming:
+    min_upvotes: 15
+    min_comments: 8
+    notes: >
+      Beginners often express pain differently. Focus on repeated
+      obstacles in learning, not one-off questions.
+
+  ChatGPT:
+    min_upvotes: 25
+    min_comments: 15
+    notes: >
+      AI tool users. Focus on workflow integration pain, not
+      prompt engineering or capability showcase.
+
+  OpenAI:
+    min_upvotes: 25
+    min_comments: 15
+    notes: >
+      Similar to ChatGPT. Focus on API integration, production
+      deployment, and scaling challenges.
+
+# =========================
 # Pain Keywords Configuration
 # =========================
 pain_keywords:

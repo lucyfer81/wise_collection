@@ -83,6 +83,7 @@ task_mapping:
     model: "main"
     temperature: 0.3
     max_tokens: 2500
+    timeout: 90
 
   # 可行性评分 - 使用小型模型快速评分
   viability_scoring:

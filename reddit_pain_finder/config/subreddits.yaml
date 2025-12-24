@@ -181,6 +181,33 @@ pain_keywords:
     - money
 
 # =========================
+# Aspiration Keywords Configuration
+# =========================
+aspiration_keywords:
+  forward_looking:
+    - "wish i had"
+    - "if only there was"
+    - "my dream tool would"
+    - "would be amazing if"
+    - "i wish someone would build"
+    - "someone should make"
+    - "looking for a tool that"
+    - "need a way to"
+  opportunity:
+    - "there should be a"
+    - "why isn't there a"
+    - "can't believe no one has"
+    - "surprised there's no"
+    - "would pay for"
+    - "would subscribe to"
+  workflow_gap:
+    - "manual process"
+    - "currently i have to"
+    - "still doing manually"
+    - "tired of doing"
+    - "hate that i have to"
+
+# =========================
 # Exclusion Patterns
 # =========================
 exclude_patterns:

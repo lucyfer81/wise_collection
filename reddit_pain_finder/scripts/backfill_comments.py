@@ -17,6 +17,10 @@ def _normalize_comments(comments: list, source: str) -> list:
         # Reddit 和 HN 的评论格式已经在 fetch 阶段统一
         # 这里主要做防御性检查
         if isinstance(comment, dict):
+            # 跳过没有 body 的评论（body 是必填字段）
+            if not comment.get("body"):
+                continue
+
             normalized.append({
                 "id": comment.get("id"),
                 "author": comment.get("author", ""),
@@ -96,9 +100,14 @@ def backfill_comments(batch_size: int = 100, dry_run: bool = False) -> dict:
                             # 插入评论
                             inserted = db.insert_comments(post_id, normalized_comments, source)
                             stats["comments_inserted"] += inserted
+
+                            # 验证插入数量
+                            if inserted != len(normalized_comments):
+                                logger.warning(f"Post {post_id}: expected {len(normalized_comments)} comments, inserted {inserted}")
                         else:
-                            # Dry-run 模式只统计
-                            stats["comments_inserted"] += len(comments)
+                            # Dry-run 模式只统计（使用 normalized 数量）
+                            normalized_comments = _normalize_comments(comments, source)
+                            stats["comments_inserted"] += len(normalized_comments)
 
                         if (stats["posts_with_comments"] % 10) == 0:
                             logger.debug(f"Processed {stats['posts_with_comments']} posts with comments so far")

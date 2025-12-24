@@ -250,13 +250,13 @@ class PainSignalFilter:
 
         return True, f"Type {post_type} check passed"
 
-    def _get_trust_based_thresholds(self, post_data: Dict[str, Any]) -> Dict[str, int]:
+    def _get_trust_based_thresholds(self, post_data: Dict[str, Any]) -> Dict[str, float]:
         """根据帖子所属subreddit的trust_level返回动态阈值"""
         subreddit = post_data.get("subreddit", "").lower()
 
         # 查找subreddit所属category及其trust_level
         trust_level = 0.5  # 默认值
-        for category_name, category_config in self.subreddits_config.get("categories", {}).items():
+        for category_name, category_config in self.subreddits_config.items():
             if isinstance(category_config, dict):
                 # 检查category级别的trust_level
                 if "trust_level" in category_config:

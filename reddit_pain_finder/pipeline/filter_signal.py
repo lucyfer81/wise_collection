@@ -432,8 +432,6 @@ class PainSignalFilter:
             passed = True
             filter_result["pass_type"] = "aspiration"
             filter_result["aspiration_score"] = aspiration_score
-        else:
-            filter_result["pass_type"] = "pain"
 
         if passed:
             self.stats["passed_filter"] += 1

@@ -691,6 +691,55 @@ class WiseCollectionDB:
             logger.error(f"Failed to insert raw post {post_data.get('id')}: {e}")
             return False
 
+    def insert_comments(self, post_id: str, comments: List[Dict[str, Any]], source: str) -> int:
+        """批量插入评论数据
+
+        Args:
+            post_id: 帖子ID
+            comments: 评论列表，每个评论是包含 id, author, body, score, created_utc, created_at 的字典
+            source: 数据源 ('reddit' 或 'hackernews')
+
+        Returns:
+            成功插入的评论数量
+        """
+        try:
+            with self.get_connection("raw") as conn:
+                inserted_count = 0
+                for comment in comments:
+                    comment_id = comment.get("id")
+
+                    # 异常检测：记录缺失ID的评论
+                    if comment_id is None:
+                        logger.warning(
+                            f"Comment for post {post_id} from {source} is missing a source ID. "
+                            f"Author: {comment.get('author', 'unknown')}. "
+                            f"Generating fallback ID."
+                        )
+                        # Fallback ID
+                        comment_id = f"{source}_{comment.get('author', 'unknown')}_{hash(comment.get('body', ''))}"
+
+                    conn.execute("""
+                        INSERT OR IGNORE INTO comments
+                        (post_id, source, source_comment_id, author, body, score, created_utc, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        post_id,
+                        source,
+                        comment_id,
+                        comment.get("author", ""),
+                        comment.get("body", ""),
+                        comment.get("score", 0),
+                        comment.get("created_utc"),
+                        comment.get("created_at")
+                    ))
+                    # Count the comment as inserted (INSERT OR IGNORE will silently skip duplicates)
+                    inserted_count += 1
+                conn.commit()
+                return inserted_count
+        except Exception as e:
+            logger.error(f"Failed to insert comments for post {post_id}: {e}")
+            return 0
+
     def get_unprocessed_posts(self, limit: int = 100) -> List[Dict]:
         """获取未处理的帖子"""
         try:

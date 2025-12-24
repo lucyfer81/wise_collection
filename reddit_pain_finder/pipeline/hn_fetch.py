@@ -61,9 +61,12 @@ class HackerNewsFetcher:
                     comment_data = comment_resp.json()
                     if comment_data and comment_data.get("type") == "comment":
                         comments.append({
+                            "id": str(comment_data.get("id", "")),  # 确保id为字符串
                             "author": comment_data.get("by", ""),
                             "body": comment_data.get("text", ""),
-                            "score": 0  # HN评论没有score
+                            "score": 0,  # HN评论没有score
+                            "created_utc": comment_data.get("time"),  # 添加时间戳
+                            "created_at": datetime.fromtimestamp(comment_data.get("time", 0)).isoformat() + "Z" if comment_data.get("time") else None
                         })
             except Exception as e:
                 logger.warning(f"Failed to fetch comment {kid_id}: {e}")
@@ -156,6 +159,15 @@ class HackerNewsFetcher:
                             self.stats["total_saved"] += 1
                             saved_count += 1
                             logger.info(f"Saved HN story: {item.get('title', '')[:60]}... (ID: {story_id})")
+
+                            # 保存评论到独立的 comments 表
+                            if story_data.get("comments"):
+                                try:
+                                    comment_count = db.insert_comments(unified_id, story_data["comments"], "hackernews")
+                                    if comment_count > 0:
+                                        logger.info(f"Saved {comment_count} comments for HN story {story_id}")
+                                except Exception as e:
+                                    logger.error(f"Failed to save comments for {unified_id}: {e}")
                         else:
                             self.stats["errors"] += 1
                     except Exception as db_e:

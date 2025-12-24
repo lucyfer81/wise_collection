@@ -1,0 +1,781 @@
+{
+  "start_time": "2025-12-24T09:20:38.591577",
+  "stages_completed": [
+    "fetch",
+    "filter",
+    "extract",
+    "embed",
+    "cluster",
+    "alignment",
+    "map_opportunities",
+    "score"
+  ],
+  "stages_failed": [],
+  "stage_results": {
+    "fetch": {
+      "sources_processed": [
+        "reddit",
+        "hackernews"
+      ],
+      "total_saved": 86,
+      "total_filtered": 2141,
+      "total_errors": 0,
+      "source_stats": {
+        "reddit": {
+          "total_fetched": 41,
+          "total_saved": 41,
+          "filtered_out": 2121,
+          "errors": 0,
+          "start_time": "2025-12-24 09:20:40.088491",
+          "runtime_seconds": 105.076743
+        },
+        "hackernews": {
+          "total_fetched": 45,
+          "total_saved": 45,
+          "filtered_out": 20,
+          "errors": 0,
+          "start_time": "2025-12-24 09:22:25.165509",
+          "runtime_seconds": 522.935316
+        }
+      },
+      "runtime_seconds": 628.012627
+    },
+    "filter": {
+      "processed": 805,
+      "filtered": 13,
+      "saved": 13,
+      "filter_stats": {
+        "total_processed": 805,
+        "passed_filter": 13,
+        "filtered_out": 792,
+        "filter_reasons": {
+          "Post too short: 21 < 50": 3,
+          "insufficient_keywords; low_emotional_intensity; low_overall_score": 113,
+          "Post too short: 46 < 50": 5,
+          "Post too short: 39 < 50": 2,
+          "Post too short: 19 < 50": 6,
+          "Post too short: 24 < 50": 6,
+          "Post too short: 41 < 50": 4,
+          "Post too short: 43 < 50": 3,
+          "Post too short: 27 < 50": 1,
+          "Post too short: 28 < 50": 3,
+          "Post too short: 8 < 50": 1,
+          "low_emotional_intensity; low_overall_score": 178,
+          "Post too short: 20 < 50": 2,
+          "Post too short: 38 < 50": 2,
+          "Too few upvotes: 2 < 5": 33,
+          "Too few upvotes: 3 < 5": 30,
+          "Too few upvotes: 4 < 5": 27,
+          "Too few comments: 1 < 3": 6,
+          "Too few comments: 0 < 3": 11,
+          "Excluded due to off_topic: discussion": 9,
+          "low_emotional_intensity": 101,
+          "low_overall_score": 30,
+          "Excluded due to question: how do i": 14,
+          "Excluded due to showcase: i made": 36,
+          "Excluded due to showcase: demo": 26,
+          "Excluded due to job: hiring": 12,
+          "Type discussion: too few comments: 14 < 15": 2,
+          "Excluded due to off_topic: meme": 1,
+          "Post too short: 32 < 50": 1,
+          "Post too long: 7684 > 5000": 1,
+          "Type business: too few upvotes: 10 < 15": 2,
+          "Excluded due to off_topic: general": 15,
+          "Post too short: 18 < 50": 2,
+          "Post too short: 16 < 50": 1,
+          "Post too short: 48 < 50": 4,
+          "Post too short: 34 < 50": 3,
+          "Post too short: 37 < 50": 3,
+          "Post too short: 33 < 50": 3,
+          "Post too short: 36 < 50": 3,
+          "Too few comments: 2 < 3": 7,
+          "insufficient_keywords; low_overall_score": 4,
+          "Type business: too few upvotes: 7 < 15": 2,
+          "Type business: too few upvotes: 12 < 15": 2,
+          "Excluded due to showcase: my project": 9,
+          "Type discussion: too few comments: 13 < 15": 3,
+          "Post too short: 40 < 50": 1,
+          "Post too short: 44 < 50": 5,
+          "Post too short: 29 < 50": 2,
+          "Post too short: 17 < 50": 2,
+          "Post too short: 49 < 50": 1,
+          "Post too short: 31 < 50": 1,
+          "Post too short: 45 < 50": 6,
+          "Type discussion: too few comments: 12 < 15": 2,
+          "Post too short: 25 < 50": 4,
+          "Post too short: 42 < 50": 1,
+          "insufficient_keywords": 1,
+          "Post too short: 14 < 50": 3,
+          "Post too short: 35 < 50": 2,
+          "Post too short: 23 < 50": 1,
+          "Type business: too few upvotes: 14 < 15": 4,
+          "Post too short: 22 < 50": 2,
+          "Post too short: 13 < 50": 2,
+          "Post too short: 15 < 50": 1,
+          "Excluded due to showcase: just launched": 3,
+          "Post too long: 5060 > 5000": 1,
+          "Post too short: 47 < 50": 1,
+          "Excluded due to showcase: showcase": 6,
+          "Excluded due to job: recruiting": 2,
+          "Post too long: 9310 > 5000": 1,
+          "Post too long: 5123 > 5000": 1,
+          "Post too long: 5576 > 5000": 1,
+          "Post too long: 6227 > 5000": 1,
+          "Post too long: 5120 > 5000": 1,
+          "Post too long: 5545 > 5000": 1
+        },
+        "pass_rate": 0.016149068322981366
+      }
+    },
+    "extract": {
+      "processed": 63,
+      "failed": 0,
+      "pain_events_extracted": 39,
+      "pain_events_saved": 39,
+      "extraction_stats": {
+        "total_processed": 0,
+        "total_pain_events": 39,
+        "extraction_errors": 0,
+        "avg_confidence": 0.0,
+        "processing_time": 0.0,
+        "avg_events_per_post": 0,
+        "processing_rate": 0,
+        "llm_stats": {
+          "requests": 63,
+          "tokens_used": 49280,
+          "cost": 0.0,
+          "errors": 0
+        }
+      },
+      "failed_posts": []
+    },
+    "embed": {
+      "processed": 39,
+      "embeddings_created": 39,
+      "embedding_stats": {
+        "total_processed": 39,
+        "embeddings_created": 39,
+        "errors": 0,
+        "processing_time": 4.333319664001465,
+        "cache_hits": 0,
+        "success_rate": 1.0
+      }
+    },
+    "cluster": {
+      "clusters_created": 4,
+      "events_processed": 200,
+      "source_groups": 2,
+      "final_clusters": [
+        {
+          "cluster_name": "reddit: Sustaining and Growing a SaaS Product Through Early-Stage Challenges",
+          "cluster_description": "A recurring workflow involving the emotional, operational, and growth-related challenges faced while building, launching, and iterating on a SaaS product or technical project, particularly in solo or small-team contexts. This includes dealing with customer acquisition, monetization uncertainty, tooling friction, project abandonment, and psychological barriers like doubt, comparison, and motivation loss.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_01",
+          "centroid_summary": "Projects and workflows stall due to inefficiencies in execution, collaboration, or scaling beyond initial momentum",
+          "common_pain": "Failure to sustain or scale initiatives due to operational friction, context loss, or resource misalignment",
+          "common_context": "Software development and product growth workflows involving version control, CI/CD, project management, and customer acquisition",
+          "example_events": [
+            "Event 1: Terraform Cloud pricing and org limits hinder scaling of hundreds of workspaces in multi-cloud CI/CD environments",
+            "Event 9: Context is lost outside GitHub PR diffs, forcing teams to work around rather than fix the root issue in code review workflows",
+            "Event 6: Posting in subreddits generates interest but no sales, indicating a gap between awareness and conversion in GTM efforts"
+          ],
+          "pain_event_ids": [
+            301,
+            297,
+            296,
+            295,
+            292,
+            289,
+            288,
+            287,
+            282,
+            281,
+            280,
+            279,
+            278,
+            277,
+            273,
+            272,
+            271,
+            264,
+            263,
+            258,
+            257,
+            256,
+            255,
+            254,
+            252,
+            251,
+            250,
+            249,
+            248,
+            241,
+            240,
+            239,
+            229,
+            228,
+            227,
+            226,
+            225,
+            222,
+            217,
+            216,
+            213,
+            212,
+            210,
+            209,
+            208,
+            206,
+            205,
+            204,
+            195,
+            194,
+            193,
+            190,
+            189,
+            188,
+            182,
+            181,
+            180,
+            175,
+            174,
+            173,
+            172,
+            171,
+            170,
+            164,
+            161,
+            159,
+            158,
+            157,
+            156,
+            155,
+            154,
+            150,
+            149,
+            148,
+            147,
+            145,
+            144,
+            143,
+            142,
+            139,
+            138,
+            137,
+            136,
+            135,
+            134,
+            133,
+            132,
+            131,
+            130,
+            127,
+            122,
+            121,
+            120,
+            119,
+            118,
+            111,
+            108,
+            107,
+            106
+          ],
+          "cluster_size": 99,
+          "workflow_confidence": 0.88,
+          "workflow_similarity": 0.85,
+          "validation_reasoning": "The majority of pain events (especially 1, 5\u20138, 15\u201320) revolve around the core workflow of developing and growing a SaaS or technical product, where individuals face repeated hurdles in execution, validation, feedback, and persistence. Events 9\u201314 form a tightly related subset (PR review inefficiencies), but they are nested within this broader workflow\u2014code reviews being part of the development loop in such projects. Events 2\u20134 and 18\u201319 reflect motivational and completion challenges common in side projects or indie SaaS efforts. While some events focus on technical tooling (Terraform, GitHub), others on GTM, psychology, or abandonment, they all stem from the same underlying pattern: iterating on a product with limited resources, feedback, and emotional resilience. The core activity\u2014building and sustaining a technical product amid uncertainty\u2014is consistent. Minor variations include focus (code, growth, psychology), but root causes (resource constraints, ambiguity, motivation decay) are shared. Hence, strong similarity with minor variations across subdomains of the same workflow.",
+          "saved_cluster_id": 13
+        },
+        {
+          "cluster_name": "reddit: Optimizing Video Retention Through Micro-Level Editing Adjustments",
+          "cluster_description": "A repeated process of diagnosing viewer dropoff in short-form video content by analyzing second-by-second engagement metrics and iteratively adjusting visual pacing, audio continuity, hook specificity, and content delivery timing to improve retention and algorithmic promotion.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_02",
+          "centroid_summary": "Inability to detect and optimize for subtle behavioral triggers that affect viewer retention or data workflow efficiency due to lack of granular visibility or automation",
+          "common_pain": "Lack of granular, real-time feedback on user behavior or workflow steps, preventing targeted optimization",
+          "common_context": "Content creation or data collection workflows where small, quantifiable behavioral cues (e.g., dropoff timing, visual pacing, import steps) significantly impact outcomes, but standard tools only provide aggregate or high-level metrics",
+          "example_events": [
+            "Event 1: Standard analytics show overall dropoff but not the exact second viewers leave, preventing precise editing fixes",
+            "Event 4: Silence longer than 1.2 seconds causes abrupt viewer loss, but no tool flags these pauses automatically"
+          ],
+          "pain_event_ids": [
+            270,
+            269,
+            268,
+            267,
+            266,
+            265,
+            160,
+            105
+          ],
+          "cluster_size": 8,
+          "workflow_confidence": 0.85,
+          "workflow_similarity": 0.7,
+          "validation_reasoning": "Events 1\u20136 all share a core workflow: creators repeatedly analyze granular viewer retention data (often from analytics tools) to identify precise moments of dropoff, then make tactical editing changes (visual, audio, structural) to improve engagement. The root cause across these is suboptimal moment-to-moment video design leading to viewer disengagement. Events 1\u20136 involve diagnosing and fixing micro-level flaws in video structure using data-informed tweaks, with similar goals (boost retention, trigger rewatches, satisfy algorithms). Event 7 involves scaling data pipelines and faces technical infrastructure barriers, while Event 8 is about manual data import inefficiencies\u2014both are data workflow bottlenecks but in a completely different domain (data operations vs. content optimization). Thus, Events 1\u20136 form a coherent, highly similar workflow (rated 0.7\u20130.8 among themselves), but including Events 7 and 8 lowers the overall similarity to 0.7 due to partial overlap in 'diagnosing failure points with data' but divergent domains and actions. The core activity in 1\u20136 is creative content tuning; in 7\u20138, it's data handling. Despite some conceptual similarity (using data to fix breakdowns), the workflows differ fundamentally in action, tools, and context.",
+          "saved_cluster_id": 14
+        },
+        {
+          "cluster_name": "reddit: Ineffective Learning Reinforcement Through Note-Taking and Self-Explanation",
+          "cluster_description": "A repeated learning workflow where individuals engage with technical or academic material through passive review or excessive organization, then attempt to reinforce understanding via self-explanation or note-taking\u2014but fail to achieve retention or real comprehension due to lack of feedback, active recall, or spaced repetition.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_03",
+          "centroid_summary": "Ineffective knowledge retention due to passive learning and over-reliance on note organization rather than active recall and explanation",
+          "common_pain": "Poor long-term retention of learned material due to passive consumption and insufficient active retrieval or explanation",
+          "common_context": "Self-directed technical learning involving note-taking and study for exams or skill mastery",
+          "example_events": [
+            "Event 2: Forgetting studied material during exams despite extensive passive review (reading, highlighting, rewatching lectures)",
+            "Event 4: Forgetting note content within two weeks and repeatedly re-searching the same topics due to passive note-taking"
+          ],
+          "pain_event_ids": [
+            294,
+            293,
+            166,
+            165
+          ],
+          "cluster_size": 4,
+          "workflow_confidence": 0.85,
+          "workflow_similarity": 0.7,
+          "validation_reasoning": "Events 1, 2, 4, and to a lesser extent 3, share a core workflow of trying to learn complex material (often technical or academic) through methods that emphasize output (notes, explanations) without effective feedback loops or retention mechanisms. Events 1 and 2 both involve using the Feynman Technique as a corrective strategy\u2014indicating a shared root cause: passive learning fails, so the user turns to verbal explanation to check understanding. Events 3 and 4 focus on note organization, but the underlying issue is the same: effort is misdirected into systematizing notes rather than consolidating knowledge. The key difference is that Events 3 and 4 emphasize metacognitive effort (organizing systems), while Events 1 and 2 focus on execution of understanding\u2014but all stem from ineffective knowledge retention workflows. The workaround of switching apps (Events 3, 4) mirrors the adoption of Feynman (Events 1, 2) as a search for a 'better system' to fix shallow learning. This makes the workflows strongly similar (0.7), though not identical due to differing surface activities (organizing vs. explaining).",
+          "saved_cluster_id": 15
+        },
+        {
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "cluster_description": "A repeated activity where individuals attempt to receive high-priority, time-sensitive alerts reliably while avoiding disruptive low-priority interruptions from existing communication tools.",
+          "source_type": "hackernews",
+          "cluster_id": "hackernews_01",
+          "centroid_summary": "Lack of a reliable, low-noise mechanism to deliver high-priority alerts without overwhelming users",
+          "common_pain": "Inability to filter and deliver time-sensitive alerts with guaranteed delivery and minimal noise",
+          "common_context": "Workflows requiring timely awareness of critical events while preserving focus and avoiding distraction",
+          "example_events": [
+            "Event 1: Existing notification systems allow too many low-priority interruptions, breaking concentration; disabling them entirely risks missing critical alerts.",
+            "Event 2: Lack of a simple, guaranteed alert system that cuts through noise until acknowledged, especially during on-call handoffs."
+          ],
+          "pain_event_ids": [
+            187,
+            186,
+            185,
+            184
+          ],
+          "cluster_size": 4,
+          "workflow_confidence": 0.9,
+          "workflow_similarity": 0.85,
+          "validation_reasoning": "All four events revolve around the same core workflow: filtering or ensuring delivery of critical alerts in environments saturated with low-signal notifications. The root cause is consistent\u2014existing tools (email, Slack, general notification systems) fail to reliably distinguish urgency levels, leading to either missed alerts or attention fragmentation. Workarounds like disabling notifications entirely (Events 1 and 4) or lacking a reliable alternative (Events 2 and 3) reflect similar failure modes. The key variation is the specific tool mentioned (email vs. Slack vs. generic systems), but the underlying workflow\u2014balancing focus with urgent alert reception\u2014is identical. Minor differences in context (on-call handoff vs. general focus) do not change the fundamental workflow, warranting a high similarity score.",
+          "saved_cluster_id": 16
+        }
+      ],
+      "clustering_stats": {
+        "total_events_processed": 200,
+        "clusters_created": 4,
+        "llm_validations": 5,
+        "processing_time": 160.4606420993805,
+        "avg_cluster_size": 28.75,
+        "clustering_rate": 0.02,
+        "processing_rate": 1.2464115647507568,
+        "embedding_stats": {
+          "embeddings_created": 200,
+          "cache_hits": 39,
+          "total_tokens": 9071
+        }
+      }
+    },
+    "alignment": {
+      "aligned_problems_count": 1,
+      "aligned_problems": [
+        {
+          "id": "aligned_AP_01_1766541211",
+          "aligned_problem_id": "AP_01",
+          "sources": [
+            "REDDIT",
+            "HACKERNEWS"
+          ],
+          "core_problem": "Ineffective information or signal delivery systems that fail to ensure critical content reaches the user without causing overload or being lost in noise.",
+          "why_they_look_different": "The Reddit cluster focuses on the downstream consequence of this failure for personal productivity (stalled workflows), while the HackerNews cluster focuses on the upstream mechanism itself (lack of a reliable alert system). Both describe a breakdown in the flow of high-priority information.",
+          "evidence": [
+            {
+              "source": "HACKERNEWS",
+              "cluster_summary": "Lack of a reliable, low-noise mechanism to deliver high-priority alerts without overwhelming users",
+              "evidence_quote": "Lack of a reliable, low-noise mechanism to deliver high-priority alerts"
+            },
+            {
+              "source": "REDDIT",
+              "cluster_summary": "Projects and workflows stall due to inefficiencies in execution, collaboration, or scaling beyond initial momentum",
+              "evidence_quote": "Projects and workflows stall due to inefficiencies in execution, collaboration"
+            }
+          ],
+          "cluster_ids": [
+            "REDDIT_Cluster_1",
+            "HACKERNEWS_Cluster_1"
+          ],
+          "created_at": "2025-12-24 01:53:31"
+        }
+      ]
+    },
+    "map_opportunities": {
+      "opportunities_created": 17,
+      "viable_opportunities": 17,
+      "clusters_processed": 17,
+      "opportunity_details": [
+        {
+          "opportunity_id": 30,
+          "cluster_id": 1,
+          "cluster_name": "reddit: Notification Management for Critical Alerts",
+          "opportunity_name": "CriticalPing",
+          "opportunity_description": "A micro-tool that provides a unique, private notification endpoint (e.g., a URL or email address) for critical alerts. Users can configure it to send alerts via a dedicated mobile app with loud, persistent notifications, or to a secondary email that's kept empty and monitored. It includes simple rules (e.g., only allow alerts from approved sources, rate limiting) to prevent spam.",
+          "quality_score": 1.0,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Low competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 31,
+          "cluster_id": 2,
+          "cluster_name": "reddit: Inefficient Note-Taking and Knowledge Retrieval for Technical Learning",
+          "opportunity_name": "QuickRecall CLI",
+          "opportunity_description": "A terminal-based micro-tool for developers to capture technical learning notes with a single command and instantly retrieve them using semantic search, without any UI overhead or organization required.",
+          "quality_score": 0.9,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Moderate competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 32,
+          "cluster_id": 3,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "CriticalPing",
+          "opportunity_description": "A micro-tool that sends a single, high-priority alert (via SMS, phone call, or persistent desktop notification) that must be manually acknowledged to stop. No integrations, just a simple API/webhook endpoint to trigger alerts.",
+          "quality_score": 1.0,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Low competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 33,
+          "cluster_id": 4,
+          "cluster_name": "reddit: Inefficient Note-Taking and Retrieval for Technical Learning",
+          "opportunity_name": "TechNote Stream",
+          "opportunity_description": "A terminal-inspired, single-input field note app that auto-tags technical notes (e.g., Docker, AWS) using AI-based topic detection and enables instant semantic search retrieval without any manual organization.",
+          "quality_score": 0.9,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Moderate competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 34,
+          "cluster_id": 5,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "CriticalPing",
+          "opportunity_description": "A micro-tool that provides a single, high-priority notification channel via a simple API. Sends alerts that bypass Do Not Disturb, repeat at intervals, and require explicit acknowledgment. No configuration, no teams, just a personal alert endpoint.",
+          "quality_score": 1.0,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Low competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 35,
+          "cluster_id": 6,
+          "cluster_name": "reddit: Collaborative Decision-Making and Communication",
+          "opportunity_name": "Decision Tracker",
+          "opportunity_description": "A micro-tool that lets users quickly log collaborative interactions (approvals requested, input dismissed, meetings hijacked) with timestamps, context, and optional screenshots. Creates a private, timestamped log to reference in 1:1s or reviews without confrontation.",
+          "quality_score": 0.9,
+          "quality_reasons": [
+            "High pain frequency",
+            "Medium market size",
+            "Simple MVP",
+            "Low competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 36,
+          "cluster_id": 7,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "CriticalPing",
+          "opportunity_description": "A micro-tool that sends one-time, high-priority alerts via SMS/call with a simple API/webhook. Users define a critical contact list; alerts bypass all app notifications and require explicit acknowledgment (reply 'ACK') to stop.",
+          "quality_score": 0.9,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Moderate competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 37,
+          "cluster_id": 8,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "AckPing",
+          "opportunity_description": "A micro-tool that sends a single, high-priority alert (via SMS, browser notification, or simple app) that repeats at intervals until manually acknowledged by the recipient, ensuring critical messages are never missed.",
+          "quality_score": 0.9,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Moderate competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 38,
+          "cluster_id": 9,
+          "cluster_name": "reddit: Premature Optimization and Validation Avoidance in Early-Stage SaaS Development",
+          "opportunity_name": "Assumption Forcer",
+          "opportunity_description": "A micro-tool that guides solo founders through a rapid, structured process to identify their top 3 riskiest business assumptions (e.g., 'Will users pay $X?', 'Can I reach customers via channel Y?'), then forces them to design and commit to a tiny, concrete validation test for each one within the next 48 hours. It tracks commitment and prompts for results.",
+          "quality_score": 1.0,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Low competition",
+            "Easy integration",
+            "Large cluster size"
+          ]
+        },
+        {
+          "opportunity_id": 39,
+          "cluster_id": 10,
+          "cluster_name": "reddit: Collaborative Decision-Making and Communication",
+          "opportunity_name": "ClarityLog",
+          "opportunity_description": "A micro-tool that lets users log quick collaborative interactions (e.g., 'requested approval for X from teammate Y at 2 PM') with one click, generating a timestamped, shareable log. It auto-sends a polite, non-confrontational summary to relevant parties (optional) and stores a searchable record to highlight patterns of bottlenecks or dismissals.",
+          "quality_score": 0.9,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Moderate competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 40,
+          "cluster_id": 11,
+          "cluster_name": "reddit: Survival-Driven Job Acceptance Under Economic and Structural Instability",
+          "opportunity_name": "JobRiskAlert",
+          "opportunity_description": "A micro-tool that scrapes public data (layoff news, company reviews, policy changes) and user-reported signals to generate stability scores for companies/roles, sending alerts when risks (e.g., layoff spikes, benefit reductions) are detected.",
+          "quality_score": 0.9,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Moderate MVP complexity",
+            "Low competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 41,
+          "cluster_id": 12,
+          "cluster_name": "reddit: Notification Management Failure in Monitoring Workflows",
+          "opportunity_name": "AlertEscalate",
+          "opportunity_description": "A micro-tool that acts as a notification router for critical alerts. Users connect monitoring tools (via webhook) and define escalation rules (e.g., if no acknowledgment in 5 minutes, send SMS/call). It ensures one critical alert cuts through the noise.",
+          "quality_score": 0.9,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Moderate competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 42,
+          "cluster_id": 13,
+          "cluster_name": "reddit: Sustaining and Growing a SaaS Product Through Early-Stage Challenges",
+          "opportunity_name": "PR Context Snapshot",
+          "opportunity_description": "A browser extension that lets you capture and attach key context (requirements, decisions, links) directly to a GitHub PR as a pinned comment or lightweight overlay, visible to all reviewers. It automatically suggests when context might be missing based on PR size or changes.",
+          "quality_score": 1.0,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Low competition",
+            "Easy integration",
+            "Large cluster size"
+          ]
+        },
+        {
+          "opportunity_id": 43,
+          "cluster_id": 14,
+          "cluster_name": "reddit: Optimizing Video Retention Through Micro-Level Editing Adjustments",
+          "opportunity_name": "RetentionLint",
+          "opportunity_description": "A lightweight plugin for popular video editors (starting with CapCut) that scans a video timeline and flags specific, known retention pitfalls: visual shots longer than 3 seconds, audio silences over 1.2 seconds, and vague hook text in the first 2 seconds. It overlays colored warnings directly on the timeline.",
+          "quality_score": 0.83,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Moderate competition",
+            "Moderate integration"
+          ]
+        },
+        {
+          "opportunity_id": 44,
+          "cluster_id": 15,
+          "cluster_name": "reddit: Ineffective Learning Reinforcement Through Note-Taking and Self-Explanation",
+          "opportunity_name": "ExplainBack",
+          "opportunity_description": "A micro-tool that lets users record or type a self-explanation of a concept, then uses AI to generate concise feedback: highlighting gaps, inaccuracies, or oversimplifications, and suggesting key points to reinforce.",
+          "quality_score": 1.0,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Low competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 45,
+          "cluster_id": 16,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "CriticalPing",
+          "opportunity_description": "A micro-tool that provides a single, high-priority notification channel. Users get a unique URL/API endpoint. Any POST to that endpoint triggers a persistent, high-visibility alert (sound, visual) on their device until manually acknowledged. No configuration, no teams, no integrations\u2014just a personal pager for critical stuff.",
+          "quality_score": 1.0,
+          "quality_reasons": [
+            "High pain frequency",
+            "Large market size",
+            "Simple MVP",
+            "Low competition",
+            "Easy integration"
+          ]
+        },
+        {
+          "opportunity_id": 46,
+          "cluster_id": 0,
+          "cluster_name": "AP_01",
+          "opportunity_name": "Multi-Source: Ineffective information or signal delivery systems...",
+          "opportunity_description": "This opportunity is validated by multiple communities across different platforms. Core problem: Ineffective information or signal delivery systems that fail to ensure critical content reaches the user without causing overload or being lost in noise.",
+          "quality_score": 0.95,
+          "quality_reasons": [
+            "Multi-source validation",
+            "Large market size",
+            "High pain frequency",
+            "Moderate competition"
+          ]
+        }
+      ],
+      "mapping_stats": {
+        "total_clusters_processed": 17,
+        "opportunities_identified": 17,
+        "viable_opportunities": 17,
+        "processing_time": 1094.7767312526703,
+        "avg_opportunity_score": 0.9400000000000001,
+        "opportunity_rate": 1.0,
+        "viable_rate": 1.0,
+        "processing_rate": 0.015528280346759092
+      }
+    },
+    "score": {
+      "opportunities_scored": 0,
+      "viable_opportunities": 0
+    }
+  },
+  "total_runtime_seconds": 3067.98689,
+  "final_summary": {
+    "pipeline_completed": true,
+    "stages_completed": 8,
+    "stages_failed": 0,
+    "total_runtime_minutes": 51.13,
+    "database_statistics": {
+      "raw_posts_count": 989,
+      "filtered_posts_count": 197,
+      "avg_pain_score": 0.5120308454002988,
+      "pain_events_count": 301,
+      "clusters_count": 16,
+      "opportunities_count": 46,
+      "aligned_problems_count": 1,
+      "clusters_by_alignment_status": {
+        "processed": 16
+      },
+      "posts_by_source": {
+        "hackernews": 343,
+        "reddit": 646
+      }
+    },
+    "top_opportunities": [
+      {
+        "opportunity_name": "CriticalPing",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise"
+      },
+      {
+        "opportunity_name": "ExplainBack",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "reddit: Ineffective Learning Reinforcement Through Note-Taking and Self-Explanation"
+      },
+      {
+        "opportunity_name": "PR Context Snapshot",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "reddit: Sustaining and Growing a SaaS Product Through Early-Stage Challenges"
+      },
+      {
+        "opportunity_name": "Assumption Forcer",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "reddit: Premature Optimization and Validation Avoidance in Early-Stage SaaS Development"
+      },
+      {
+        "opportunity_name": "CriticalPing",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise"
+      },
+      {
+        "opportunity_name": "CriticalPing",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise"
+      },
+      {
+        "opportunity_name": "CriticalPing",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "reddit: Notification Management for Critical Alerts"
+      },
+      {
+        "opportunity_name": "Assumption Validator",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "reddit: Premature Optimization and Validation Avoidance in Early-Stage SaaS Development"
+      },
+      {
+        "opportunity_name": "CriticalPing",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise"
+      },
+      {
+        "opportunity_name": "Interaction Ledger",
+        "total_score": 1.0,
+        "recommendation": "",
+        "cluster_name": "reddit: Collaborative Decision-Making and Communication"
+      }
+    ],
+    "pipeline_efficiency": {
+      "posts_per_minute": 1.6818846315213556,
+      "pain_events_per_hour": 39.0,
+      "opportunities_per_hour": 17.0
+    }
+  }
+}

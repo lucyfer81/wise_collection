@@ -105,6 +105,43 @@ class PainSignalFilter:
 
         return len(matched_keywords) > 0, matched_keywords, normalized_score
 
+    def _check_aspiration_keywords(self, post_data: Dict[str, Any]) -> Tuple[bool, List[str], float]:
+        """检查愿望关键词 - 寻找机会信号"""
+        title = (post_data.get("title", "")).lower()
+        body = (post_data.get("body", "")).lower()
+        full_text = f"{title} {body}"
+
+        aspiration_keywords = self.subreddits_config.get("aspiration_keywords", {})
+        matched_keywords = []
+        keyword_scores = {}
+
+        # 统计各类别关键词匹配
+        for category, keywords in aspiration_keywords.items():
+            category_matches = 0
+            category_weight = {
+                "forward_looking": 1.0,
+                "opportunity": 0.9,
+                "workflow_gap": 0.8
+            }.get(category, 0.5)
+
+            for keyword in keywords:
+                if keyword.lower() in full_text:
+                    matched_keywords.append(f"{category}:{keyword}")
+                    category_matches += 1
+                    keyword_scores[keyword] = category_weight
+
+            # 计算该类别的得分
+            if category_matches > 0:
+                keyword_scores[f"category_{category}"] = category_matches * category_weight
+
+        # 计算总愿望分数
+        total_score = sum(score for score in keyword_scores.values() if isinstance(score, (int, float)))
+
+        # 标准化分数（0-1范围）
+        normalized_score = min(total_score / 3.0, 1.0)  # 3分为满分
+
+        return len(matched_keywords) > 0, matched_keywords, normalized_score
+
     def _check_pain_patterns(self, post_data: Dict[str, Any]) -> Tuple[bool, List[str]]:
         """检查痛点句式模式"""
         title = (post_data.get("title", "")).lower()

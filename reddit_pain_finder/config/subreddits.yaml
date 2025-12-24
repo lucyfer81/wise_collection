@@ -198,13 +198,10 @@ exclude_patterns:
     - "apply now"
     - "recruiting"
   question:
-    - "how do i"
-    - "what is the best"
     - "any recommendations"
     - "looking for advice"
   off_topic:
     - "meme"
-    - "discussion"
     - "general"
 
 # =========================

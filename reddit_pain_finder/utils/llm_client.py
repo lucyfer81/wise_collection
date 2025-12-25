@@ -339,13 +339,13 @@ Comments: {comments_count}
         )
 
     def _get_pain_extraction_prompt(self) -> str:
-        """获取痛点抽取提示"""
-        return """You are an information extraction engine.
+        """获取痛点抽取提示 - 支持评论上下文"""
+        return """You are an information extraction engine specializing in user pain point analysis.
 
 Your task:
-From the following Reddit post, extract concrete PAIN EVENTS.
-A pain event is a specific recurring problem experienced by the author,
-not opinions, not general complaints.
+From the provided Reddit post and its top comments, extract concrete PAIN EVENTS.
+
+A pain event is a specific recurring problem experienced by users, supported by evidence from discussions.
 
 Rules:
 - Do NOT summarize the post
@@ -353,6 +353,20 @@ Rules:
 - If no concrete pain exists, return an empty list
 - Be literal and conservative
 - Focus on actionable problems people face repeatedly
+
+**Using Comment Context:**
+Top comments often reveal:
+- Additional specific pain instances mentioned by others
+- Confirmation/refinement of the main pain point
+- Alternative perspectives on the same problem
+- Workarounds people are actually using
+- Frequency indicators (how often this occurs)
+
+When extracting pain events:
+1. Look for pains mentioned in BOTH the post AND comments
+2. Use comments to add specificity to vague problems in the post
+3. Include alternative formulations of the same pain
+4. Note if multiple commenters confirm the same issue
 
 Output JSON only with this format:
 {
@@ -365,7 +379,8 @@ Output JSON only with this format:
       "frequency": "how often it happens (explicit or inferred)",
       "emotional_signal": "frustration, anxiety, exhaustion, etc.",
       "mentioned_tools": ["tool1", "tool2"],
-      "confidence": 0.8
+      "confidence": 0.8,
+      "evidence_sources": ["post", "comments"]  # where this pain was mentioned
     }
   ],
   "extraction_summary": "brief summary of findings"
@@ -374,12 +389,15 @@ Output JSON only with this format:
 Fields explanation:
 - actor: who has this problem (developer, manager, user, etc.)
 - context: the situation or workflow where the problem occurs
-- problem: specific, concrete issue (not "things are slow" but "compilation takes 30 minutes")
+- problem: specific, concrete issue (e.g., "compilation takes 30 minutes" not "things are slow")
 - current_workaround: current solutions people use (if mentioned)
 - frequency: how often this happens (daily, weekly, occasionally, etc.)
 - emotional_signal: the emotion expressed (frustration, anger, disappointment, etc.)
 - mentioned_tools: tools, software, or methods explicitly mentioned
-- confidence: how confident you are this is a real pain point (0-1)"""
+- confidence: how confident you are this is a real pain point (0-1)
+- evidence_sources: list of where pain was found ("post", "comments", or both)
+
+Be more confident when the same pain appears in both post and comments."""
 
     def _get_workflow_clustering_prompt(self) -> str:
         """Get workflow clustering prompt with continuous scoring"""

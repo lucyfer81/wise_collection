@@ -77,6 +77,95 @@ verticals:
       Emotional noise is high, extraction must be strict.
 
 # =========================
+# Consumer Life: 非技术蓝海探索
+# =========================
+consumer_life:
+  trust_level: 0.5
+  languagelearning:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      关注对学习工具、App价格、功能、内容枯燥、激励机制的抱怨。
+
+  ChineseLanguage:
+    min_upvotes: 8
+    min_comments: 5
+    notes: >
+      与 r/languagelearning 类似，但更专注于中文学习的特定痛点。
+
+  personalfinance:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      寻找关于预算工具复杂、银行App体验差、订阅服务管理困难等问题的讨论。
+
+  frugal:
+    min_upvotes: 20
+    min_comments: 12
+    notes: >
+      与 r/personalfinance 类似，但更侧重于省钱和性价比，可能会有对"反向消费"工具的需求。
+
+  homeowners:
+    min_upvotes: 10
+    min_comments: 8
+    notes: >
+      痛点集中在寻找可靠承包商、管理家庭维修项目、追踪家电保修和维护历史。
+
+  artistslounge:
+    min_upvotes: 8
+    min_comments: 5
+    notes: >
+      专注于作品集管理、项目追踪、客户寻找、以及对数字绘图软件功能的抱怨。
+
+  artbusiness:
+    min_upvotes: 8
+    min_comments: 5
+    notes: >
+      更侧重商业运作，例如委托项目管理、付款追踪、客户沟通效率等。
+
+  Notion:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      高阶用户的痛点金矿。关注用户分享的复杂工作流、抱怨的局限性和同步问题。
+
+  ObsidianMD:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      类似于 r/Notion，但更关注本地化、数据所有权和插件生态中的缺失功能。
+
+  AskWomenOver30:
+    min_upvotes: 25
+    min_comments: 15
+    notes: >
+      寻找 "I wish there was an app for..." 模式。关注职业、健康、人际关系中未被满足的真实需求。
+
+  selfimprovement:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      寻找对现有习惯养成、时间管理工具（如Todoist, TickTick）不满意的具体原因。
+
+  woodworking:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      木工爱好者，可能抱怨工具、材料寻找、项目设计或管理软件的不便。
+
+  gardening:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      园艺爱好者，可能抱怨植物识别App、灌溉管理、病虫害诊断工具等。
+
+  sewing:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      缝纫爱好者，可能抱怨图纸管理、缝纫机功能、材料购买和项目规划方面的痛点。
+
+# =========================
 # Experimental: 低频探索
 # =========================
 experimental:
@@ -180,6 +269,37 @@ pain_keywords:
     - budget
     - money
 
+  # 生活场景关键词
+  life_frustration:
+    - can't keep up
+    - too much work
+    - overwhelmed
+    - stressful
+    - exhausting
+    - dreading
+    - avoiding
+    - procrastinating
+
+  # 日常效率痛点
+  daily_inefficiency:
+    - forget to
+    - keep forgetting
+    - missed
+    - lost track
+    - disorganized
+    - chaotic
+    - hard to find
+    - can't find
+
+  # 价值评估关键词
+  value_concern:
+    - not worth it
+    - too expensive
+    - overpriced
+    - rip off
+    - waste of money
+    - can't justify
+
 # =========================
 # Aspiration Keywords Configuration
 # =========================
@@ -207,6 +327,14 @@ aspiration_keywords:
     - "tired of doing"
     - "hate that i have to"
 
+  # 具体功能愿望
+  feature_wish:
+    - "wish it could"
+    - "if it could also"
+    - "needs to have"
+    - "should include"
+    - "would be better if"
+
 # =========================
 # Exclusion Patterns
 # =========================
@@ -230,6 +358,19 @@ exclude_patterns:
   off_topic:
     - "meme"
     - "general"
+
+  # 非技术社群特定排除
+  personal_story:
+    - "my story"
+    - "personal experience"
+    - "vent"
+    - "rant"
+    - "just need to share"
+  advice_seeking:
+    - "what do you think"
+    - "advice needed"
+    - "should i"
+    - "need advice on"
 
 # =========================
 # Search Strategy

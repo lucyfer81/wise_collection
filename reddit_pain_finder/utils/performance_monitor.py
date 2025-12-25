@@ -15,6 +15,10 @@ class PerformanceMonitor:
     """性能监控器"""
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
+        """重置所有指标"""
         self.metrics = {
             "start_time": None,
             "end_time": None,

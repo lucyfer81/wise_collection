@@ -1,0 +1,658 @@
+{
+  "results": {
+    "extract": {
+      "processed": 2,
+      "failed": 0,
+      "pain_events_extracted": 4,
+      "pain_events_saved": 4,
+      "extraction_stats": {
+        "total_processed": 0,
+        "total_pain_events": 4,
+        "extraction_errors": 0,
+        "avg_confidence": 0.0,
+        "processing_time": 0.0,
+        "avg_events_per_post": 0,
+        "processing_rate": 0,
+        "llm_stats": {
+          "requests": 2,
+          "tokens_used": 3171,
+          "cost": 0.0,
+          "errors": 0
+        }
+      },
+      "failed_posts": []
+    },
+    "embed": {
+      "processed": 4,
+      "embeddings_created": 4,
+      "embedding_stats": {
+        "total_processed": 4,
+        "embeddings_created": 4,
+        "errors": 0,
+        "processing_time": 0.34552574157714844,
+        "cache_hits": 0,
+        "success_rate": 1.0
+      }
+    },
+    "cluster": {
+      "clusters_created": 1,
+      "events_processed": 4,
+      "source_groups": 1,
+      "final_clusters": [
+        {
+          "cluster_name": "reddit: Seeking Trustworthy Product Information Amid Unreliable Sources",
+          "cluster_description": "Users repeatedly attempt to find authentic, crowd-sourced product insights by navigating through or around systems they perceive as biased, opaque, or incomplete, often hitting dead ends due to poor source transparency or limited access.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_01",
+          "centroid_summary": "Users cannot reliably access or verify authentic product information due to broken or inadequate aggregation of Reddit-based insights.",
+          "common_pain": "Inadequate access to raw, verifiable, and filterable Reddit-derived product data, leading to unreliable or incomplete information retrieval.",
+          "common_context": "Users attempting to evaluate products by leveraging Reddit as a source of authentic, crowd-sourced opinions, but facing broken links, missing source threads, or failed filters.",
+          "example_events": [
+            "Event 1: Price links redirect exclusively to Amazon, which users consider unreliable for price comparison, preventing verification of cost data from Reddit discussions.",
+            "Event 2: Only AI-generated summaries are shown without access to original Reddit threads, making it impossible to verify the source or context of aggregated opinions."
+          ],
+          "pain_event_ids": [
+            359,
+            358,
+            357,
+            356
+          ],
+          "cluster_size": 4,
+          "workflow_confidence": 0.85,
+          "workflow_similarity": 0.8,
+          "validation_reasoning": "All four events revolve around a core workflow: the user's effort to obtain reliable, real-user product information in an environment saturated with bias, aggregation, or restricted access. The root cause across events is distrust in conventional sources (Amazon, editorial lists, AI summaries) and a desire to access raw, authentic user opinions\u2014especially from Reddit. The failure modes differ slightly (being redirected, lacking source access, failed search, or perception of bias), but the underlying activity\u2014seeking truth through decentralized user voices\u2014is consistent. The main variation is in the interface failure point (navigation, filtering, summarization), but the intent and workflow are strongly aligned, warranting a 0.8 similarity.",
+          "saved_cluster_id": 26
+        }
+      ],
+      "clustering_stats": {
+        "total_events_processed": 4,
+        "clusters_created": 1,
+        "llm_validations": 1,
+        "processing_time": 19.725910425186157,
+        "avg_cluster_size": 4.0,
+        "clustering_rate": 0.25,
+        "processing_rate": 0.20277898022353263,
+        "embedding_stats": {
+          "embeddings_created": 4,
+          "cache_hits": 4,
+          "total_tokens": 265
+        }
+      }
+    },
+    "map_opportunities": {
+      "opportunities_created": 27,
+      "viable_opportunities": 27,
+      "clusters_processed": 27,
+      "opportunity_details": [
+        {
+          "opportunity_id": 95,
+          "cluster_id": 1,
+          "cluster_name": "reddit: Notification Management for Critical Alerts",
+          "opportunity_name": "AlertEscalate",
+          "opportunity_description": "A micro-tool that monitors a designated email inbox for critical alerts (from services like UptimeRobot) and automatically escalates them via SMS, phone call, or a loud mobile app notification if no acknowledgment is received within a set time (e.g., 5 minutes).",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 96,
+          "cluster_id": 2,
+          "cluster_name": "reddit: Inefficient Note-Taking and Knowledge Retrieval for Technical Learning",
+          "opportunity_name": "QuickRecall CLI",
+          "opportunity_description": "A terminal-based tool that lets developers instantly capture technical notes with a single command, auto-tags them with semantic context (e.g., topic, commands, code snippets), and enables natural language search to retrieve forgotten details without manual organization.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 97,
+          "cluster_id": 3,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "Acknowledgment Pager",
+          "opportunity_description": "A micro-tool that provides a single, high-priority notification endpoint (e.g., a unique URL). When triggered, it sends a persistent, escalating alert (e.g., mobile push, SMS) that only stops when the recipient explicitly acknowledges it via a simple action.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 98,
+          "cluster_id": 4,
+          "cluster_name": "reddit: Inefficient Note-Taking and Retrieval for Technical Learning",
+          "opportunity_name": "QuickRecall",
+          "opportunity_description": "A minimalist, terminal-style note-taking tool with a single input field for instant capture and automatic semantic search for retrieval, requiring zero upfront organization.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 99,
+          "cluster_id": 5,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "CriticalPing",
+          "opportunity_description": "A minimal, standalone web and mobile app that provides a single, high-priority notification channel. Users get a unique, private URL to send a critical alert (via a simple HTTP POST or web form) that triggers an unmistakable, persistent notification on their devices until acknowledged.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 100,
+          "cluster_id": 6,
+          "cluster_name": "reddit: Collaborative Decision-Making and Communication",
+          "opportunity_name": "Meeting & Interaction Tracker",
+          "opportunity_description": "A lightweight, private tool that allows an individual to discreetly log instances of being talked over, dismissed, or stonewalled during meetings and key interactions, tagging them with context (e.g., 'idea dismissed,' 'interrupted,' 'approval bottleneck'). It generates a simple, factual timeline report to help the user identify patterns and prepare for a constructive conversation.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 101,
+          "cluster_id": 7,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "Acknowledge-Only Pager",
+          "opportunity_description": "A dead-simple web and mobile app that provides a single, high-priority notification channel. It sends a critical alert (via push, SMS fallback) that loops and escalates until the recipient positively acknowledges it with one tap, cutting through all other muted notifications.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 102,
+          "cluster_id": 8,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "AckPager",
+          "opportunity_description": "A minimal web app that provides a single, high-priority notification endpoint. Sending an alert triggers a persistent, intrusive notification (sound, browser notification, optional SMS) that repeats at intervals until the user explicitly acknowledges it via a click.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 103,
+          "cluster_id": 9,
+          "cluster_name": "reddit: Premature Optimization and Validation Avoidance in Early-Stage SaaS Development",
+          "opportunity_name": "Assumption Forcer",
+          "opportunity_description": "A micro-tool that guides solo founders to identify their single riskiest assumption about their idea, then generates a specific, minimal test (e.g., a one-quessage survey, a fake door page, a script for a 5-minute call) and a deadline to complete it.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 104,
+          "cluster_id": 10,
+          "cluster_name": "reddit: Collaborative Decision-Making and Communication",
+          "opportunity_name": "Blocklog",
+          "opportunity_description": "A private, timestamped log where users can quickly record instances of being dismissed, ignored, or bottlenecked by a teammate, categorizing each event (e.g., 'dismissed idea,' 'delayed response,' 'talked over') to identify patterns over time.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 105,
+          "cluster_id": 11,
+          "cluster_name": "reddit: Survival-Driven Job Acceptance Under Economic and Structural Instability",
+          "opportunity_name": "Offer Stability Scanner",
+          "opportunity_description": "A micro-tool that lets users input a job offer's details (salary, benefits, contract type) and their monthly financial obligations to instantly generate a stability score and risk report, flagging potential issues like benefit changes, layoff history, or income gaps.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 106,
+          "cluster_id": 12,
+          "cluster_name": "reddit: Notification Management Failure in Monitoring Workflows",
+          "opportunity_name": "AlertSiren",
+          "opportunity_description": "A micro-tool that receives monitoring webhooks or emails and forwards only critical alerts as high-priority SMS or app push notifications to a dedicated, always-on mobile device, with configurable quiet hours and escalation rules.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 107,
+          "cluster_id": 13,
+          "cluster_name": "reddit: Sustaining and Growing a SaaS Product Through Early-Stage Challenges",
+          "opportunity_name": "Project Epitaph",
+          "opportunity_description": "A micro-tool that lets solo founders quickly document the core reason a project is being paused or abandoned, capturing the key lesson, assumption tested, and one reusable insight for next time. It creates a simple, searchable graveyard of projects focused on learning, not guilt.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 108,
+          "cluster_id": 14,
+          "cluster_name": "reddit: Optimizing Video Retention Through Micro-Level Editing Adjustments",
+          "opportunity_name": "RetentionLint",
+          "opportunity_description": "A micro-tool that uploads a draft video and automatically flags specific, timestamped retention risks like audio silences over 1.2 seconds, visual shots longer than 3 seconds, and vague opening text, providing concrete suggestions for fixes.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 109,
+          "cluster_id": 15,
+          "cluster_name": "reddit: Ineffective Learning Reinforcement Through Note-Taking and Self-Explanation",
+          "opportunity_name": "Explanation Checker",
+          "opportunity_description": "A micro-tool that lets learners paste a short explanation of a concept (e.g., from notes or spoken via transcription) and instantly receive feedback on clarity, missing key points, and potential misunderstandings using AI, without requiring manual card setup or complex integrations.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 110,
+          "cluster_id": 16,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "Acknowledge-Only Pager",
+          "opportunity_description": "A dead-simple web and mobile app that provides a single, high-priority notification channel. Senders post an urgent alert via a unique URL; the recipient gets a persistent, unavoidable notification (sound, vibration, visual) across devices until they explicitly acknowledge it.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 111,
+          "cluster_id": 17,
+          "cluster_name": "reddit: AI Interaction Fatigue Due to Output Degradation and Behavioral Annoyances",
+          "opportunity_name": "ToneGuard",
+          "opportunity_description": "A browser extension that monitors AI conversations in real-time, detects patronizing language, unnecessary safety disclaimers, and repetitive responses, then automatically rewrites prompts or suggests corrections to keep conversations focused and productive.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 112,
+          "cluster_id": 18,
+          "cluster_name": "reddit: Scaling GTM Experiments Under Resource and Organizational Constraints",
+          "opportunity_name": "Experiment Ledger",
+          "opportunity_description": "A micro-tool for solo marketers or small teams to define, run, and review GTM experiments with a strict focus on learning. Users input an experiment hypothesis, allocated budget, and success metric upfront; the tool then provides a simple dashboard to track spend vs. learning, flags underpowered experiments, and generates a plain-English 'What We Learned' report at the end.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 113,
+          "cluster_id": 19,
+          "cluster_name": "reddit: Navigating Ambiguous Communication Expectations in Client-Facing Roles",
+          "opportunity_name": "ToneCheck for Client Emails",
+          "opportunity_description": "A micro-tool that analyzes draft client-facing emails for tone (e.g., aggressive, too nice, neutral) based on simple rules (like bolding, word choice, sentence length) and suggests small, specific edits to align with a user-defined or feedback-informed style goal.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 114,
+          "cluster_id": 20,
+          "cluster_name": "reddit: Ineffective Learning Reinforcement Through Note-Taking and Self-Explanation",
+          "opportunity_name": "ExplainBack",
+          "opportunity_description": "A micro-tool that lets users record or type a short explanation of a concept, then uses AI to instantly highlight gaps, inaccuracies, or missing key points compared to a trusted source or simple knowledge base.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 115,
+          "cluster_id": 21,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "Critical Ping",
+          "opportunity_description": "A minimal web app that provides a single, high-priority alert inbox. Users get a unique, shareable link; any POST request to that link triggers a guaranteed, persistent notification (sound, browser notification, optional SMS fallback) that must be manually acknowledged to silence. No sign-up for recipients; senders use a simple API or web form.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 116,
+          "cluster_id": 22,
+          "cluster_name": "reddit: AI Interaction Frustration Due to Overly Restrictive or Unreliable Model Behavior",
+          "opportunity_name": "PromptGuard",
+          "opportunity_description": "A browser extension that analyzes your AI query in real-time, detects potential triggers for safety overreactions or hallucinations, and suggests subtle rephrasings to get a direct, useful answer from the same model.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 117,
+          "cluster_id": 23,
+          "cluster_name": "reddit: Navigating Contradictory Communication Expectations in Professional Settings",
+          "opportunity_name": "Tone Calibrator",
+          "opportunity_description": "A micro-tool that lets users input past communication snippets (e.g., emails, meeting transcripts) alongside the specific, contradictory feedback received ('too aggressive', 'too nice'), and uses simple AI to highlight the linguistic triggers (e.g., bolded words, direct questions, deferral phrases) and suggest neutral, calibrated rephrasing aligned to that reviewer's implied preference.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 118,
+          "cluster_id": 24,
+          "cluster_name": "reddit: Ineffective Knowledge Retention Loop",
+          "opportunity_name": "Feynman Check",
+          "opportunity_description": "A lightweight web app that lets users record or type an explanation of a concept, then uses AI to instantly highlight gaps, jargon, or unclear reasoning\u2014simulating a listener's feedback without the social awkwardness.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 119,
+          "cluster_id": 25,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "Critical Pager",
+          "opportunity_description": "A micro-tool that provides a single, ultra-reliable notification channel. Users define a shortlist of critical alert sources (e.g., specific monitoring systems, key people). Only alerts from these sources trigger a distinct, high-priority notification (e.g., persistent sound, repeated vibration) that continues until manually acknowledged.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 120,
+          "cluster_id": 26,
+          "cluster_name": "reddit: Seeking Trustworthy Product Information Amid Unreliable Sources",
+          "opportunity_name": "Reddit Insight Verifier",
+          "opportunity_description": "A browser extension that, when on a product page or review site, finds and displays key, verified Reddit discussions about that product with direct links to source threads and historical price mentions from multiple retailers.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 121,
+          "cluster_id": 0,
+          "cluster_name": "AP_01",
+          "opportunity_name": "Multi-Source: Information overload and poor signal-to-noise rati...",
+          "opportunity_description": "This opportunity is validated by multiple communities across different platforms. Core problem: Information overload and poor signal-to-noise ratio in digital systems, leading to inefficiency and missed critical information.",
+          "validation_reason": "Aligned cluster auto-pass"
+        }
+      ],
+      "mapping_stats": {
+        "total_clusters_processed": 27,
+        "opportunities_identified": 27,
+        "viable_opportunities": 27,
+        "processing_time": 698.5931749343872,
+        "avg_opportunity_score": 0.0,
+        "opportunity_rate": 1.0,
+        "viable_rate": 1.0,
+        "processing_rate": 0.038649103611033526
+      }
+    },
+    "score": {
+      "opportunities_scored": 26,
+      "viable_opportunities": 0,
+      "good_opportunities": 0,
+      "excellent_opportunities": 0,
+      "scored_opportunities": [
+        {
+          "opportunity_id": 119,
+          "opportunity_name": "Critical Pager",
+          "total_score": 2.9575,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 118,
+          "opportunity_name": "Feynman Check",
+          "total_score": 3.04,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 117,
+          "opportunity_name": "Tone Calibrator",
+          "total_score": 3.5414999999999996,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.60) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 116,
+          "opportunity_name": "PromptGuard",
+          "total_score": 4.093145161290322,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 115,
+          "opportunity_name": "Critical Ping",
+          "total_score": 2.9575,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 114,
+          "opportunity_name": "ExplainBack",
+          "total_score": 3.09,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 113,
+          "opportunity_name": "ToneCheck for Client Emails",
+          "total_score": 3.6914999999999996,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.60) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 112,
+          "opportunity_name": "Experiment Ledger",
+          "total_score": 3.0225,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 111,
+          "opportunity_name": "ToneGuard",
+          "total_score": 3.73688326446281,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Low trust data sources (trust_level: 0.48) - signals may not be reliable",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 110,
+          "opportunity_name": "Acknowledge-Only Pager",
+          "total_score": 2.8075,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 109,
+          "opportunity_name": "Explanation Checker",
+          "total_score": 3.04,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 108,
+          "opportunity_name": "RetentionLint",
+          "total_score": 3.2225,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 107,
+          "opportunity_name": "Project Epitaph",
+          "total_score": 4.306818181818182,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 106,
+          "opportunity_name": "AlertSiren",
+          "total_score": 3.3525,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 105,
+          "opportunity_name": "Offer Stability Scanner",
+          "total_score": 2.8525,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 104,
+          "opportunity_name": "Blocklog",
+          "total_score": 3.165,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 103,
+          "opportunity_name": "Assumption Forcer",
+          "total_score": 4.131367924528302,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 102,
+          "opportunity_name": "AckPager",
+          "total_score": 2.9575,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 101,
+          "opportunity_name": "Acknowledge-Only Pager",
+          "total_score": 2.8075,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 100,
+          "opportunity_name": "Meeting & Interaction Tracker",
+          "total_score": 2.89,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 99,
+          "opportunity_name": "CriticalPing",
+          "total_score": 2.9575,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 98,
+          "opportunity_name": "QuickRecall",
+          "total_score": 3.14,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 97,
+          "opportunity_name": "Acknowledgment Pager",
+          "total_score": 2.8325,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 96,
+          "opportunity_name": "QuickRecall CLI",
+          "total_score": 3.24,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 95,
+          "opportunity_name": "AlertEscalate",
+          "total_score": 3.1275,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 121,
+          "opportunity_name": "Multi-Source: Information overload and poor signal-to-noise rati...",
+          "total_score": 1.625,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Highly competitive market with established players",
+            "Problem may not be frequent enough to drive adoption"
+          ]
+        }
+      ],
+      "scoring_stats": {
+        "total_opportunities_scored": 26,
+        "viable_opportunities": 0,
+        "good_opportunities": 0,
+        "excellent_opportunities": 0,
+        "processing_time": 340.4078724384308,
+        "avg_total_score": 3.1763928666192163,
+        "skipped_clusters": 26,
+        "viable_rate": 0.0,
+        "good_rate": 0.0,
+        "excellent_rate": 0.0,
+        "processing_rate": 0.07637896213667207
+      }
+    }
+  },
+  "summary": {
+    "total_duration_seconds": 1138.169828,
+    "total_duration_minutes": 18.97,
+    "total_llm_calls": 56,
+    "total_tokens": 170414,
+    "estimated_cost_usd": 0.184158,
+    "stages_summary": {
+      "extract": {
+        "duration_seconds": 79.079745,
+        "items_processed": 2,
+        "llm_calls": 0,
+        "tokens_used": 0
+      },
+      "embed": {
+        "duration_seconds": 0.346415,
+        "items_processed": 4,
+        "llm_calls": 0,
+        "tokens_used": 0
+      },
+      "cluster": {
+        "duration_seconds": 19.72642,
+        "items_processed": 1,
+        "llm_calls": 0,
+        "tokens_used": 0
+      },
+      "map_opportunities": {
+        "duration_seconds": 698.593513,
+        "items_processed": 27,
+        "llm_calls": 0,
+        "tokens_used": 0
+      },
+      "score": {
+        "duration_seconds": 340.423735,
+        "items_processed": 26,
+        "llm_calls": 0,
+        "tokens_used": 0
+      }
+    }
+  }
+}

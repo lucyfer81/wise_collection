@@ -640,6 +640,7 @@ def main():
     parser.add_argument("--limit", type=int, default=15, help="最大分析数量")
     parser.add_argument("--legacy-db", action="store_true", help="使用旧的多数据库模式")
     parser.add_argument("--dry-run", action="store_true", help="试运行模式（仅获取数据，不生成报告）")
+    parser.add_argument("--evaluate", action="store_true", help="生成报告后自动评估质量")
 
     args = parser.parse_args()
 
@@ -647,6 +648,8 @@ def main():
     logger.info("痛点分析器开始运行")
     logger.info(f"数据库模式: {'多数据库文件' if args.legacy_db else '统一数据库'}")
     logger.info(f"最低评分: {args.min_score}, 最大数量: {args.limit}")
+    if args.evaluate:
+        logger.info("启用自动评估模式")
     logger.info("=" * 50)
 
     try:
@@ -667,6 +670,81 @@ def main():
 
         logger.info("开始运行分析...")
         analyzer.run_analysis(min_score=args.min_score, limit=args.limit)
+        logger.info("分析报告生成完成")
+
+        # 如果启用了评估模式，自动评估报告质量
+        if args.evaluate:
+            logger.info("=" * 50)
+            logger.info("开始评估报告质量...")
+            print("\n" + "=" * 60)
+            print("🔍 开始评估报告质量...")
+            print("=" * 60)
+
+            # 导入评估器
+            try:
+                import sys
+                import os
+                # 添加scripts目录到路径
+                scripts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts')
+                if scripts_dir not in sys.path:
+                    sys.path.insert(0, scripts_dir)
+
+                from evaluate_opportunity_reports import OpportunityReportEvaluator
+
+                # 创建评估器，评估报告目录
+                reports_dir = analyzer.output_dir
+                evaluator = OpportunityReportEvaluator(reports_dir)
+
+                # 执行评估
+                evaluations, aggregated = evaluator.evaluate_all()
+
+                if not evaluations:
+                    print("⚠️  未找到可评估的报告")
+                    logger.info("未找到可评估的报告")
+                else:
+                    # 生成评估报告，保存在同一目录
+                    eval_report_path = os.path.join(reports_dir, "opportunity_report_evaluation.md")
+                    eval_json_path = os.path.join(reports_dir, "opportunity_report_evaluation.json")
+
+                    # 生成markdown报告
+                    report_content = evaluator.generate_markdown_report(evaluations, aggregated)
+
+                    # 保存markdown报告
+                    with open(eval_report_path, 'w', encoding='utf-8') as f:
+                        f.write(report_content)
+
+                    logger.info(f"✅ Markdown评估报告已保存: {eval_report_path}")
+                    print(f"✅ Markdown评估报告已保存: {eval_report_path}")
+
+                    # 保存JSON数据
+                    with open(eval_json_path, 'w', encoding='utf-8') as f:
+                        json.dump({
+                            'evaluations': evaluations,
+                            'aggregated': aggregated,
+                            'timestamp': datetime.now().isoformat()
+                        }, f, indent=2, ensure_ascii=False)
+
+                    logger.info(f"✅ JSON评估数据已保存: {eval_json_path}")
+                    print(f"✅ JSON评估数据已保存: {eval_json_path}")
+
+                    # 输出摘要
+                    print(f"\n📊 评估完成!")
+                    print(f"   • 评估报告数: {aggregated.get('total_reports', 0)}")
+                    print(f"   • 平均完整性: 计算中...")
+                    print(f"   • 评估报告位置: {eval_report_path}")
+
+                    logger.info("=" * 50)
+                    logger.info("报告质量评估完成")
+
+            except ImportError as e:
+                logger.error(f"无法导入评估器: {e}")
+                print(f"⚠️  无法导入评估器，请检查 scripts/evaluate_opportunity_reports.py 是否存在")
+            except Exception as e:
+                logger.error(f"评估过程出错: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                print(f"❌ 评估过程出错: {e}")
+
         logger.info("程序执行完成")
     except Exception as e:
         logger.error(f"程序执行失败: {e}")

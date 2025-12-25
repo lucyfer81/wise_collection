@@ -1,0 +1,1008 @@
+{
+  "evaluations": [
+    {
+      "file": "reddit_AI_Interaction_Frustration_Due_to_Overly_Restrictive_or_Unreliable_Model_Behavior_opportunity_analysis.md",
+      "report_name": "reddit_AI_Interaction_Frustration_Due_to_Overly_Restrictive_or_Unreliable_Model_Behavior_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 6,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 6,
+        "file_size_bytes": 18377,
+        "char_count": 10115,
+        "line_count": 236,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "PromptGuard",
+          "score": 4.09
+        },
+        {
+          "name": "Failover Prompt",
+          "score": 4.09
+        },
+        {
+          "name": "ToneKey",
+          "score": 0.0
+        },
+        {
+          "name": "PromptGuard",
+          "score": 4.09
+        },
+        {
+          "name": "Failover Prompt",
+          "score": 4.09
+        },
+        {
+          "name": "ToneKey",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_Navigating_Ambiguous_Communication_Expectations_in_Client_Facing_Roles_opportunity_analysis.md",
+      "report_name": "reddit_Navigating_Ambiguous_Communication_Expectations_in_Client_Facing_Roles_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 5,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 8,
+        "file_size_bytes": 17762,
+        "char_count": 9744,
+        "line_count": 219,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "ToneCheck for Client Emails",
+          "score": 3.69
+        },
+        {
+          "name": "Feedback Clarifier",
+          "score": 3.63
+        },
+        {
+          "name": "ToneCheck Coach",
+          "score": 3.57
+        },
+        {
+          "name": "ToneTune",
+          "score": 0.0
+        },
+        {
+          "name": "ToneCheck for Client Emails",
+          "score": 3.69
+        },
+        {
+          "name": "Feedback Clarifier",
+          "score": 3.63
+        },
+        {
+          "name": "ToneCheck Coach",
+          "score": 3.57
+        },
+        {
+          "name": "ToneTune",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_Ineffective_Learning_Reinforcement_Through_Note_Taking_and_Self_Explanation_opportunity_analysis.md",
+      "report_name": "reddit_Ineffective_Learning_Reinforcement_Through_Note_Taking_and_Self_Explanation_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 6,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 10,
+        "file_size_bytes": 20055,
+        "char_count": 10733,
+        "line_count": 238,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "RecallNote",
+          "score": 3.19
+        },
+        {
+          "name": "RecallPrompt",
+          "score": 3.09
+        },
+        {
+          "name": "Explanation Checker",
+          "score": 3.04
+        },
+        {
+          "name": "Feynman Feedback",
+          "score": 3.0
+        },
+        {
+          "name": "ExplainBack",
+          "score": 0.0
+        },
+        {
+          "name": "RecallNote",
+          "score": 3.19
+        },
+        {
+          "name": "RecallPrompt",
+          "score": 3.09
+        },
+        {
+          "name": "Explanation Checker",
+          "score": 3.04
+        },
+        {
+          "name": "Feynman Feedback",
+          "score": 3.0
+        },
+        {
+          "name": "ExplainBack",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_Notification_Management_Failure_in_Monitoring_Workflows_opportunity_analysis.md",
+      "report_name": "reddit_Notification_Management_Failure_in_Monitoring_Workflows_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 6,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 12,
+        "file_size_bytes": 18755,
+        "char_count": 10997,
+        "line_count": 238,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "AlertSiren",
+          "score": 3.35
+        },
+        {
+          "name": "AlertSentry Inbox",
+          "score": 3.35
+        },
+        {
+          "name": "AlertSentry Inbox",
+          "score": 3.35
+        },
+        {
+          "name": "AlertEscalate",
+          "score": 3.31
+        },
+        {
+          "name": "AlertEscalate",
+          "score": 3.19
+        },
+        {
+          "name": "AlertSiren",
+          "score": 3.35
+        },
+        {
+          "name": "AlertSentry Inbox",
+          "score": 3.35
+        },
+        {
+          "name": "AlertSentry Inbox",
+          "score": 3.35
+        },
+        {
+          "name": "AlertEscalate",
+          "score": 3.31
+        },
+        {
+          "name": "AlertEscalate",
+          "score": 3.19
+        },
+        {
+          "name": "AlertPing",
+          "score": 3.13
+        },
+        {
+          "name": "AlertEscalate",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_Inefficient_Note_Taking_and_Retrieval_for_Technical_Learning_opportunity_analysis.md",
+      "report_name": "reddit_Inefficient_Note_Taking_and_Retrieval_for_Technical_Learning_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 6,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 13,
+        "file_size_bytes": 20828,
+        "char_count": 12298,
+        "line_count": 255,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "TechSnap Recall",
+          "score": 3.21
+        },
+        {
+          "name": "QuickRecall",
+          "score": 3.14
+        },
+        {
+          "name": "TechNote Tagger",
+          "score": 3.08
+        },
+        {
+          "name": "QuickRecall",
+          "score": 3.06
+        },
+        {
+          "name": "LearnSnap",
+          "score": 2.99
+        },
+        {
+          "name": "TechSnap Recall",
+          "score": 3.21
+        },
+        {
+          "name": "QuickRecall",
+          "score": 3.14
+        },
+        {
+          "name": "TechNote Tagger",
+          "score": 3.08
+        },
+        {
+          "name": "QuickRecall",
+          "score": 3.06
+        },
+        {
+          "name": "LearnSnap",
+          "score": 2.99
+        },
+        {
+          "name": "TechNote Stream",
+          "score": 2.98
+        },
+        {
+          "name": "TechNote Stream",
+          "score": 2.98
+        },
+        {
+          "name": "TechNote Snapper",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "hackernews_Managing_Critical_Alerts_Amid_Notification_Noise_opportunity_analysis.md",
+      "report_name": "hackernews_Managing_Critical_Alerts_Amid_Notification_Noise_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 5,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 13,
+        "file_size_bytes": 19623,
+        "char_count": 11661,
+        "line_count": 245,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "CriticalPing",
+          "score": 3.23
+        },
+        {
+          "name": "UrgentBell",
+          "score": 3.02
+        },
+        {
+          "name": "CriticalPing",
+          "score": 2.96
+        },
+        {
+          "name": "CriticalPing",
+          "score": 2.95
+        },
+        {
+          "name": "Critical Alert Pager",
+          "score": 2.83
+        },
+        {
+          "name": "CriticalPing",
+          "score": 3.23
+        },
+        {
+          "name": "UrgentBell",
+          "score": 3.02
+        },
+        {
+          "name": "CriticalPing",
+          "score": 2.96
+        },
+        {
+          "name": "CriticalPing",
+          "score": 2.95
+        },
+        {
+          "name": "Critical Alert Pager",
+          "score": 2.83
+        },
+        {
+          "name": "Critical Pager",
+          "score": 2.81
+        },
+        {
+          "name": "Critical Pager",
+          "score": 2.71
+        },
+        {
+          "name": "AlertGate",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_AI_Interaction_Fatigue_Due_to_Output_Degradation_and_Behavioral_Annoyances_opportunity_analysis.md",
+      "report_name": "reddit_AI_Interaction_Fatigue_Due_to_Output_Degradation_and_Behavioral_Annoyances_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 6,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 8,
+        "file_size_bytes": 19820,
+        "char_count": 10740,
+        "line_count": 255,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "ToneGuard",
+          "score": 3.93
+        },
+        {
+          "name": "ToneGuard",
+          "score": 3.74
+        },
+        {
+          "name": "ToneFilter",
+          "score": 3.71
+        },
+        {
+          "name": "ToneDeflect",
+          "score": 0.0
+        },
+        {
+          "name": "ToneGuard",
+          "score": 3.93
+        },
+        {
+          "name": "ToneGuard",
+          "score": 3.74
+        },
+        {
+          "name": "ToneFilter",
+          "score": 3.71
+        },
+        {
+          "name": "ToneDeflect",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_Premature_Optimization_and_Validation_Avoidance_in_Early_Stage_SaaS_Development_opportunity_analysis.md",
+      "report_name": "reddit_Premature_Optimization_and_Validation_Avoidance_in_Early_Stage_SaaS_Development_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 6,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 12,
+        "file_size_bytes": 18938,
+        "char_count": 10900,
+        "line_count": 226,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "Preflight Validator",
+          "score": 4.26
+        },
+        {
+          "name": "Assumption Forcer",
+          "score": 4.13
+        },
+        {
+          "name": "Assumption Interrogator",
+          "score": 4.11
+        },
+        {
+          "name": "Validation Lock",
+          "score": 4.06
+        },
+        {
+          "name": "Assumption Forcer",
+          "score": 3.68
+        },
+        {
+          "name": "Preflight Validator",
+          "score": 4.26
+        },
+        {
+          "name": "Assumption Forcer",
+          "score": 4.13
+        },
+        {
+          "name": "Assumption Interrogator",
+          "score": 4.11
+        },
+        {
+          "name": "Validation Lock",
+          "score": 4.06
+        },
+        {
+          "name": "Assumption Forcer",
+          "score": 3.68
+        },
+        {
+          "name": "Assumption Validator",
+          "score": 3.56
+        },
+        {
+          "name": "Assumption Validator",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_Sustaining_and_Growing_a_SaaS_Product_Through_Early_Stage_Challenges_opportunity_analysis.md",
+      "report_name": "reddit_Sustaining_and_Growing_a_SaaS_Product_Through_Early_Stage_Challenges_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 7,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 11,
+        "file_size_bytes": 19504,
+        "char_count": 10942,
+        "line_count": 236,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "Project Epitaph",
+          "score": 4.31
+        },
+        {
+          "name": "Solo Sprint Tracker",
+          "score": 4.16
+        },
+        {
+          "name": "Project Compass",
+          "score": 4.08
+        },
+        {
+          "name": "Assumption Tracker",
+          "score": 4.06
+        },
+        {
+          "name": "PRContext Snapshot",
+          "score": 3.48
+        },
+        {
+          "name": "Project Epitaph",
+          "score": 4.31
+        },
+        {
+          "name": "Solo Sprint Tracker",
+          "score": 4.16
+        },
+        {
+          "name": "Project Compass",
+          "score": 4.08
+        },
+        {
+          "name": "Assumption Tracker",
+          "score": 4.06
+        },
+        {
+          "name": "PRContext Snapshot",
+          "score": 3.48
+        },
+        {
+          "name": "PR Context Snapshot",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_Inefficient_Note_Taking_and_Knowledge_Retrieval_for_Technical_Learning_opportunity_analysis.md",
+      "report_name": "reddit_Inefficient_Note_Taking_and_Knowledge_Retrieval_for_Technical_Learning_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 6,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 14,
+        "file_size_bytes": 21272,
+        "char_count": 13126,
+        "line_count": 277,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "QuickRecall CLI",
+          "score": 3.24
+        },
+        {
+          "name": "QuickRecall CLI",
+          "score": 3.23
+        },
+        {
+          "name": "QuickRecall",
+          "score": 3.14
+        },
+        {
+          "name": "TechNote TTY",
+          "score": 3.05
+        },
+        {
+          "name": "QuickRecall",
+          "score": 2.99
+        },
+        {
+          "name": "QuickRecall CLI",
+          "score": 3.24
+        },
+        {
+          "name": "QuickRecall CLI",
+          "score": 3.23
+        },
+        {
+          "name": "QuickRecall",
+          "score": 3.14
+        },
+        {
+          "name": "TechNote TTY",
+          "score": 3.05
+        },
+        {
+          "name": "QuickRecall",
+          "score": 2.99
+        },
+        {
+          "name": "QuickRecall",
+          "score": 2.99
+        },
+        {
+          "name": "TechNote Recall",
+          "score": 2.98
+        },
+        {
+          "name": "TechNote QuickSearch",
+          "score": 2.98
+        },
+        {
+          "name": "TechNote TTY",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_Navigating_Contradictory_Communication_Expectations_in_Professional_Settings_opportunity_analysis.md",
+      "report_name": "reddit_Navigating_Contradictory_Communication_Expectations_in_Professional_Settings_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 5,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 6,
+        "file_size_bytes": 18098,
+        "char_count": 9770,
+        "line_count": 224,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "ToneCheck Preview",
+          "score": 3.57
+        },
+        {
+          "name": "Tone Calibrator",
+          "score": 3.54
+        },
+        {
+          "name": "ToneTuner",
+          "score": 0.0
+        },
+        {
+          "name": "ToneCheck Preview",
+          "score": 3.57
+        },
+        {
+          "name": "Tone Calibrator",
+          "score": 3.54
+        },
+        {
+          "name": "ToneTuner",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_Seeking_Trustworthy_Product_Information_Amid_Unreliable_Sources_opportunity_analysis.md",
+      "report_name": "reddit_Seeking_Trustworthy_Product_Information_Amid_Unreliable_Sources_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 5,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 4,
+        "file_size_bytes": 17175,
+        "char_count": 8991,
+        "line_count": 228,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "Reddit Source Verifier",
+          "score": 5.15
+        },
+        {
+          "name": "Reddit Insight Verifier",
+          "score": 0.0
+        },
+        {
+          "name": "Reddit Source Verifier",
+          "score": 5.15
+        },
+        {
+          "name": "Reddit Insight Verifier",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_Optimizing_Video_Retention_Through_Micro_Level_Editing_Adjustments_opportunity_analysis.md",
+      "report_name": "reddit_Optimizing_Video_Retention_Through_Micro_Level_Editing_Adjustments_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 6,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 11,
+        "file_size_bytes": 19908,
+        "char_count": 11470,
+        "line_count": 252,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "RetentionGuard",
+          "score": 3.3
+        },
+        {
+          "name": "RetentionScan",
+          "score": 3.27
+        },
+        {
+          "name": "RetentionLint",
+          "score": 3.22
+        },
+        {
+          "name": "RetentionGuard",
+          "score": 3.22
+        },
+        {
+          "name": "RetentionAudit",
+          "score": 3.17
+        },
+        {
+          "name": "RetentionGuard",
+          "score": 3.3
+        },
+        {
+          "name": "RetentionScan",
+          "score": 3.27
+        },
+        {
+          "name": "RetentionLint",
+          "score": 3.22
+        },
+        {
+          "name": "RetentionGuard",
+          "score": 3.22
+        },
+        {
+          "name": "RetentionAudit",
+          "score": 3.17
+        },
+        {
+          "name": "RetentionLint",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_Notification_Management_for_Critical_Alerts_opportunity_analysis.md",
+      "report_name": "reddit_Notification_Management_for_Critical_Alerts_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 5,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 17,
+        "file_size_bytes": 22152,
+        "char_count": 13880,
+        "line_count": 267,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "CriticalBell",
+          "score": 3.43
+        },
+        {
+          "name": "AlertEscalate",
+          "score": 3.34
+        },
+        {
+          "name": "AlertEscalate",
+          "score": 3.34
+        },
+        {
+          "name": "CriticalPing",
+          "score": 3.31
+        },
+        {
+          "name": "Critical Ping",
+          "score": 3.3
+        },
+        {
+          "name": "CriticalBell",
+          "score": 3.43
+        },
+        {
+          "name": "AlertEscalate",
+          "score": 3.34
+        },
+        {
+          "name": "AlertEscalate",
+          "score": 3.34
+        },
+        {
+          "name": "CriticalPing",
+          "score": 3.31
+        },
+        {
+          "name": "Critical Ping",
+          "score": 3.3
+        },
+        {
+          "name": "CriticalPing",
+          "score": 3.29
+        },
+        {
+          "name": "AlertSiren",
+          "score": 3.28
+        },
+        {
+          "name": "AlertEscalator",
+          "score": 3.19
+        },
+        {
+          "name": "AlertSiren",
+          "score": 3.19
+        },
+        {
+          "name": "AlertEscalate",
+          "score": 3.13
+        },
+        {
+          "name": "AlertEscalate",
+          "score": 3.11
+        },
+        {
+          "name": "AlertSiren",
+          "score": 0.0
+        }
+      ]
+    },
+    {
+      "file": "reddit_Ineffective_Knowledge_Retention_Loop_opportunity_analysis.md",
+      "report_name": "reddit_Ineffective_Knowledge_Retention_Loop_opportunity_analysis",
+      "metrics": {
+        "has_comment_evidence": true,
+        "has_problem_description": true,
+        "problem_description_count": 6,
+        "has_mvp_suggestions": true,
+        "has_target_users": true,
+        "has_risk_analysis": true,
+        "opportunity_count": 6,
+        "file_size_bytes": 16170,
+        "char_count": 8700,
+        "line_count": 208,
+        "has_overview_section": true,
+        "has_analysis_section": true,
+        "has_design_section": true,
+        "has_action_section": true,
+        "has_data_section": true
+      },
+      "opportunities": [
+        {
+          "name": "Feynman Validator",
+          "score": 3.19
+        },
+        {
+          "name": "Feynman Check",
+          "score": 3.04
+        },
+        {
+          "name": "Recall Check",
+          "score": 0.0
+        },
+        {
+          "name": "Feynman Validator",
+          "score": 3.19
+        },
+        {
+          "name": "Feynman Check",
+          "score": 3.04
+        },
+        {
+          "name": "Recall Check",
+          "score": 0.0
+        }
+      ]
+    }
+  ],
+  "aggregated": {
+    "total_reports": 15,
+    "completeness_scores": {
+      "has_comment_evidence": {
+        "count": 15,
+        "percentage": 100.0
+      },
+      "has_problem_description": {
+        "count": 15,
+        "percentage": 100.0
+      },
+      "has_mvp_suggestions": {
+        "count": 15,
+        "percentage": 100.0
+      },
+      "has_target_users": {
+        "count": 15,
+        "percentage": 100.0
+      },
+      "has_risk_analysis": {
+        "count": 15,
+        "percentage": 100.0
+      }
+    },
+    "content_metrics": {
+      "avg_file_size": 19229.13,
+      "avg_char_count": 10937.8,
+      "avg_line_count": 240.27,
+      "total_opportunities": 151,
+      "avg_opportunities_per_report": 10.07
+    },
+    "section_coverage": {
+      "has_overview_section": {
+        "count": 15,
+        "percentage": 100.0
+      },
+      "has_analysis_section": {
+        "count": 15,
+        "percentage": 100.0
+      },
+      "has_design_section": {
+        "count": 15,
+        "percentage": 100.0
+      },
+      "has_action_section": {
+        "count": 15,
+        "percentage": 100.0
+      },
+      "has_data_section": {
+        "count": 15,
+        "percentage": 100.0
+      }
+    }
+  },
+  "timestamp": "2025-12-25T14:30:43.323789"
+}

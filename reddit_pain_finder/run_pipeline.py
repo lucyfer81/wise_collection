@@ -29,6 +29,7 @@ from pipeline.align_cross_sources import CrossSourceAligner
 # 导入工具模块
 from utils.db import db
 from utils.llm_client import LLMClient
+from utils.performance_monitor import performance_monitor
 
 # 设置日志
 logging.basicConfig(
@@ -45,9 +46,10 @@ logger = logging.getLogger(__name__)
 class WiseCollectionPipeline:
     """Wise Collection数据收集Pipeline"""
 
-    def __init__(self):
+    def __init__(self, enable_monitoring: bool = True):
         """初始化pipeline"""
         self.pipeline_start_time = datetime.now()
+        self.enable_monitoring = enable_monitoring
         self.stats = {
             "start_time": self.pipeline_start_time.isoformat(),
             "stages_completed": [],
@@ -59,6 +61,10 @@ class WiseCollectionPipeline:
 
         # 确保日志目录存在
         os.makedirs("logs", exist_ok=True)
+
+        # 重置性能监控器
+        if self.enable_monitoring:
+            performance_monitor.reset()
 
     def _load_config(self, config_path: str = "config/llm.yaml") -> Dict[str, Any]:
         """加载配置文件"""
@@ -88,6 +94,9 @@ class WiseCollectionPipeline:
         logger.info("STAGE 1: Multi-Source Posts Fetcher")
         logger.info("=" * 50)
 
+        if self.enable_monitoring:
+            performance_monitor.start_stage("fetch")
+
         try:
             from pipeline.fetch import MultiSourceFetcher
 
@@ -98,6 +107,9 @@ class WiseCollectionPipeline:
 
             self.stats["stages_completed"].append("fetch")
             self.stats["stage_results"]["fetch"] = result
+
+            if self.enable_monitoring:
+                performance_monitor.end_stage("fetch", result.get('total_saved', 0))
 
             logger.info(f"✅ Stage 1 completed: Found {result['total_saved']} posts from {len(result['sources_processed'])} sources")
 
@@ -113,6 +125,8 @@ class WiseCollectionPipeline:
         except Exception as e:
             logger.error(f"❌ Stage 1 failed: {e}")
             self.stats["stages_failed"].append("fetch")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("fetch", 0)
             raise
 
     def run_stage_filter(self, limit_posts: Optional[int] = None) -> Dict[str, Any]:
@@ -120,6 +134,9 @@ class WiseCollectionPipeline:
         logger.info("=" * 50)
         logger.info("STAGE 2: Filtering pain signals")
         logger.info("=" * 50)
+
+        if self.enable_monitoring:
+            performance_monitor.start_stage("filter")
 
         try:
             filter = PainSignalFilter()
@@ -130,6 +147,8 @@ class WiseCollectionPipeline:
             if not unfiltered_posts:
                 logger.info("No posts to filter")
                 result = {"processed": 0, "filtered": 0}
+                if self.enable_monitoring:
+                    performance_monitor.end_stage("filter", 0)
             else:
                 logger.info(f"Filtering {len(unfiltered_posts)} posts")
                 filtered_posts = filter.filter_posts_batch(unfiltered_posts)
@@ -147,6 +166,9 @@ class WiseCollectionPipeline:
                     "filter_stats": filter.get_statistics()
                 }
 
+                if self.enable_monitoring:
+                    performance_monitor.end_stage("filter", saved_count)
+
             self.stats["stages_completed"].append("filter")
             self.stats["stage_results"]["filter"] = result
 
@@ -156,6 +178,8 @@ class WiseCollectionPipeline:
         except Exception as e:
             logger.error(f"❌ Stage 2 failed: {e}")
             self.stats["stages_failed"].append("filter")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("filter", 0)
             raise
 
     def run_stage_extract(self, limit_posts: Optional[int] = None) -> Dict[str, Any]:
@@ -164,6 +188,9 @@ class WiseCollectionPipeline:
         logger.info("STAGE 3: Extracting pain points")
         logger.info("=" * 50)
 
+        if self.enable_monitoring:
+            performance_monitor.start_stage("extract")
+
         try:
             extractor = PainPointExtractor()
             result = extractor.process_unextracted_posts(limit=limit_posts or 100)
@@ -171,12 +198,17 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("extract")
             self.stats["stage_results"]["extract"] = result
 
+            if self.enable_monitoring:
+                performance_monitor.end_stage("extract", result.get('pain_events_saved', 0))
+
             logger.info(f"✅ Stage 3 completed: Extracted {result['pain_events_saved']} pain events")
             return result
 
         except Exception as e:
             logger.error(f"❌ Stage 3 failed: {e}")
             self.stats["stages_failed"].append("extract")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("extract", 0)
             raise
 
     def run_stage_embed(self, limit_events: Optional[int] = None) -> Dict[str, Any]:
@@ -185,6 +217,9 @@ class WiseCollectionPipeline:
         logger.info("STAGE 4: Creating embeddings")
         logger.info("=" * 50)
 
+        if self.enable_monitoring:
+            performance_monitor.start_stage("embed")
+
         try:
             embedder = PainEventEmbedder()
             result = embedder.process_missing_embeddings(limit=limit_events or 200)
@@ -192,12 +227,17 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("embed")
             self.stats["stage_results"]["embed"] = result
 
+            if self.enable_monitoring:
+                performance_monitor.end_stage("embed", result.get('embeddings_created', 0))
+
             logger.info(f"✅ Stage 4 completed: Created {result['embeddings_created']} embeddings")
             return result
 
         except Exception as e:
             logger.error(f"❌ Stage 4 failed: {e}")
             self.stats["stages_failed"].append("embed")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("embed", 0)
             raise
 
     def run_stage_cluster(self, limit_events: Optional[int] = None) -> Dict[str, Any]:
@@ -206,6 +246,9 @@ class WiseCollectionPipeline:
         logger.info("STAGE 5: Clustering pain events")
         logger.info("=" * 50)
 
+        if self.enable_monitoring:
+            performance_monitor.start_stage("cluster")
+
         try:
             clusterer = PainEventClusterer()
             result = clusterer.cluster_pain_events(limit=limit_events or 200)
@@ -213,12 +256,17 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("cluster")
             self.stats["stage_results"]["cluster"] = result
 
+            if self.enable_monitoring:
+                performance_monitor.end_stage("cluster", result.get('clusters_created', 0))
+
             logger.info(f"✅ Stage 5 completed: Created {result['clusters_created']} clusters")
             return result
 
         except Exception as e:
             logger.error(f"❌ Stage 5 failed: {e}")
             self.stats["stages_failed"].append("cluster")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("cluster", 0)
             raise
 
     def run_stage_cross_source_alignment(self) -> Dict[str, Any]:
@@ -226,6 +274,9 @@ class WiseCollectionPipeline:
         logger.info("=" * 50)
         logger.info("STAGE 5.5: Cross-Source Alignment")
         logger.info("=" * 50)
+
+        if self.enable_monitoring:
+            performance_monitor.start_stage("alignment")
 
         try:
             # 初始化对齐器
@@ -247,6 +298,9 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("alignment")
             self.stats["stage_results"]["alignment"] = result
 
+            if self.enable_monitoring:
+                performance_monitor.end_stage("alignment", len(aligned_problems))
+
             logger.info(f"✅ Stage 5.5 completed: Found {len(aligned_problems)} aligned problems")
 
             # 显示对齐摘要
@@ -264,6 +318,8 @@ class WiseCollectionPipeline:
         except Exception as e:
             logger.error(f"❌ Stage 5.5 failed: {e}")
             self.stats["stages_failed"].append("alignment")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("alignment", 0)
             raise
 
     def run_stage_map_opportunities(self, limit_clusters: Optional[int] = None) -> Dict[str, Any]:
@@ -272,6 +328,9 @@ class WiseCollectionPipeline:
         logger.info("STAGE 6: Mapping opportunities")
         logger.info("=" * 50)
 
+        if self.enable_monitoring:
+            performance_monitor.start_stage("map_opportunities")
+
         try:
             mapper = OpportunityMapper()
             result = mapper.map_opportunities_for_clusters(limit=limit_clusters or 50)
@@ -279,12 +338,17 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("map_opportunities")
             self.stats["stage_results"]["map_opportunities"] = result
 
+            if self.enable_monitoring:
+                performance_monitor.end_stage("map_opportunities", result.get('opportunities_created', 0))
+
             logger.info(f"✅ Stage 6 completed: Mapped {result['opportunities_created']} opportunities")
             return result
 
         except Exception as e:
             logger.error(f"❌ Stage 6 failed: {e}")
             self.stats["stages_failed"].append("map_opportunities")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("map_opportunities", 0)
             raise
 
     def run_stage_score(self, limit_opportunities: Optional[int] = None) -> Dict[str, Any]:
@@ -293,6 +357,9 @@ class WiseCollectionPipeline:
         logger.info("STAGE 7: Scoring viability")
         logger.info("=" * 50)
 
+        if self.enable_monitoring:
+            performance_monitor.start_stage("score")
+
         try:
             scorer = ViabilityScorer()
             result = scorer.score_opportunities(limit=limit_opportunities or 100)
@@ -300,21 +367,55 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("score")
             self.stats["stage_results"]["score"] = result
 
+            if self.enable_monitoring:
+                performance_monitor.end_stage("score", result.get('opportunities_scored', 0))
+
             logger.info(f"✅ Stage 7 completed: Scored {result['opportunities_scored']} opportunities")
             return result
 
         except Exception as e:
             logger.error(f"❌ Stage 7 failed: {e}")
             self.stats["stages_failed"].append("score")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("score", 0)
             raise
 
-    def generate_final_report(self) -> Dict[str, Any]:
+    def generate_final_report(
+        self,
+        save_metrics: bool = False,
+        metrics_file: Optional[str] = None,
+        generate_report: bool = False,
+        report_file: Optional[str] = None
+    ) -> Dict[str, Any]:
         """生成最终报告"""
         logger.info("=" * 50)
         logger.info("GENERATING FINAL REPORT")
         logger.info("=" * 50)
 
         try:
+            # 输出性能监控摘要
+            if self.enable_monitoring:
+                monitor_summary = performance_monitor.get_summary()
+                logger.info(f"\n📊 Performance Summary:")
+                logger.info(f"   • Total Duration: {monitor_summary['total_duration_minutes']} minutes")
+                logger.info(f"   • LLM Calls: {monitor_summary['total_llm_calls']:,}")
+                logger.info(f"   • Total Tokens: {monitor_summary['total_tokens']:,}")
+                logger.info(f"   • Est. Cost: ${monitor_summary['estimated_cost_usd']:.4f} USD")
+
+                # 保存metrics到文件
+                if save_metrics:
+                    if metrics_file is None:
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        metrics_file = f"docs/reports/pipeline_metrics_{timestamp}.json"
+
+                    os.makedirs(os.path.dirname(metrics_file), exist_ok=True)
+                    performance_monitor.save_metrics(metrics_file)
+                    logger.info(f"💾 Metrics saved to: {metrics_file}")
+
+                    # 如果需要生成markdown报告
+                    if generate_report:
+                        self.generate_markdown_report(metrics_file, report_file)
+
             # 获取数据库统计信息
             db_stats = db.get_statistics()
 
@@ -354,6 +455,10 @@ class WiseCollectionPipeline:
                 }
             }
 
+            # 添加性能监控数据到摘要
+            if self.enable_monitoring:
+                final_summary["performance"] = monitor_summary
+
             self.stats["final_summary"] = final_summary
 
             logger.info("🎉 PIPELINE COMPLETED SUCCESSFULLY!")
@@ -382,11 +487,20 @@ class WiseCollectionPipeline:
         limit_clusters: Optional[int] = None,
         limit_opportunities: Optional[int] = None,
         sources: Optional[List[str]] = None,
-        stop_on_error: bool = False
+        stop_on_error: bool = False,
+        save_metrics: bool = False,
+        metrics_file: Optional[str] = None,
+        generate_report: bool = False,
+        report_file: Optional[str] = None
     ) -> Dict[str, Any]:
         """运行完整pipeline"""
         logger.info("🚀 Starting Wise Collection Multi-Source Pipeline")
         logger.info(f"⏰ Started at: {self.pipeline_start_time}")
+
+        if self.enable_monitoring:
+            logger.info("📊 Performance monitoring: ENABLED")
+        else:
+            logger.info("📊 Performance monitoring: DISABLED")
 
         # 使用指定的数据源，默认为 reddit + hackernews
         fetch_sources = sources or ['reddit', 'hackernews']
@@ -415,7 +529,12 @@ class WiseCollectionPipeline:
                     logger.warning(f"Continuing pipeline despite '{stage_name}' failure")
 
         # 生成最终报告
-        final_report = self.generate_final_report()
+        final_report = self.generate_final_report(
+            save_metrics=save_metrics,
+            metrics_file=metrics_file,
+            generate_report=generate_report,
+            report_file=report_file
+        )
 
         return final_report
 
@@ -454,6 +573,223 @@ class WiseCollectionPipeline:
             logger.error(f"Failed to save results: {e}")
             return None
 
+    def generate_markdown_report(self, metrics_file: str, output_file: Optional[str] = None) -> str:
+        """生成详细的成本性能markdown报告"""
+        if not self.enable_monitoring:
+            logger.warning("Performance monitoring is disabled, cannot generate report")
+            return None
+
+        try:
+            from utils.performance_monitor import PerformanceMonitor
+
+            # 加载metrics
+            monitor = PerformanceMonitor.load_metrics(metrics_file)
+            summary = monitor.get_summary()
+            stages_summary = summary['stages_summary']
+
+            # 阶段中文名称映射
+            stage_names_cn = {
+                'fetch': '数据抓取',
+                'filter': '信号过滤',
+                'extract': '痛点抽取',
+                'embed': '向量化',
+                'cluster': '聚类分析',
+                'alignment': '跨源对齐',
+                'map_opportunities': '机会映射',
+                'score': '可行性评分'
+            }
+
+            # 生成报告
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            metrics_filename = os.path.basename(metrics_file)
+
+            report = f"""# Pipeline 成本与性能分析报告
+
+> **生成时间**: {timestamp}
+> **指标文件**: {metrics_filename}
+
+---
+
+## 📊 执行摘要
+
+### 关键指标
+
+| 指标 | 数值 |
+|------|------|
+| 总执行时间 | {summary['total_duration_minutes']:.2f} 分钟 ({summary['total_duration_seconds']:.1f} 秒) |
+| LLM调用次数 | {summary['total_llm_calls']:,} 次 |
+| 总Token使用量 | {summary['total_tokens']:,} |
+| 预估成本 | ${summary['estimated_cost_usd']:.4f} USD |
+| 平均每调用成本 | ${(summary['estimated_cost_usd']/summary['total_llm_calls'] if summary['total_llm_calls'] > 0 else 0):.6f} USD |
+
+### 效率指标
+
+| 指标 | 数值 |
+|------|------|
+| 平均每调用耗时 | {(summary['total_duration_seconds']/summary['total_llm_calls'] if summary['total_llm_calls'] > 0 else 0):.2f} 秒 |
+| 平均每调用Token数 | {(summary['total_tokens']/summary['total_llm_calls'] if summary['total_llm_calls'] > 0 else 0):.0f} |
+| 每千Token成本 | ${(summary['estimated_cost_usd']/(summary['total_tokens']/1000) if summary['total_tokens'] > 0 else 0):.4f} USD |
+
+---
+
+## 📈 阶段分解
+
+### 各阶段性能详情
+
+| 阶段 | 执行时间(秒) | 处理项目数 | LLM调用次数 | Token使用量 |
+|------|-------------|-----------|------------|-----------|
+"""
+
+            # 添加各阶段数据
+            for stage_name, stats in stages_summary.items():
+                stage_name_cn = stage_names_cn.get(stage_name, stage_name)
+                duration = stats['duration_seconds']
+                items = stats['items_processed']
+                tokens = stats['tokens_used']
+                llm_calls = stats['llm_calls']
+
+                report += f"| {stage_name_cn} | {duration:.1f} | {items} | {llm_calls} | {tokens:,} |\n"
+
+            # 阶段效率对比
+            report += "\n### 阶段效率对比\n\n"
+            for stage_name, stats in stages_summary.items():
+                stage_name_cn = stage_names_cn.get(stage_name, stage_name)
+                duration = stats['duration_seconds']
+                items = stats['items_processed']
+                tokens = stats['tokens_used']
+
+                if items > 0:
+                    avg_time_per_item = duration / items
+                    report += f"**{stage_name_cn}**:\n"
+                    report += f"- 平均每项目处理时间: {avg_time_per_item:.2f} 秒\n"
+
+                    if tokens > 0:
+                        avg_tokens_per_item = tokens / items
+                        report += f"- 平均每项目Token数: {avg_tokens_per_item:.0f}\n"
+                    report += "\n"
+
+            # 成本分析
+            total_tokens = summary['total_tokens']
+            report += """
+---
+
+## 💰 成本分析
+
+### Token分布
+
+| 阶段 | Token使用量 | 占比 |
+|------|-----------|------|
+"""
+
+            for stage_name, stats in stages_summary.items():
+                stage_name_cn = stage_names_cn.get(stage_name, stage_name)
+                tokens = stats['tokens_used']
+                percentage = (tokens / total_tokens * 100) if total_tokens > 0 else 0
+                report += f"| {stage_name_cn} | {tokens:,} | {percentage:.1f}% |\n"
+
+            # 成本构成分析
+            report += "\n### 成本构成分析\n\n"
+            for stage_name, stats in stages_summary.items():
+                stage_name_cn = stage_names_cn.get(stage_name, stage_name)
+                tokens = stats['tokens_used']
+                percentage = (tokens / total_tokens * 100) if total_tokens > 0 else 0
+                stage_cost = summary['estimated_cost_usd'] * (percentage / 100)
+                report += f"**{stage_name_cn}**: ${stage_cost:.4f} USD ({percentage:.1f}%)\n"
+
+            report += f"\n**总成本**: ${summary['estimated_cost_usd']:.4f} USD\n"
+
+            # 性能指标
+            report += """
+---
+
+## ⚡ 性能指标
+
+### 吞吐量分析
+
+| 阶段 | 吞吐量 (项目/分钟) | 吞吐量 (Token/秒) |
+|------|------------------|------------------|
+"""
+
+            for stage_name, stats in stages_summary.items():
+                stage_name_cn = stage_names_cn.get(stage_name, stage_name)
+                duration_minutes = stats['duration_seconds'] / 60
+                items = stats['items_processed']
+                tokens = stats['tokens_used']
+
+                items_per_minute = (items / duration_minutes) if duration_minutes > 0 else 0
+                tokens_per_second = (tokens / stats['duration_seconds']) if stats['duration_seconds'] > 0 else 0
+
+                report += f"| {stage_name_cn} | {items_per_minute:.2f} | {tokens_per_second:.0f} |\n"
+
+            # 性能瓶颈识别
+            report += "\n### 性能瓶颈识别\n\n"
+
+            # 识别最慢的阶段
+            slowest_stage = max(stages_summary.items(), key=lambda x: x[1]['duration_seconds'])
+            slowest_stage_cn = stage_names_cn.get(slowest_stage[0], slowest_stage[0])
+            report += f"- **最慢阶段**: {slowest_stage_cn} ({slowest_stage[1]['duration_seconds']:.1f}秒)\n"
+
+            # 识别Token消耗最大的阶段
+            highest_token_stage = max(stages_summary.items(), key=lambda x: x[1]['tokens_used'])
+            highest_token_cn = stage_names_cn.get(highest_token_stage[0], highest_token_stage[0])
+            report += f"- **最高Token消耗**: {highest_token_cn} ({highest_token_stage[1]['tokens_used']:,} tokens)\n"
+
+            # 结论与建议
+            report += """
+---
+
+## 💡 结论与建议
+
+### 关键发现
+
+1. **自动化流程**: Pipeline已实现端到端自动化，从数据抓取到机会评分无需人工干预
+2. **成本可控**: 整个流程成本在可接受范围内，适合定期执行
+3. **输出完整**: 包含多维度分析和性能追踪
+
+### 优化建议
+
+#### 短期优化 (1-2周)
+
+1. **批量处理**: 对更大的数据集进行批量处理，降低单位成本
+2. **缓存优化**: 对相似内容进行缓存，减少重复LLM调用
+3. **并行处理**: 在独立阶段并行处理，缩短总执行时间
+
+#### 中期优化 (1个月)
+
+1. **定期执行**: 设置定时任务，每周/每月自动运行
+2. **数据积累**: 持续积累数据，形成趋势分析
+3. **反馈闭环**: 建立反馈机制，持续改进分析质量
+
+#### 长期优化 (持续)
+
+1. **智能调度**: 根据数据变化自动触发分析
+2. **A/B测试**: 对不同prompt和参数进行A/B测试
+3. **成本优化**: 探索更经济的模型组合
+
+---
+
+*本报告由 Pipeline 自动生成*
+"""
+
+            # 保存报告
+            if output_file is None:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_file = f"docs/reports/pipeline_cost_performance_{timestamp}.md"
+
+            os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+            with open(output_file, 'w', encoding='utf-8') as f:
+                f.write(report)
+
+            logger.info(f"📝 Markdown report saved to: {output_file}")
+            return output_file
+
+        except Exception as e:
+            logger.error(f"Failed to generate markdown report: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return None
+
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(description="Wise Collection Multi-Source Pipeline")
@@ -473,6 +809,13 @@ def main():
     parser.add_argument("--limit-clusters", type=int, help="Limit number of clusters to process")
     parser.add_argument("--limit-opportunities", type=int, help="Limit number of opportunities to score")
 
+    # 性能监控选项
+    parser.add_argument("--no-monitoring", action="store_true", help="Disable performance monitoring")
+    parser.add_argument("--save-metrics", action="store_true", help="Save performance metrics to file")
+    parser.add_argument("--metrics-file", help="Custom metrics file path")
+    parser.add_argument("--generate-report", action="store_true", help="Generate detailed markdown cost/performance report")
+    parser.add_argument("--report-file", help="Custom markdown report file path")
+
     # 其他选项
     parser.add_argument("--stop-on-error", action="store_true", help="Stop pipeline on first error")
     parser.add_argument("--save-results", action="store_true", help="Save results to file")
@@ -482,7 +825,7 @@ def main():
 
     try:
         # 初始化pipeline
-        pipeline = WiseCollectionPipeline()
+        pipeline = WiseCollectionPipeline(enable_monitoring=not args.no_monitoring)
 
         if args.stage == "all":
             # 运行完整pipeline
@@ -493,7 +836,11 @@ def main():
                 limit_clusters=args.limit_clusters,
                 limit_opportunities=args.limit_opportunities,
                 sources=args.sources,
-                stop_on_error=args.stop_on_error
+                stop_on_error=args.stop_on_error,
+                save_metrics=args.save_metrics,
+                metrics_file=args.metrics_file,
+                generate_report=args.generate_report,
+                report_file=args.report_file
             )
         else:
             # 运行单个阶段

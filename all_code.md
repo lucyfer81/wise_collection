@@ -1,6 +1,6 @@
 # Reddit Pain Finder - 代码汇总
 
-生成时间: 2025-12-23 09:16:00
+生成时间: 2025-12-24 15:07:32
 
 本文档包含 reddit_pain_finder 项目的核心代码文件：
 - Pipeline处理模块 (pipeline/)
@@ -1305,6 +1305,9 @@ from utils.db import WiseCollectionDB
 from utils.llm_client import LLMClient
 import logging
 
+# Hardcoded threshold for alignment confidence
+ALIGNMENT_SCORE_THRESHOLD = 0.7
+
 logger = logging.getLogger(__name__)
 
 class CrossSourceAligner:
@@ -1447,11 +1450,23 @@ Rules:
 4. Only align clusters from DIFFERENT source types
 5. Be conservative - only align when you're confident it's the same problem
 
+## Alignment Scoring
+
+Rate each potential alignment on a scale from 0.0 to 1.0:
+- 0.0 = Completely different problems, no relationship
+- 0.3 = Same general domain but different issues
+- 0.5 = Related problems with some overlap
+- 0.7 = Strong indication they're the same problem
+- 1.0 = Clearly the same problem, just described differently
+
+Only include alignments with scores >= 0.7 in your output.
+
 ## Output Format
 
 For each alignment discovered, output a JSON object with this structure:
 {
   "aligned_problem_id": "AP_XX",
+  "alignment_score": 0.85,
   "sources": ["source_type_1", "source_type_2"],
   "core_problem": "Clear description of the shared underlying problem",
   "why_they_look_different": "Explanation of how the same problem appears different across communities",
@@ -1495,13 +1510,28 @@ Return only valid JSON arrays of alignment objects. If no alignments exist, retu
             for alignment in alignments:
                 # 验证必需字段
                 required_fields = [
-                    'aligned_problem_id', 'sources', 'core_problem',
+                    'aligned_problem_id', 'alignment_score', 'sources', 'core_problem',
                     'why_they_look_different', 'evidence'
                 ]
 
                 if not all(field in alignment for field in required_fields):
                     logger.warning(f"Alignment missing required fields: {alignment}")
                     continue
+
+                # 验证alignment_score是浮点数
+                try:
+                    alignment_score = float(alignment['alignment_score'])
+                except (ValueError, TypeError):
+                    logger.warning(f"Alignment has invalid alignment_score: {alignment.get('alignment_score')}")
+                    continue
+
+                # 过滤低于阈值的对齐
+                if alignment_score < ALIGNMENT_SCORE_THRESHOLD:
+                    logger.info(f"Skipping alignment with score {alignment_score} below threshold {ALIGNMENT_SCORE_THRESHOLD}")
+                    continue
+
+                # 存储验证后的分数
+                alignment['alignment_score'] = alignment_score
 
                 # 处理cluster_ids字段
                 if 'original_cluster_ids' not in alignment:
@@ -1543,6 +1573,10 @@ Return only valid JSON arrays of alignment objects. If no alignments exist, retu
             try:
                 # 生成唯一ID
                 alignment['id'] = f"aligned_{alignment['aligned_problem_id']}_{int(time.time())}"
+
+                # 记录对齐分数
+                alignment_score = alignment.get('alignment_score', 0.0)
+                logger.info(f"Processing alignment {alignment['aligned_problem_id']} with score {alignment_score}")
 
                 # 插入对齐问题
                 self._insert_aligned_problem(alignment)
@@ -1616,6 +1650,9 @@ from utils.db import db
 
 logger = logging.getLogger(__name__)
 
+# Hardcoded threshold for cluster validation
+WORKFLOW_SIMILARITY_THRESHOLD = 0.7
+
 class PainEventClusterer:
     """痛点事件聚类器"""
 
@@ -1656,32 +1693,32 @@ class PainEventClusterer:
         pain_events: List[Dict[str, Any]],
         cluster_name: str = None
     ) -> Dict[str, Any]:
-        """使用LLM验证聚类是否属于同一工作流"""
+        """Use LLM to validate cluster with continuous scoring"""
         try:
-            # 调用LLM进行聚类验证
+            # Call LLM for cluster validation
             response = llm_client.cluster_pain_events(pain_events)
-
             validation_result = response["content"]
 
-            # 检查LLM是否认为这些事件属于同一工作流
-            if validation_result.get("same_workflow", False):
-                return {
-                    "is_valid_cluster": True,
-                    "cluster_name": validation_result.get("workflow_name", "Unnamed Cluster"),
-                    "cluster_description": validation_result.get("workflow_description", ""),
-                    "confidence": validation_result.get("confidence", 0.0),
-                    "reasoning": validation_result.get("reasoning", "")
-                }
-            else:
-                return {
-                    "is_valid_cluster": False,
-                    "reasoning": validation_result.get("reasoning", "Not same workflow")
-                }
+            # Extract workflow_similarity score
+            workflow_similarity = validation_result.get("workflow_similarity", 0.0)
+
+            # Use hardcoded threshold for decision
+            is_valid_cluster = workflow_similarity >= WORKFLOW_SIMILARITY_THRESHOLD
+
+            return {
+                "is_valid_cluster": is_valid_cluster,
+                "workflow_similarity": workflow_similarity,  # NEW: Store raw score
+                "cluster_name": validation_result.get("workflow_name", "Unnamed Cluster"),
+                "cluster_description": validation_result.get("workflow_description", ""),
+                "confidence": validation_result.get("confidence", 0.0),
+                "reasoning": validation_result.get("reasoning", "")
+            }
 
         except Exception as e:
             logger.error(f"Failed to validate cluster with LLM: {e}")
             return {
                 "is_valid_cluster": False,
+                "workflow_similarity": 0.0,
                 "reasoning": f"Validation error: {e}"
             }
 
@@ -1771,7 +1808,8 @@ class PainEventClusterer:
                 "pain_event_ids": cluster_data["pain_event_ids"],
                 "cluster_size": cluster_data["cluster_size"],
                 "avg_pain_score": cluster_data.get("avg_pain_score", 0.0),
-                "workflow_confidence": cluster_data.get("workflow_confidence", 0.0)
+                "workflow_confidence": cluster_data.get("workflow_confidence", 0.0),
+                "workflow_similarity": cluster_data.get("workflow_similarity", 0.0)
             }
 
             cluster_id = db.insert_cluster(cluster_record)
@@ -1939,6 +1977,10 @@ Processing time: {processing_time:.2f}s
             validation_result = self._validate_cluster_with_llm(events_for_processing)
             self.stats["llm_validations"] += 1
 
+            # Log workflow_similarity score
+            workflow_similarity = validation_result.get("workflow_similarity", 0.0)
+            logger.info(f"Workflow similarity score: {workflow_similarity:.2f} (threshold: {WORKFLOW_SIMILARITY_THRESHOLD})")
+
             if validation_result["is_valid_cluster"]:
                 # 使用Cluster Summarizer生成source内摘要
                 summary_result = self._summarize_source_cluster(events_for_processing, source_type)
@@ -1960,6 +2002,7 @@ Processing time: {processing_time:.2f}s
                     "pain_event_ids": [event["id"] for event in cluster_events],
                     "cluster_size": len(cluster_events),
                     "workflow_confidence": validation_result["confidence"],
+                    "workflow_similarity": workflow_similarity,
                     "validation_reasoning": validation_result["reasoning"]
                 }
 
@@ -1969,9 +2012,9 @@ Processing time: {processing_time:.2f}s
                     final_cluster["saved_cluster_id"] = saved_cluster_id
                     final_clusters.append(final_cluster)
 
-                    logger.info(f"✅ Saved {cluster_id}: {validation_result['cluster_name']} ({len(cluster_events)} events)")
+                    logger.info(f"✅ Saved {cluster_id}: {validation_result['cluster_name']} ({len(cluster_events)} events, similarity: {workflow_similarity:.2f})")
             else:
-                logger.warning(f"❌ Cluster {i+1} rejected by LLM: {validation_result['reasoning']}")
+                logger.warning(f"❌ Cluster {i+1} rejected by LLM: {validation_result['reasoning']} (similarity: {workflow_similarity:.2f})")
 
             # 添加延迟避免API限制
             time.sleep(1)
@@ -2039,9 +2082,9 @@ Processing time: {processing_time:.2f}s
         try:
             with db.get_connection("clusters") as conn:
                 cursor = conn.execute("""
-                    SELECT id, cluster_name, cluster_size, avg_pain_score, workflow_confidence, created_at
+                    SELECT id, cluster_name, cluster_size, avg_pain_score, workflow_confidence, workflow_similarity, created_at
                     FROM clusters
-                    ORDER BY cluster_size DESC, workflow_confidence DESC
+                    ORDER BY cluster_size DESC, workflow_similarity DESC
                 """)
                 clusters = [dict(row) for row in cursor.fetchall()]
 
@@ -2869,6 +2912,29 @@ class RedditSourceFetcher:
             "start_time": None
         }
 
+    def _get_trust_level_for_category(self, category: str) -> float:
+        """Get trust level for a category from config"""
+        try:
+            # Get the category config
+            category_config = self.config.get(category, {})
+            if isinstance(category_config, dict):
+                trust_level = category_config.get("trust_level")
+                if trust_level is not None:
+                    return float(trust_level)
+
+            # Default fallback levels
+            default_levels = {
+                'core': 0.9,
+                'secondary': 0.7,
+                'verticals': 0.6,
+                'experimental': 0.4
+            }
+            return default_levels.get(category, 0.5)
+
+        except Exception as e:
+            logger.warning(f"Failed to get trust_level for {category}: {e}, using default 0.5")
+            return 0.5
+
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """加载配置文件"""
         try:
@@ -3098,6 +3164,7 @@ class RedditSourceFetcher:
                 "author": submission.author.name if submission.author else "[deleted]",
                 "comments": comments,
                 "pain_score": pain_score,
+                "trust_level": self._get_trust_level_for_category(subreddit_config["category"]),
                 "collected_at": datetime.now().isoformat()
             }
 
@@ -3518,6 +3585,43 @@ class PainSignalFilter:
 
         return len(matched_keywords) > 0, matched_keywords, normalized_score
 
+    def _check_aspiration_keywords(self, post_data: Dict[str, Any]) -> Tuple[bool, List[str], float]:
+        """检查愿望关键词 - 寻找机会信号"""
+        title = (post_data.get("title", "")).lower()
+        body = (post_data.get("body", "")).lower()
+        full_text = f"{title} {body}"
+
+        aspiration_keywords = self.subreddits_config.get("aspiration_keywords", {})
+        matched_keywords = []
+        keyword_scores = {}
+
+        # 统计各类别关键词匹配
+        for category, keywords in aspiration_keywords.items():
+            category_matches = 0
+            category_weight = {
+                "forward_looking": 1.0,
+                "opportunity": 0.9,
+                "workflow_gap": 0.8
+            }.get(category, 0.5)
+
+            for keyword in keywords:
+                if keyword.lower() in full_text:
+                    matched_keywords.append(f"{category}:{keyword}")
+                    category_matches += 1
+                    keyword_scores[keyword] = category_weight
+
+            # 计算该类别的得分
+            if category_matches > 0:
+                keyword_scores[f"category_{category}"] = category_matches * category_weight
+
+        # 计算总愿望分数
+        total_score = sum(score for score in keyword_scores.values() if isinstance(score, (int, float)))
+
+        # 标准化分数（0-1范围）
+        normalized_score = min(total_score / 3.0, 1.0)  # 3分为满分
+
+        return len(matched_keywords) > 0, matched_keywords, normalized_score
+
     def _check_pain_patterns(self, post_data: Dict[str, Any]) -> Tuple[bool, List[str]]:
         """检查痛点句式模式"""
         title = (post_data.get("title", "")).lower()
@@ -3626,6 +3730,49 @@ class PainSignalFilter:
 
         return True, f"Type {post_type} check passed"
 
+    def _get_trust_based_thresholds(self, post_data: Dict[str, Any]) -> Dict[str, float]:
+        """根据帖子所属subreddit的trust_level返回动态阈值"""
+        subreddit = post_data.get("subreddit", "").lower()
+
+        # 查找subreddit所属category及其trust_level
+        trust_level = 0.5  # 默认值
+        for category_name, category_config in self.subreddits_config.items():
+            if isinstance(category_config, dict):
+                # 检查category级别的trust_level
+                if "trust_level" in category_config:
+                    category_trust = category_config["trust_level"]
+                    # 检查subreddit是否在这个category下
+                    for sub_name in category_config.keys():
+                        if sub_name.lower() == subreddit and sub_name != "trust_level":
+                            trust_level = category_trust
+                            break
+
+        # 从posts表获取trust_level（如果有）
+        post_trust_level = post_data.get("trust_level", trust_level)
+
+        # 根据trust_level返回阈值
+        if post_trust_level < 0.5:
+            # 低信任度板块 - 更严格的标准
+            return {
+                "min_comments": 20,
+                "min_upvotes": 50,
+                "min_engagement_score": 0.6
+            }
+        elif post_trust_level < 0.7:
+            # 中等信任度板块 - 中等标准
+            return {
+                "min_comments": 10,
+                "min_upvotes": 25,
+                "min_engagement_score": 0.4
+            }
+        else:
+            # 高信任度板块 - 标准阈值
+            return {
+                "min_comments": 5,
+                "min_upvotes": 10,
+                "min_engagement_score": 0.2
+            }
+
     def filter_post(self, post_data: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
         """过滤单个帖子"""
         self.stats["total_processed"] += 1
@@ -3663,6 +3810,10 @@ class PainSignalFilter:
         has_keywords, matched_keywords, keyword_score = self._check_pain_keywords(post_data)
         filter_result["matched_keywords"] = matched_keywords
 
+        # 3.5 愿望关键词检查
+        has_aspiration, matched_aspirations, aspiration_score = self._check_aspiration_keywords(post_data)
+        filter_result["matched_aspirations"] = matched_aspirations
+
         # 4. 痛点句式检查
         has_patterns, matched_patterns = self._check_pain_patterns(post_data)
         filter_result["matched_patterns"] = matched_patterns
@@ -3679,6 +3830,37 @@ class PainSignalFilter:
             filter_result["reasons"].append(type_reason)
             filter_result["filter_summary"] = {"reason": "type_specific", "details": type_reason}
             return False, filter_result
+
+        # 6.5 基于信任度的动态阈值检查
+        trust_thresholds = self._get_trust_based_thresholds(post_data)
+        min_comments = trust_thresholds["min_comments"]
+        min_upvotes = trust_thresholds["min_upvotes"]
+        min_engagement_score = trust_thresholds["min_engagement_score"]
+
+        # 计算参与度分数
+        engagement_score = min(
+            (post_data.get("score", 0) / min_upvotes + post_data.get("num_comments", 0) / min_comments) / 2.0,
+            1.0
+        )
+
+        # 对于低信任度板块，必须满足参与度要求
+        if post_data.get("trust_level", 0.5) < 0.5 and engagement_score < min_engagement_score:
+            self.stats["filtered_out"] += 1
+            failure_reason = f"Low trust post with insufficient engagement: {engagement_score:.2f} < {min_engagement_score}"
+            self.stats["filter_reasons"][failure_reason] = self.stats["filter_reasons"].get(failure_reason, 0) + 1
+            filter_result["reasons"].append(failure_reason)
+            filter_result["filter_summary"] = {
+                "reason": "trust_based_engagement",
+                "details": {
+                    "trust_level": post_data.get("trust_level", 0.5),
+                    "engagement_score": engagement_score,
+                    "min_required": min_engagement_score
+                }
+            }
+            return False, filter_result
+
+        filter_result["engagement_score"] = engagement_score
+        filter_result["trust_level"] = post_data.get("trust_level", 0.5)
 
         # 计算综合痛点分数
         pain_score = 0.0
@@ -3709,13 +3891,27 @@ class PainSignalFilter:
         min_keyword_matches = pain_config.get("keyword_match", {}).get("min_matches", 1)
         min_emotional_intensity = pain_config.get("emotional_intensity", {}).get("min_score", 0.3)
 
-        # 最终判断
-        passed = (
-            has_keywords and
+        # 最终判断 - 支持愿望信号通过
+        passed = False
+
+        # Set default pass_type if not already set
+        if "pass_type" not in filter_result:
+            filter_result["pass_type"] = "pain"
+
+        # 路径1: 强痛点信号（原有逻辑）
+        if (has_keywords and
             len(matched_keywords) >= min_keyword_matches and
             emotional_intensity >= min_emotional_intensity and
-            pain_score >= 0.3  # 综合分数阈值
-        )
+            pain_score >= 0.3):
+            passed = True
+
+        # 路径2: 愿望信号 + 高参与度（新增逻辑）
+        elif (has_aspiration and
+              engagement_score >= min_engagement_score and
+              aspiration_score >= 0.4):
+            passed = True
+            filter_result["pass_type"] = "aspiration"
+            filter_result["aspiration_score"] = aspiration_score
 
         if passed:
             self.stats["passed_filter"] += 1
@@ -3766,7 +3962,12 @@ class PainSignalFilter:
                     "pain_keywords": result["matched_keywords"],
                     "pain_patterns": result["matched_patterns"],
                     "emotional_intensity": result["emotional_intensity"],
-                    "filter_reason": "pain_signal_passed"
+                    "filter_reason": "pain_signal_passed",
+                    "aspiration_keywords": result.get("matched_aspirations", []),
+                    "aspiration_score": result.get("aspiration_score", 0.0),
+                    "pass_type": result.get("pass_type", "pain"),
+                    "engagement_score": result.get("engagement_score", 0.0),
+                    "trust_level": result.get("trust_level", 0.5)
                 })
                 filtered_posts.append(filtered_post)
 
@@ -3966,6 +4167,7 @@ class HackerNewsFetcher:
             "author": item.get("by", ""),
             "comments": comments,
             "pain_score": 0.5,  # 默认pain_score，后续pipeline会重新计算
+            "trust_level": 0.8,  # HN has high quality technical discussions
             "collected_at": datetime.now().isoformat()
         }
 
@@ -4246,8 +4448,8 @@ class OpportunityMapper:
             logger.error(f"Failed to map opportunity with LLM: {e}")
             return None
 
-    def _evaluate_opportunity_quality(self, opportunity_data: Dict[str, Any], cluster_data: Dict[str, Any]) -> Dict[str, Any]:
-        """评估机会质量"""
+    def _validate_opportunity_data(self, opportunity_data: Dict[str, Any]) -> Dict[str, Any]:
+        """验证机会数据（Phase 3：只做基础验证，不评分）"""
         try:
             # 处理可能的数据结构差异
             if "content" in opportunity_data:
@@ -4256,91 +4458,34 @@ class OpportunityMapper:
                 opportunity = opportunity_data.get("opportunity", {})
 
             if not opportunity:
-                return {"is_viable": False, "reason": "No opportunity data"}
+                return {"is_valid": False, "reason": "No opportunity data"}
 
-            # 基础质量检查
+            # 基础字段验证
             required_fields = ["name", "description", "target_users"]
             for field in required_fields:
                 if not opportunity.get(field):
-                    return {"is_viable": False, "reason": f"Missing required field: {field}"}
+                    return {"is_valid": False, "reason": f"Missing required field: {field}"}
 
-            # 质量评分
-            quality_score = 0.0
-            reasons = []
+            # 简单质量检查：描述长度
+            description = opportunity.get("description", "")
+            if len(description) < 20:
+                return {"is_valid": False, "reason": f"Description too short ({len(description)} < 20 chars)"}
 
-            # 痛点频率 (20%)
-            pain_frequency = opportunity.get("pain_frequency", 0)
-            if pain_frequency >= 7:
-                quality_score += 0.2
-                reasons.append("High pain frequency")
-            elif pain_frequency >= 5:
-                quality_score += 0.1
-                reasons.append("Medium pain frequency")
+            # 名称长度检查
+            name = opportunity.get("name", "")
+            if len(name) < 3:
+                return {"is_valid": False, "reason": f"Name too short ({len(name)} < 3 chars)"}
 
-            # 市场规模 (20%)
-            market_size = opportunity.get("market_size", 0)
-            if market_size >= 7:
-                quality_score += 0.2
-                reasons.append("Large market size")
-            elif market_size >= 5:
-                quality_score += 0.1
-                reasons.append("Medium market size")
+            # 目标用户长度检查
+            target_users = opportunity.get("target_users", "")
+            if len(target_users) < 10:
+                return {"is_valid": False, "reason": f"Target users too short ({len(target_users)} < 10 chars)"}
 
-            # MVP复杂度 (25%) - 越低越好
-            mvp_complexity = opportunity.get("mvp_complexity", 10)
-            if mvp_complexity <= 4:
-                quality_score += 0.25
-                reasons.append("Simple MVP")
-            elif mvp_complexity <= 6:
-                quality_score += 0.15
-                reasons.append("Moderate MVP complexity")
-
-            # 竞争风险 (20%) - 越低越好
-            competition_risk = opportunity.get("competition_risk", 10)
-            if competition_risk <= 4:
-                quality_score += 0.2
-                reasons.append("Low competition")
-            elif competition_risk <= 6:
-                quality_score += 0.1
-                reasons.append("Moderate competition")
-
-            # 集成难度 (15%) - 越低越好
-            integration_complexity = opportunity.get("integration_complexity", 10)
-            if integration_complexity <= 5:
-                quality_score += 0.15
-                reasons.append("Easy integration")
-            elif integration_complexity <= 7:
-                quality_score += 0.08
-                reasons.append("Moderate integration")
-
-            # 聚类大小加分
-            cluster_size = cluster_data.get("cluster_size", 0)
-            if cluster_size >= 10:
-                quality_score += 0.1
-                reasons.append("Large cluster size")
-
-            # 总分范围：0-1
-            total_score = min(quality_score, 1.0)
-
-            # 判断是否可行
-            is_viable = total_score >= 0.4  # 40%以上认为可行
-
-            return {
-                "is_viable": is_viable,
-                "quality_score": total_score,
-                "quality_reasons": reasons,
-                "detailed_scores": {
-                    "pain_frequency": pain_frequency,
-                    "market_size": market_size,
-                    "mvp_complexity": mvp_complexity,
-                    "competition_risk": competition_risk,
-                    "integration_complexity": integration_complexity
-                }
-            }
+            return {"is_valid": True, "reason": "Valid opportunity structure"}
 
         except Exception as e:
-            logger.error(f"Failed to evaluate opportunity quality: {e}")
-            return {"is_viable": False, "reason": f"Evaluation error: {e}"}
+            logger.error(f"Failed to validate opportunity: {e}")
+            return {"is_valid": False, "reason": f"Validation error: {e}"}
 
     def _process_aligned_cluster(self, aligned_cluster: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """处理对齐问题聚类"""
@@ -4400,8 +4545,8 @@ class OpportunityMapper:
                 tools.add('Discord')
         return list(tools)
 
-    def _save_opportunity_to_database(self, cluster_id: int, opportunity_data: Dict[str, Any], quality_result: Dict[str, Any]) -> Optional[int]:
-        """保存机会到数据库"""
+    def _save_opportunity_to_database(self, cluster_id: int, opportunity_data: Dict[str, Any]) -> Optional[int]:
+        """保存机会到数据库（Phase 3：评分字段设为占位符，由score_viability.py计算）"""
         try:
             # 处理可能的数据结构差异
             if "content" in opportunity_data:
@@ -4416,7 +4561,7 @@ class OpportunityMapper:
                 missing_capability = opportunity_data.get("missing_capability", "")
                 why_existing_fail = opportunity_data.get("why_existing_fail", "")
 
-            # 准备机会数据
+            # 准备机会数据 - 评分字段使用占位符值
             opportunity_record = {
                 "cluster_id": cluster_id,
                 "opportunity_name": opportunity.get("name", ""),
@@ -4425,14 +4570,15 @@ class OpportunityMapper:
                 "missing_capability": missing_capability,
                 "why_existing_fail": why_existing_fail,
                 "target_users": opportunity.get("target_users", ""),
-                "pain_frequency_score": opportunity.get("pain_frequency", 0),
-                "market_size_score": opportunity.get("market_size", 0),
-                "mvp_complexity_score": opportunity.get("mvp_complexity", 0),
-                "competition_risk_score": opportunity.get("competition_risk", 0),
-                "integration_complexity_score": opportunity.get("integration_complexity", 0),
-                "total_score": quality_result["quality_score"],
-                "killer_risks": json.dumps([]),  # 稍后在viability scoring中填充
-                "recommendation": ""  # 稍后在viability scoring中填充
+                # 占位符值：由 score_viability.py 计算并更新
+                "pain_frequency_score": 0.0,
+                "market_size_score": 0.0,
+                "mvp_complexity_score": 0.0,
+                "competition_risk_score": 0.0,
+                "integration_complexity_score": 0.0,
+                "total_score": 0.0,
+                "killer_risks": json.dumps([]),
+                "recommendation": ""
             }
 
             opportunity_id = db.insert_opportunity(opportunity_record)
@@ -4479,28 +4625,19 @@ class OpportunityMapper:
                         opportunity_data = self._map_opportunity_with_llm(enriched_cluster)
 
                     if opportunity_data:
-                        # 评估机会质量
+                        # 验证机会数据（Phase 3：只验证结构，不评分）
                         if cluster.get('source_type') == 'aligned':
-                            # 对齐聚类使用预设的高质量评分
-                            quality_result = {
-                                "is_viable": True,
-                                "quality_score": 0.95,  # 高质量评分
-                                "quality_reasons": [
-                                    "Multi-source validation",
-                                    "Large market size",
-                                    "High pain frequency",
-                                    "Moderate competition"
-                                ]
-                            }
+                            # 对齐聚群默认通过验证
+                            validation_result = {"is_valid": True, "reason": "Aligned cluster auto-pass"}
                         else:
-                            # 原始聚类使用标准评估
-                            quality_result = self._evaluate_opportunity_quality(opportunity_data, enriched_cluster)
+                            # 原始聚类使用标准验证
+                            validation_result = self._validate_opportunity_data(opportunity_data)
 
-                        if quality_result["is_viable"]:
+                        if validation_result["is_valid"]:
                             # 保存到数据库
                             cluster_id = cluster.get("id", 0)  # 对齐聚类可能没有id
                             opportunity_id = self._save_opportunity_to_database(
-                                cluster_id, opportunity_data, quality_result
+                                cluster_id, opportunity_data
                             )
 
                             if opportunity_id:
@@ -4510,16 +4647,15 @@ class OpportunityMapper:
                                     "cluster_name": cluster["cluster_name"],
                                     "opportunity_name": opportunity_data["content"]["opportunity"]["name"],
                                     "opportunity_description": opportunity_data["content"]["opportunity"]["description"],
-                                    "quality_score": quality_result["quality_score"],
-                                    "quality_reasons": quality_result["quality_reasons"]
+                                    "validation_reason": validation_result.get("reason", "")
                                 }
 
                                 opportunities_created.append(opportunity_summary)
                                 viable_opportunities += 1
 
-                                logger.info(f"Created opportunity: {opportunity_data['content']['opportunity']['name']} (Score: {quality_result['quality_score']:.2f})")
+                                logger.info(f"Created opportunity: {opportunity_data['content']['opportunity']['name']}")
                         else:
-                            logger.debug(f"Opportunity not viable: {quality_result.get('reason', 'Unknown')}")
+                            logger.debug(f"Opportunity validation failed: {validation_result.get('reason', 'Unknown')}")
                     else:
                         logger.debug(f"No opportunity found for cluster {cluster['cluster_name']}")
 
@@ -4762,6 +4898,26 @@ class ViabilityScorer:
             logger.error(f"Failed to calculate average frequency score: {e}")
             return 0.0
 
+    def _calculate_cluster_trust_level(self, pain_event_ids: List[int]) -> float:
+        """计算聚类中所有帖子的平均信任度"""
+        if not pain_event_ids:
+            return 0.5  # 默认中等信任度
+
+        try:
+            with db.get_connection("pain") as conn:
+                placeholders = ','.join(['?' for _ in pain_event_ids])
+                cursor = conn.execute(f"""
+                    SELECT AVG(fp.trust_level) as avg_trust
+                    FROM pain_events pe
+                    JOIN filtered_posts fp ON pe.post_id = fp.id
+                    WHERE pe.id IN ({placeholders})
+                """, pain_event_ids)
+                result = cursor.fetchone()
+                return result['avg_trust'] if result and result['avg_trust'] else 0.5
+        except Exception as e:
+            logger.error(f"Failed to calculate cluster trust level: {e}")
+            return 0.5
+
     def _frequency_to_score(self, frequencies: List[str]) -> float:
         """将频率文本转换为评分"""
         if not frequencies:
@@ -4862,6 +5018,34 @@ class ViabilityScorer:
                        f"frequency: {avg_frequency_score:.1f}")
 
         return False, ""
+
+    def _calculate_market_size_score(self, pain_event_ids: List[int]) -> float:
+        """基于硬数据计算市场规模评分 (0-10)"""
+        try:
+            # 1. 获取独立作者数
+            unique_authors = self._calculate_unique_authors(pain_event_ids)
+
+            # 2. 获取涉及的subreddit数量
+            cross_subreddit = self._calculate_cross_subreddit_count(pain_event_ids)
+
+            # 3. 基于作者数和subreddit数计算评分
+            # 作者数评分 (最高5分)
+            author_score = min(unique_authors / 10, 5.0)  # 10+作者=5分
+
+            # 跨度评分 (最高5分)
+            subreddit_score = min(cross_subreddit * 1.5, 5.0)  # 3+subreddit=5分
+
+            total_score = author_score + subreddit_score
+            return min(total_score, 10.0)
+
+        except Exception as e:
+            logger.error(f"Failed to calculate market size score: {e}")
+            return 3.0  # 默认中等偏下
+
+    def _calculate_pain_frequency_score_data_driven(self, pain_event_ids: List[int]) -> float:
+        """基于频率数据计算痛点频率评分 (0-10) - 数据驱动"""
+        # 直接复用现有的 _calculate_avg_frequency_score
+        return self._calculate_avg_frequency_score(pain_event_ids)
 
     def _update_opportunities_recommendation(self, cluster_id: int, recommendation: str, skip_reason: str = "") -> bool:
         """更新聚类下所有机会的推荐状态"""
@@ -5173,61 +5357,58 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
             return None
 
     def _combine_scores(self, llm_scores: Dict[str, Any], opportunity_data: Dict[str, Any]) -> Dict[str, Any]:
-        """结合LLM评分和规则评分"""
+        """结合LLM评分和规则评分（Phase 3：添加trust_level加权）"""
         try:
-            # LLM评分
+            # 获取聚类信息和信任度
+            cluster_info = opportunity_data.get("cluster_info", {})
+            pain_events = cluster_info.get("pain_events", [])
+            pain_event_ids = [pe['id'] for pe in pain_events]
+
+            cluster_trust_level = self._calculate_cluster_trust_level(pain_event_ids)
+
+            # LLM评分（主观维度）
             llm_component_scores = llm_scores.get("scores", {})
             llm_total_score = llm_scores.get("total_score", 0.0)
+
+            # 数据驱动评分
+            data_driven_scores = {
+                "pain_frequency": self._calculate_pain_frequency_score_data_driven(pain_event_ids),
+                "market_size": self._calculate_market_size_score(pain_event_ids),
+            }
 
             # 规则评分
             market_analysis = opportunity_data.get("market_analysis", {})
             competition_analysis = opportunity_data.get("competition_analysis", {})
-
-            # 市场规模评分 (0-10)
-            market_tier = market_analysis.get("market_tier", "niche")
-            market_score_by_tier = {
-                "large": 9,
-                "medium": 7,
-                "small": 5,
-                "niche": 3
-            }
-            market_score = market_score_by_tier.get(market_tier, 3)
 
             # 竞争评分 (0-10, 越低越好)
             competition_score = competition_analysis.get("competition_score", 8)
             competition_normalized = max(10 - competition_score, 1)  # 转换为越高越好
 
             # 聚类大小评分 (0-10)
-            cluster_info = opportunity_data.get("cluster_info", {})
             cluster_size = cluster_info.get("cluster_size", 0)
-            cluster_score = min(cluster_size, 10)  # 每个事件1分，最多10分
-
-            # 工作流置信度评分 (0-10)
-            workflow_confidence = cluster_info.get("workflow_confidence", 0.0)
-            workflow_score = workflow_confidence * 10
+            cluster_score = min(cluster_size, 10)
 
             # 综合评分计算
             final_component_scores = {
-                "pain_frequency": llm_component_scores.get("pain_frequency", 5),
-                "clear_buyer": llm_component_scores.get("clear_buyer", 5),
+                **data_driven_scores,  # 数据驱动评分
+                "clear_buyer": llm_component_scores.get("pain_frequency", 5),  # LLM评分
                 "mvp_buildable": llm_component_scores.get("mvp_buildable", 5),
                 "crowded_market": competition_normalized,
                 "integration": llm_component_scores.get("integration", 5),
-                "market_size": market_score,
                 "cluster_strength": cluster_score,
-                "workflow_confidence": workflow_score
+                "trust_level": cluster_trust_level * 10  # 转换为0-10分
             }
 
             # 计算加权总分
             weights = {
                 "pain_frequency": 0.15,
+                "market_size": 0.15,
                 "clear_buyer": 0.15,
                 "mvp_buildable": 0.20,
                 "crowded_market": 0.15,
                 "integration": 0.10,
-                "market_size": 0.10,
-                "cluster_strength": 0.10,
-                "workflow_confidence": 0.05
+                "cluster_strength": 0.10
+                # trust_level 通过加权因子体现，不直接参与权重
             }
 
             weighted_total = sum(
@@ -5235,15 +5416,20 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
                 for component, weight in weights.items()
             )
 
-            # 确保分数在0-10范围内
-            final_total_score = min(max(weighted_total, 0), 10)
+            # 应用trust_level加权
+            trust_weighted_total = weighted_total * cluster_trust_level
 
-            # 生成杀手风险
-            killer_risks = self._generate_killer_risks(final_component_scores, opportunity_data)
+            # 确保分数在0-10范围内
+            final_total_score = min(max(trust_weighted_total, 0), 10)
+
+            # 生成杀手风险（包含trust_level风险）
+            killer_risks = self._generate_killer_risks(final_component_scores, opportunity_data, cluster_trust_level)
 
             return {
                 "component_scores": final_component_scores,
                 "total_score": final_total_score,
+                "raw_total_score": weighted_total,  # 加权前的原始分数
+                "trust_level": cluster_trust_level,
                 "llm_total_score": llm_total_score,
                 "killer_risks": killer_risks,
                 "recommendation": self._generate_recommendation(final_total_score, killer_risks)
@@ -5253,8 +5439,8 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
             logger.error(f"Failed to combine scores: {e}")
             return {"total_score": 0.0, "component_scores": {}, "killer_risks": [], "recommendation": "Error in scoring"}
 
-    def _generate_killer_risks(self, component_scores: Dict[str, Any], opportunity_data: Dict[str, Any]) -> List[str]:
-        """生成杀手风险"""
+    def _generate_killer_risks(self, component_scores: Dict[str, Any], opportunity_data: Dict[str, Any], trust_level: float = 0.5) -> List[str]:
+        """生成杀手风险（Phase 3：考虑trust_level）"""
         risks = []
 
         # 基于分项评分生成风险
@@ -5275,6 +5461,12 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
 
         if component_scores.get("integration", 0) < 4:
             risks.append("Difficult integration with existing workflows")
+
+        # Phase 3: 新增trust_level风险
+        if trust_level < 0.5:
+            risks.append(f"Low trust data sources (trust_level: {trust_level:.2f}) - signals may not be reliable")
+        elif trust_level < 0.7:
+            risks.append(f"Moderate trust data sources (trust_level: {trust_level:.2f}) - validate with additional research")
 
         # 基于竞争分析生成风险
         competition_analysis = opportunity_data.get("competition_analysis", {})
@@ -5302,10 +5494,15 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
             return "abandon - Too many risks or unclear value proposition"
 
     def _update_opportunity_in_database(self, opportunity_id: int, scoring_result: Dict[str, Any]) -> bool:
-        """更新数据库中的机会评分"""
+        """更新数据库中的机会评分（Phase 3：支持raw_total_score和trust_level）"""
         try:
             with db.get_connection("clusters") as conn:
-                conn.execute("""
+                # 检查是否存在新列
+                cursor = conn.execute("PRAGMA table_info(opportunities)")
+                existing_columns = {row['name'] for row in cursor.fetchall()}
+
+                # 基础更新语句（适用于旧schema）
+                update_sql = """
                     UPDATE opportunities
                     SET pain_frequency_score = ?,
                         market_size_score = ?,
@@ -5315,8 +5512,9 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
                         total_score = ?,
                         killer_risks = ?,
                         recommendation = ?
-                    WHERE id = ?
-                """, (
+                """
+
+                update_values = [
                     scoring_result["component_scores"].get("pain_frequency", 0),
                     scoring_result["component_scores"].get("market_size", 0),
                     scoring_result["component_scores"].get("mvp_buildable", 0),
@@ -5325,8 +5523,30 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
                     scoring_result["total_score"],
                     json.dumps(scoring_result["killer_risks"]),
                     scoring_result.get("recommendation", ""),
-                    opportunity_id
-                ))
+                ]
+
+                # 如果存在新列，添加到更新语句
+                if "raw_total_score" in existing_columns:
+                    update_sql = update_sql.rstrip() + ",\nraw_total_score = ?"
+                    update_values.append(scoring_result.get("raw_total_score", scoring_result["total_score"]))
+
+                if "trust_level" in existing_columns:
+                    update_sql = update_sql.rstrip() + ",\ntrust_level = ?"
+                    update_values.append(scoring_result.get("trust_level", 0.5))
+
+                if "scoring_breakdown" in existing_columns:
+                    update_sql = update_sql.rstrip() + ",\nscoring_breakdown = ?"
+                    breakdown = {
+                        "component_scores": scoring_result["component_scores"],
+                        "raw_total_score": scoring_result.get("raw_total_score", scoring_result["total_score"]),
+                        "trust_level": scoring_result.get("trust_level", 0.5)
+                    }
+                    update_values.append(json.dumps(breakdown))
+
+                update_sql = update_sql.rstrip() + "\nWHERE id = ?"
+                update_values.append(opportunity_id)
+
+                conn.execute(update_sql, tuple(update_values))
                 conn.commit()
                 return True
 
@@ -5649,6 +5869,7 @@ class WiseCollectionDB:
                     created_at TIMESTAMP NOT NULL,
                     author TEXT,
                     category TEXT,
+                    trust_level REAL DEFAULT 0.5,
                     collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     raw_data TEXT,  -- 原始JSON数据
                     UNIQUE(source, source_id)
@@ -5669,7 +5890,12 @@ class WiseCollectionDB:
                     pain_score REAL NOT NULL,
                     pain_keywords TEXT,
                     filtered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    filter_reason TEXT
+                    filter_reason TEXT,
+                    aspiration_keywords TEXT,
+                    aspiration_score REAL DEFAULT 0.0,
+                    pass_type TEXT DEFAULT 'pain',
+                    engagement_score REAL DEFAULT 0.0,
+                    trust_level REAL DEFAULT 0.5
                 )
             """)
 
@@ -5717,6 +5943,7 @@ class WiseCollectionDB:
                     cluster_size INTEGER NOT NULL,
                     avg_pain_score REAL,
                     workflow_confidence REAL,
+                    workflow_similarity REAL DEFAULT 0.0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -5755,6 +5982,7 @@ class WiseCollectionDB:
                     why_they_look_different TEXT,
                     evidence TEXT,  -- JSON array of evidence objects
                     cluster_ids TEXT,  -- JSON array of original cluster IDs
+                    alignment_score REAL DEFAULT 0.0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -5798,6 +6026,21 @@ class WiseCollectionDB:
             # 添加对齐跟踪列到clusters表（如果不存在）
             self._add_alignment_columns_to_clusters(conn)
 
+            # 添加trust_level列到posts表（如果不存在）
+            self._add_trust_level_column(conn)
+
+            # 添加workflow_similarity列到clusters表（如果不存在）
+            self._add_workflow_similarity_column(conn)
+
+            # 添加alignment_score列到aligned_problems表（如果不存在）
+            self._add_alignment_score_column(conn)
+
+            # 添加Phase 2字段到filtered_posts表（如果不存在）
+            self._add_phase2_filtered_posts_columns(conn)
+
+            # 添加Phase 3字段到opportunities表（如果不存在）
+            self._add_phase3_opportunities_columns(conn)
+
             conn.commit()
             logger.info("Unified database initialized successfully")
 
@@ -5822,6 +6065,7 @@ class WiseCollectionDB:
                     created_at TIMESTAMP NOT NULL,
                     author TEXT,
                     category TEXT,
+                    trust_level REAL DEFAULT 0.5,
                     collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     raw_data TEXT,  -- 原始JSON数据
                     UNIQUE(source, source_id)
@@ -5845,6 +6089,10 @@ class WiseCollectionDB:
 
             if 'source' in existing_columns and 'source_id' in existing_columns:
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_unique_source ON posts(source, source_id)")
+
+            # 添加trust_level列到posts表（如果不存在）
+            self._add_trust_level_column(conn)
+
             conn.commit()
 
     def _init_filtered_posts_db(self):
@@ -5927,6 +6175,7 @@ class WiseCollectionDB:
                     cluster_size INTEGER NOT NULL,
                     avg_pain_score REAL,
                     workflow_confidence REAL,
+                    workflow_similarity REAL DEFAULT 0.0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -5965,6 +6214,7 @@ class WiseCollectionDB:
                     why_they_look_different TEXT,
                     evidence TEXT,  -- JSON array of evidence objects
                     cluster_ids TEXT,  -- JSON array of original cluster IDs
+                    alignment_score REAL DEFAULT 0.0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -5976,6 +6226,15 @@ class WiseCollectionDB:
 
             # 添加对齐跟踪列到clusters表（如果不存在）
             self._add_alignment_columns_to_clusters(conn)
+
+            # 添加workflow_similarity列到clusters表（如果不存在）
+            self._add_workflow_similarity_column(conn)
+
+            # 添加alignment_score列到aligned_problems表（如果不存在）
+            self._add_alignment_score_column(conn)
+
+            # 添加Phase 3字段到opportunities表（如果不存在）
+            self._add_phase3_opportunities_columns(conn)
 
             conn.commit()
 
@@ -6009,6 +6268,134 @@ class WiseCollectionDB:
         except Exception as e:
             logger.error(f"Failed to add alignment columns to clusters table: {e}")
 
+    def _add_trust_level_column(self, conn):
+        """Add trust_level column to posts table if not exists"""
+        try:
+            cursor = conn.execute("PRAGMA table_info(posts)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            if 'trust_level' not in existing_columns:
+                conn.execute("""
+                    ALTER TABLE posts
+                    ADD COLUMN trust_level REAL DEFAULT 0.5
+                """)
+                logger.info("Added trust_level column to posts table")
+
+                # Migrate existing data: set trust_level based on category
+                category_trust_levels = {
+                    'core': 0.9,
+                    'secondary': 0.7,
+                    'verticals': 0.6,
+                    'experimental': 0.4
+                }
+
+                for category, level in category_trust_levels.items():
+                    conn.execute("""
+                        UPDATE posts
+                        SET trust_level = ?
+                        WHERE category = ?
+                    """, (level, category))
+
+                logger.info("Migrated trust_level for existing posts")
+
+        except Exception as e:
+            logger.error(f"Failed to add trust_level column: {e}")
+
+    def _add_workflow_similarity_column(self, conn):
+        """Add workflow_similarity column to clusters table if not exists"""
+        try:
+            cursor = conn.execute("PRAGMA table_info(clusters)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            if 'workflow_similarity' not in existing_columns:
+                conn.execute("""
+                    ALTER TABLE clusters
+                    ADD COLUMN workflow_similarity REAL DEFAULT 0.0
+                """)
+                logger.info("Added workflow_similarity column to clusters table")
+
+                # For existing clusters, migrate workflow_confidence to workflow_similarity
+                conn.execute("""
+                    UPDATE clusters
+                    SET workflow_similarity = COALESCE(workflow_confidence, 0.0)
+                """)
+                logger.info("Migrated workflow_confidence to workflow_similarity")
+
+        except Exception as e:
+            logger.error(f"Failed to add workflow_similarity column: {e}")
+
+    def _add_alignment_score_column(self, conn):
+        """Add alignment_score column to aligned_problems table if not exists"""
+        try:
+            cursor = conn.execute("PRAGMA table_info(aligned_problems)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            if 'alignment_score' not in existing_columns:
+                conn.execute("""
+                    ALTER TABLE aligned_problems
+                    ADD COLUMN alignment_score REAL DEFAULT 0.0
+                """)
+                logger.info("Added alignment_score column to aligned_problems table")
+
+                # Existing alignments get default high score
+                conn.execute("""
+                    UPDATE aligned_problems
+                    SET alignment_score = 0.85
+                    WHERE alignment_score = 0.0
+                """)
+                logger.info("Set default alignment_score for existing aligned problems")
+
+        except Exception as e:
+            logger.error(f"Failed to add alignment_score column: {e}")
+
+    def _add_phase2_filtered_posts_columns(self, conn):
+        """Add Phase 2 aspiration and trust columns to filtered_posts table if not exist"""
+        try:
+            cursor = conn.execute("PRAGMA table_info(filtered_posts)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            new_columns = {
+                'aspiration_keywords': 'TEXT',
+                'aspiration_score': 'REAL DEFAULT 0.0',
+                'pass_type': 'TEXT DEFAULT \'pain\'',
+                'engagement_score': 'REAL DEFAULT 0.0',
+                'trust_level': 'REAL DEFAULT 0.5'
+            }
+
+            for column_name, column_def in new_columns.items():
+                if column_name not in existing_columns:
+                    conn.execute(f"""
+                        ALTER TABLE filtered_posts
+                        ADD COLUMN {column_name} {column_def}
+                    """)
+                    logger.info(f"Added {column_name} column to filtered_posts table")
+
+        except Exception as e:
+            logger.error(f"Failed to add Phase 2 columns to filtered_posts table: {e}")
+
+    def _add_phase3_opportunities_columns(self, conn):
+        """Add Phase 3 scoring columns to opportunities table if not exist"""
+        try:
+            cursor = conn.execute("PRAGMA table_info(opportunities)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            new_columns = {
+                'raw_total_score': 'REAL DEFAULT 0.0',
+                'trust_level': 'REAL DEFAULT 0.5',
+                'scoring_breakdown': 'TEXT'  # JSON格式存储详细计算过程
+            }
+
+            for column_name, column_def in new_columns.items():
+                if column_name not in existing_columns:
+                    conn.execute(f"""
+                        ALTER TABLE opportunities
+                        ADD COLUMN {column_name} {column_def}
+                    """)
+                    logger.info(f"Added {column_name} column to opportunities table")
+
+        except Exception as e:
+            logger.error(f"Failed to add Phase 3 columns to opportunities table: {e}")
+
     # Raw posts operations
     def insert_raw_post(self, post_data: Dict[str, Any]) -> bool:
         """插入原始帖子数据（支持多数据源）"""
@@ -6018,8 +6405,8 @@ class WiseCollectionDB:
                     INSERT OR REPLACE INTO posts
                     (id, title, body, subreddit, url, source, source_id, platform_data,
                      score, num_comments, upvote_ratio, is_self, created_utc, created_at,
-                     author, category, raw_data)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     author, category, trust_level, raw_data)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     post_data.get("id"),                    # 统一ID (兼容旧数据)
                     post_data["title"],
@@ -6037,6 +6424,7 @@ class WiseCollectionDB:
                     post_data.get("created_at", datetime.now().isoformat()),  # 新字段
                     post_data.get("author", ""),
                     post_data.get("category", ""),
+                    post_data.get("trust_level", 0.5),      # 新字段，默认0.5
                     json.dumps(post_data)
                 ))
                 conn.commit()
@@ -6117,8 +6505,9 @@ class WiseCollectionDB:
                 conn.execute("""
                     INSERT OR REPLACE INTO filtered_posts
                     (id, title, body, subreddit, url, score, num_comments,
-                     upvote_ratio, pain_score, pain_keywords, filter_reason)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     upvote_ratio, pain_score, pain_keywords, filter_reason,
+                     aspiration_keywords, aspiration_score, pass_type, engagement_score, trust_level)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     post_data["id"],
                     post_data["title"],
@@ -6130,7 +6519,12 @@ class WiseCollectionDB:
                     post_data.get("upvote_ratio", 0.0),
                     post_data.get("pain_score", 0.0),
                     json.dumps(post_data.get("pain_keywords", [])),
-                    post_data.get("filter_reason", "")
+                    post_data.get("filter_reason", ""),
+                    json.dumps(post_data.get("aspiration_keywords", [])),
+                    post_data.get("aspiration_score", 0.0),
+                    post_data.get("pass_type", "pain"),
+                    post_data.get("engagement_score", 0.0),
+                    post_data.get("trust_level", 0.5)
                 ))
                 conn.commit()
                 return True
@@ -6265,8 +6659,8 @@ class WiseCollectionDB:
                     INSERT INTO clusters
                     (cluster_name, cluster_description, source_type, centroid_summary,
                      common_pain, common_context, example_events, pain_event_ids, cluster_size,
-                     avg_pain_score, workflow_confidence)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     avg_pain_score, workflow_confidence, workflow_similarity)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     cluster_data["cluster_name"],
                     cluster_data.get("cluster_description", ""),
@@ -6278,7 +6672,8 @@ class WiseCollectionDB:
                     json.dumps(cluster_data["pain_event_ids"]),
                     cluster_data["cluster_size"],
                     cluster_data.get("avg_pain_score", 0.0),
-                    cluster_data.get("workflow_confidence", 0.0)
+                    cluster_data.get("workflow_confidence", 0.0),
+                    cluster_data.get("workflow_similarity", 0.0)
                 ))
                 cluster_id = cursor.lastrowid
                 conn.commit()
@@ -6460,8 +6855,8 @@ class WiseCollectionDB:
                 conn.execute("""
                     INSERT OR REPLACE INTO aligned_problems
                     (id, aligned_problem_id, sources, core_problem,
-                     why_they_look_different, evidence, cluster_ids)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                     why_they_look_different, evidence, cluster_ids, alignment_score)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     aligned_problem_data['id'],
                     aligned_problem_data['aligned_problem_id'],
@@ -6469,7 +6864,8 @@ class WiseCollectionDB:
                     aligned_problem_data['core_problem'],
                     aligned_problem_data['why_they_look_different'],
                     json.dumps(aligned_problem_data['evidence']),
-                    json.dumps(aligned_problem_data['cluster_ids'])
+                    json.dumps(aligned_problem_data['cluster_ids']),
+                    aligned_problem_data.get('alignment_score', 0.0)
                 ))
                 conn.commit()
         except Exception as e:
@@ -6592,6 +6988,72 @@ class WiseCollectionDB:
 
         except Exception as e:
             logger.error(f"Failed to get cross-table stats: {e}")
+
+        return stats
+
+    def get_score_statistics(self) -> Dict[str, Any]:
+        """Get statistics on continuous scores"""
+        stats = {}
+
+        try:
+            with self.get_connection("clusters") as conn:
+                # Workflow similarity distribution
+                cursor = conn.execute("""
+                    SELECT
+                        COUNT(*) as total_clusters,
+                        AVG(workflow_similarity) as avg_similarity,
+                        MIN(workflow_similarity) as min_similarity,
+                        MAX(workflow_similarity) as max_similarity
+                    FROM clusters
+                    WHERE workflow_similarity IS NOT NULL
+                """)
+                row = cursor.fetchone()
+                stats['workflow_similarity'] = dict(row) if row else {}
+
+                # Distribution buckets
+                cursor = conn.execute("""
+                    SELECT
+                        CASE
+                            WHEN workflow_similarity >= 0.8 THEN 'high'
+                            WHEN workflow_similarity >= 0.6 THEN 'medium'
+                            ELSE 'low'
+                        END as bucket,
+                        COUNT(*) as count
+                    FROM clusters
+                    WHERE workflow_similarity IS NOT NULL
+                    GROUP BY bucket
+                """)
+                stats['workflow_similarity_distribution'] = {row['bucket']: row['count'] for row in cursor.fetchall()}
+
+            with self.get_connection("clusters") as conn:
+                # Alignment score distribution
+                cursor = conn.execute("""
+                    SELECT
+                        COUNT(*) as total_alignments,
+                        AVG(alignment_score) as avg_alignment,
+                        MIN(alignment_score) as min_alignment,
+                        MAX(alignment_score) as max_alignment
+                    FROM aligned_problems
+                    WHERE alignment_score IS NOT NULL
+                """)
+                row = cursor.fetchone()
+                stats['alignment_score'] = dict(row) if row else {}
+
+            with self.get_connection("raw") as conn:
+                # Trust level distribution by source
+                cursor = conn.execute("""
+                    SELECT
+                        source,
+                        COUNT(*) as count,
+                        AVG(trust_level) as avg_trust_level
+                    FROM posts
+                    WHERE trust_level IS NOT NULL
+                    GROUP BY source
+                """)
+                stats['trust_level_by_source'] = {row['source']: {'count': row['count'], 'avg_trust': row['avg_trust_level']} for row in cursor.fetchall()}
+
+        except Exception as e:
+            logger.error(f"Failed to get score statistics: {e}")
 
         return stats
 
@@ -7351,52 +7813,62 @@ Fields explanation:
 - confidence: how confident you are this is a real pain point (0-1)"""
 
     def _get_workflow_clustering_prompt(self) -> str:
-        """获取工作流聚类提示"""
+        """Get workflow clustering prompt with continuous scoring"""
         return """You are analyzing user pain events.
 
-Given the following pain events, determine whether they belong to THE SAME UNDERLYING WORKFLOW problem.
+Given the following pain events, rate how similar their UNDERLYING WORKFLOWS are on a continuous scale.
 
 A workflow means:
-- the same repeated activity
-- where different people fail in similar ways
-- with similar root causes
+- The same repeated activity
+- Where different people fail in similar ways
+- With similar root causes
 
-If they belong to the same workflow:
-- give the workflow a short descriptive name
-- provide a brief description of the workflow
-- estimate confidence (0-1)
+Your task: Rate the workflow similarity from 0.0 to 1.0:
+- 0.0 = Completely different workflows
+- 0.3 = Some vague similarity but different core activities
+- 0.5 = Partially similar with key differences
+- 0.7 = Strong similarity with minor variations
+- 1.0 = Identical workflows
 
-If they should NOT be clustered:
-- say they should not be clustered
-- explain why briefly
+If similarity >= 0.7:
+- Give the workflow a short descriptive name
+- Provide a brief description
+- Explain your reasoning
+
+If similarity < 0.7:
+- Still provide a workflow name and description
+- But note the key differences in reasoning
 
 Return JSON only with this format:
 {
-  "same_workflow": true/false,
-  "workflow_name": "name if same workflow",
-  "workflow_description": "description if same workflow",
+  "workflow_similarity": 0.75,
+  "workflow_name": "name of the workflow (even if low similarity)",
+  "workflow_description": "description of what these events have in common",
   "confidence": 0.8,
-  "reasoning": "brief explanation"
+  "reasoning": "brief explanation of your rating"
 }
 
-Be conservative - only cluster if they're clearly the same workflow."""
+Be precise with your similarity score - use the full 0.0-1.0 range."""
 
     def _get_opportunity_mapping_prompt(self) -> str:
-        """获取机会映射提示"""
-        return """You are a brutally practical product thinker for solo founders.
+        """获取机会映射提示 - Phase 3 简化版（仅定性描述）"""
+        return """You are a practical product thinker for solo founders.
 
-Given a cluster of pain events that belong to the same workflow:
+Given a cluster of pain events from the same workflow:
 
-1. Identify what tools people CURRENTLY use to survive this problem
-2. Identify what capability is missing
-3. Explain why existing tools fail (too heavy, too generic, etc.)
+1. Identify what tools people CURRENTLY use to cope with this problem
+2. Identify what capability is MISSING that would solve it
+3. Explain WHY existing tools fail (too complex, too expensive, wrong focus, etc.)
 4. Propose ONE narrow micro-tool opportunity
 
+Focus on:
+- Specific, actionable problems with clear user context
+- Narrow scope suitable for solo founder MVP (1-3 months)
+- Concrete user needs, not abstract concepts
+
 Rules:
-- No platforms (unless you can justify the MVP)
-- No marketplaces
-- Assume a solo founder building an MVP in 1-3 months
-- Focus on specific, painful problems with clear solutions
+- No platforms (unless you can justify the MVP scope)
+- No marketplaces or two-sided markets
 - If no viable tool opportunity exists, say so
 
 Return JSON only with this format:
@@ -7406,17 +7878,12 @@ Return JSON only with this format:
   "why_existing_fail": "why current solutions don't work well",
   "opportunity": {
     "name": "short descriptive name",
-    "description": "what the micro-tool does",
-    "target_users": "who would use this",
-    "pain_frequency": "how often this pain occurs (1-10)",
-    "market_size": "how many people have this problem (1-10)",
-    "mvp_complexity": "how hard to build MVP (1-10, lower is better)",
-    "competition_risk": "risk of competitors (1-10, lower is better)",
-    "integration_complexity": "how hard to integrate (1-10, lower is better)"
+    "description": "what the micro-tool does in 1-2 sentences",
+    "target_users": "who would use this (be specific about role/context)"
   }
 }
 
-Focus on narrow, specific problems that a solo founder can actually solve."""
+NO quantitative scores - focus on clear, specific descriptions that capture the essence of the problem and solution."""
 
     def _get_viability_scoring_prompt(self) -> str:
         """获取可行性评分提示"""

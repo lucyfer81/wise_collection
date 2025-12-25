@@ -806,6 +806,30 @@ class WiseCollectionDB:
             logger.error(f"Failed to get unprocessed posts for source {source}: {e}")
             return []
 
+    def get_top_comments_for_post(self, post_id: str, top_n: int = 10) -> List[Dict[str, Any]]:
+        """获取指定帖子的Top N高赞评论
+
+        Args:
+            post_id: 帖子ID
+            top_n: 返回评论数量，默认10条
+
+        Returns:
+            评论列表，按score降序排列
+        """
+        try:
+            with self.get_connection("raw") as conn:
+                cursor = conn.execute("""
+                    SELECT source_comment_id, author, body, score
+                    FROM comments
+                    WHERE post_id = ?
+                    ORDER BY score DESC
+                    LIMIT ?
+                """, (post_id, top_n))
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Failed to get comments for post {post_id}: {e}")
+            return []
+
     # Filtered posts operations
     def insert_filtered_post(self, post_data: Dict[str, Any]) -> bool:
         """插入过滤后的帖子"""

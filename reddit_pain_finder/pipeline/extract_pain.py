@@ -36,13 +36,19 @@ class PainPointExtractor:
             upvotes = post_data.get("score", 0)
             comments_count = post_data.get("num_comments", 0)
 
-            # 调用LLM进行抽取
+            # Load top comments for context
+            top_n_comments = 10
+            comments = db.get_top_comments_for_post(post_data["id"], top_n=top_n_comments)
+            logger.debug(f"Loaded {len(comments)} comments for post {post_data['id']}")
+
+            # 调用LLM进行抽取（包含评论上下文）
             response = llm_client.extract_pain_points(
                 title=title,
                 body=body,
                 subreddit=subreddit,
                 upvotes=upvotes,
-                comments_count=comments_count
+                comments_count=comments_count,
+                top_comments=comments
             )
 
             extraction_result = response["content"]
@@ -56,7 +62,9 @@ class PainPointExtractor:
                     "original_score": upvotes,
                     "extraction_model": response["model"],
                     "extraction_timestamp": datetime.now().isoformat(),
-                    "confidence": event.get("confidence", 0.0)
+                    "confidence": event.get("confidence", 0.0),
+                    "comments_used": len(comments),  # 新增：使用的评论数量
+                    "evidence_sources": event.get("evidence_sources", ["post"])  # 新增：证据来源
                 })
 
             self.stats["total_pain_events"] += len(pain_events)

@@ -1,6 +1,6 @@
 # Reddit Pain Finder - 代码汇总
 
-生成时间: 2025-12-24 15:07:32
+生成时间: 2025-12-25 15:00:09
 
 本文档包含 reddit_pain_finder 项目的核心代码文件：
 - Pipeline处理模块 (pipeline/)
@@ -45,6 +45,7 @@ from pipeline.align_cross_sources import CrossSourceAligner
 # 导入工具模块
 from utils.db import db
 from utils.llm_client import LLMClient
+from utils.performance_monitor import performance_monitor
 
 # 设置日志
 logging.basicConfig(
@@ -61,9 +62,10 @@ logger = logging.getLogger(__name__)
 class WiseCollectionPipeline:
     """Wise Collection数据收集Pipeline"""
 
-    def __init__(self):
+    def __init__(self, enable_monitoring: bool = True):
         """初始化pipeline"""
         self.pipeline_start_time = datetime.now()
+        self.enable_monitoring = enable_monitoring
         self.stats = {
             "start_time": self.pipeline_start_time.isoformat(),
             "stages_completed": [],
@@ -75,6 +77,10 @@ class WiseCollectionPipeline:
 
         # 确保日志目录存在
         os.makedirs("logs", exist_ok=True)
+
+        # 重置性能监控器
+        if self.enable_monitoring:
+            performance_monitor.reset()
 
     def _load_config(self, config_path: str = "config/llm.yaml") -> Dict[str, Any]:
         """加载配置文件"""
@@ -104,6 +110,9 @@ class WiseCollectionPipeline:
         logger.info("STAGE 1: Multi-Source Posts Fetcher")
         logger.info("=" * 50)
 
+        if self.enable_monitoring:
+            performance_monitor.start_stage("fetch")
+
         try:
             from pipeline.fetch import MultiSourceFetcher
 
@@ -114,6 +123,9 @@ class WiseCollectionPipeline:
 
             self.stats["stages_completed"].append("fetch")
             self.stats["stage_results"]["fetch"] = result
+
+            if self.enable_monitoring:
+                performance_monitor.end_stage("fetch", result.get('total_saved', 0))
 
             logger.info(f"✅ Stage 1 completed: Found {result['total_saved']} posts from {len(result['sources_processed'])} sources")
 
@@ -129,6 +141,8 @@ class WiseCollectionPipeline:
         except Exception as e:
             logger.error(f"❌ Stage 1 failed: {e}")
             self.stats["stages_failed"].append("fetch")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("fetch", 0)
             raise
 
     def run_stage_filter(self, limit_posts: Optional[int] = None) -> Dict[str, Any]:
@@ -136,6 +150,9 @@ class WiseCollectionPipeline:
         logger.info("=" * 50)
         logger.info("STAGE 2: Filtering pain signals")
         logger.info("=" * 50)
+
+        if self.enable_monitoring:
+            performance_monitor.start_stage("filter")
 
         try:
             filter = PainSignalFilter()
@@ -146,6 +163,8 @@ class WiseCollectionPipeline:
             if not unfiltered_posts:
                 logger.info("No posts to filter")
                 result = {"processed": 0, "filtered": 0}
+                if self.enable_monitoring:
+                    performance_monitor.end_stage("filter", 0)
             else:
                 logger.info(f"Filtering {len(unfiltered_posts)} posts")
                 filtered_posts = filter.filter_posts_batch(unfiltered_posts)
@@ -163,6 +182,9 @@ class WiseCollectionPipeline:
                     "filter_stats": filter.get_statistics()
                 }
 
+                if self.enable_monitoring:
+                    performance_monitor.end_stage("filter", saved_count)
+
             self.stats["stages_completed"].append("filter")
             self.stats["stage_results"]["filter"] = result
 
@@ -172,6 +194,8 @@ class WiseCollectionPipeline:
         except Exception as e:
             logger.error(f"❌ Stage 2 failed: {e}")
             self.stats["stages_failed"].append("filter")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("filter", 0)
             raise
 
     def run_stage_extract(self, limit_posts: Optional[int] = None) -> Dict[str, Any]:
@@ -180,6 +204,9 @@ class WiseCollectionPipeline:
         logger.info("STAGE 3: Extracting pain points")
         logger.info("=" * 50)
 
+        if self.enable_monitoring:
+            performance_monitor.start_stage("extract")
+
         try:
             extractor = PainPointExtractor()
             result = extractor.process_unextracted_posts(limit=limit_posts or 100)
@@ -187,12 +214,17 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("extract")
             self.stats["stage_results"]["extract"] = result
 
+            if self.enable_monitoring:
+                performance_monitor.end_stage("extract", result.get('pain_events_saved', 0))
+
             logger.info(f"✅ Stage 3 completed: Extracted {result['pain_events_saved']} pain events")
             return result
 
         except Exception as e:
             logger.error(f"❌ Stage 3 failed: {e}")
             self.stats["stages_failed"].append("extract")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("extract", 0)
             raise
 
     def run_stage_embed(self, limit_events: Optional[int] = None) -> Dict[str, Any]:
@@ -201,6 +233,9 @@ class WiseCollectionPipeline:
         logger.info("STAGE 4: Creating embeddings")
         logger.info("=" * 50)
 
+        if self.enable_monitoring:
+            performance_monitor.start_stage("embed")
+
         try:
             embedder = PainEventEmbedder()
             result = embedder.process_missing_embeddings(limit=limit_events or 200)
@@ -208,12 +243,17 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("embed")
             self.stats["stage_results"]["embed"] = result
 
+            if self.enable_monitoring:
+                performance_monitor.end_stage("embed", result.get('embeddings_created', 0))
+
             logger.info(f"✅ Stage 4 completed: Created {result['embeddings_created']} embeddings")
             return result
 
         except Exception as e:
             logger.error(f"❌ Stage 4 failed: {e}")
             self.stats["stages_failed"].append("embed")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("embed", 0)
             raise
 
     def run_stage_cluster(self, limit_events: Optional[int] = None) -> Dict[str, Any]:
@@ -222,6 +262,9 @@ class WiseCollectionPipeline:
         logger.info("STAGE 5: Clustering pain events")
         logger.info("=" * 50)
 
+        if self.enable_monitoring:
+            performance_monitor.start_stage("cluster")
+
         try:
             clusterer = PainEventClusterer()
             result = clusterer.cluster_pain_events(limit=limit_events or 200)
@@ -229,12 +272,17 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("cluster")
             self.stats["stage_results"]["cluster"] = result
 
+            if self.enable_monitoring:
+                performance_monitor.end_stage("cluster", result.get('clusters_created', 0))
+
             logger.info(f"✅ Stage 5 completed: Created {result['clusters_created']} clusters")
             return result
 
         except Exception as e:
             logger.error(f"❌ Stage 5 failed: {e}")
             self.stats["stages_failed"].append("cluster")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("cluster", 0)
             raise
 
     def run_stage_cross_source_alignment(self) -> Dict[str, Any]:
@@ -242,6 +290,9 @@ class WiseCollectionPipeline:
         logger.info("=" * 50)
         logger.info("STAGE 5.5: Cross-Source Alignment")
         logger.info("=" * 50)
+
+        if self.enable_monitoring:
+            performance_monitor.start_stage("alignment")
 
         try:
             # 初始化对齐器
@@ -263,6 +314,9 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("alignment")
             self.stats["stage_results"]["alignment"] = result
 
+            if self.enable_monitoring:
+                performance_monitor.end_stage("alignment", len(aligned_problems))
+
             logger.info(f"✅ Stage 5.5 completed: Found {len(aligned_problems)} aligned problems")
 
             # 显示对齐摘要
@@ -280,6 +334,8 @@ class WiseCollectionPipeline:
         except Exception as e:
             logger.error(f"❌ Stage 5.5 failed: {e}")
             self.stats["stages_failed"].append("alignment")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("alignment", 0)
             raise
 
     def run_stage_map_opportunities(self, limit_clusters: Optional[int] = None) -> Dict[str, Any]:
@@ -288,6 +344,9 @@ class WiseCollectionPipeline:
         logger.info("STAGE 6: Mapping opportunities")
         logger.info("=" * 50)
 
+        if self.enable_monitoring:
+            performance_monitor.start_stage("map_opportunities")
+
         try:
             mapper = OpportunityMapper()
             result = mapper.map_opportunities_for_clusters(limit=limit_clusters or 50)
@@ -295,12 +354,17 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("map_opportunities")
             self.stats["stage_results"]["map_opportunities"] = result
 
+            if self.enable_monitoring:
+                performance_monitor.end_stage("map_opportunities", result.get('opportunities_created', 0))
+
             logger.info(f"✅ Stage 6 completed: Mapped {result['opportunities_created']} opportunities")
             return result
 
         except Exception as e:
             logger.error(f"❌ Stage 6 failed: {e}")
             self.stats["stages_failed"].append("map_opportunities")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("map_opportunities", 0)
             raise
 
     def run_stage_score(self, limit_opportunities: Optional[int] = None) -> Dict[str, Any]:
@@ -309,6 +373,9 @@ class WiseCollectionPipeline:
         logger.info("STAGE 7: Scoring viability")
         logger.info("=" * 50)
 
+        if self.enable_monitoring:
+            performance_monitor.start_stage("score")
+
         try:
             scorer = ViabilityScorer()
             result = scorer.score_opportunities(limit=limit_opportunities or 100)
@@ -316,21 +383,55 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("score")
             self.stats["stage_results"]["score"] = result
 
+            if self.enable_monitoring:
+                performance_monitor.end_stage("score", result.get('opportunities_scored', 0))
+
             logger.info(f"✅ Stage 7 completed: Scored {result['opportunities_scored']} opportunities")
             return result
 
         except Exception as e:
             logger.error(f"❌ Stage 7 failed: {e}")
             self.stats["stages_failed"].append("score")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("score", 0)
             raise
 
-    def generate_final_report(self) -> Dict[str, Any]:
+    def generate_final_report(
+        self,
+        save_metrics: bool = False,
+        metrics_file: Optional[str] = None,
+        generate_report: bool = False,
+        report_file: Optional[str] = None
+    ) -> Dict[str, Any]:
         """生成最终报告"""
         logger.info("=" * 50)
         logger.info("GENERATING FINAL REPORT")
         logger.info("=" * 50)
 
         try:
+            # 输出性能监控摘要
+            if self.enable_monitoring:
+                monitor_summary = performance_monitor.get_summary()
+                logger.info(f"\n📊 Performance Summary:")
+                logger.info(f"   • Total Duration: {monitor_summary['total_duration_minutes']} minutes")
+                logger.info(f"   • LLM Calls: {monitor_summary['total_llm_calls']:,}")
+                logger.info(f"   • Total Tokens: {monitor_summary['total_tokens']:,}")
+                logger.info(f"   • Est. Cost: ${monitor_summary['estimated_cost_usd']:.4f} USD")
+
+                # 保存metrics到文件
+                if save_metrics:
+                    if metrics_file is None:
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        metrics_file = f"docs/reports/pipeline_metrics_{timestamp}.json"
+
+                    os.makedirs(os.path.dirname(metrics_file), exist_ok=True)
+                    performance_monitor.save_metrics(metrics_file)
+                    logger.info(f"💾 Metrics saved to: {metrics_file}")
+
+                    # 如果需要生成markdown报告
+                    if generate_report:
+                        self.generate_markdown_report(metrics_file, report_file)
+
             # 获取数据库统计信息
             db_stats = db.get_statistics()
 
@@ -370,6 +471,10 @@ class WiseCollectionPipeline:
                 }
             }
 
+            # 添加性能监控数据到摘要
+            if self.enable_monitoring:
+                final_summary["performance"] = monitor_summary
+
             self.stats["final_summary"] = final_summary
 
             logger.info("🎉 PIPELINE COMPLETED SUCCESSFULLY!")
@@ -398,11 +503,20 @@ class WiseCollectionPipeline:
         limit_clusters: Optional[int] = None,
         limit_opportunities: Optional[int] = None,
         sources: Optional[List[str]] = None,
-        stop_on_error: bool = False
+        stop_on_error: bool = False,
+        save_metrics: bool = False,
+        metrics_file: Optional[str] = None,
+        generate_report: bool = False,
+        report_file: Optional[str] = None
     ) -> Dict[str, Any]:
         """运行完整pipeline"""
         logger.info("🚀 Starting Wise Collection Multi-Source Pipeline")
         logger.info(f"⏰ Started at: {self.pipeline_start_time}")
+
+        if self.enable_monitoring:
+            logger.info("📊 Performance monitoring: ENABLED")
+        else:
+            logger.info("📊 Performance monitoring: DISABLED")
 
         # 使用指定的数据源，默认为 reddit + hackernews
         fetch_sources = sources or ['reddit', 'hackernews']
@@ -431,7 +545,12 @@ class WiseCollectionPipeline:
                     logger.warning(f"Continuing pipeline despite '{stage_name}' failure")
 
         # 生成最终报告
-        final_report = self.generate_final_report()
+        final_report = self.generate_final_report(
+            save_metrics=save_metrics,
+            metrics_file=metrics_file,
+            generate_report=generate_report,
+            report_file=report_file
+        )
 
         return final_report
 
@@ -470,6 +589,223 @@ class WiseCollectionPipeline:
             logger.error(f"Failed to save results: {e}")
             return None
 
+    def generate_markdown_report(self, metrics_file: str, output_file: Optional[str] = None) -> str:
+        """生成详细的成本性能markdown报告"""
+        if not self.enable_monitoring:
+            logger.warning("Performance monitoring is disabled, cannot generate report")
+            return None
+
+        try:
+            from utils.performance_monitor import PerformanceMonitor
+
+            # 加载metrics
+            monitor = PerformanceMonitor.load_metrics(metrics_file)
+            summary = monitor.get_summary()
+            stages_summary = summary['stages_summary']
+
+            # 阶段中文名称映射
+            stage_names_cn = {
+                'fetch': '数据抓取',
+                'filter': '信号过滤',
+                'extract': '痛点抽取',
+                'embed': '向量化',
+                'cluster': '聚类分析',
+                'alignment': '跨源对齐',
+                'map_opportunities': '机会映射',
+                'score': '可行性评分'
+            }
+
+            # 生成报告
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            metrics_filename = os.path.basename(metrics_file)
+
+            report = f"""# Pipeline 成本与性能分析报告
+
+> **生成时间**: {timestamp}
+> **指标文件**: {metrics_filename}
+
+---
+
+## 📊 执行摘要
+
+### 关键指标
+
+| 指标 | 数值 |
+|------|------|
+| 总执行时间 | {summary['total_duration_minutes']:.2f} 分钟 ({summary['total_duration_seconds']:.1f} 秒) |
+| LLM调用次数 | {summary['total_llm_calls']:,} 次 |
+| 总Token使用量 | {summary['total_tokens']:,} |
+| 预估成本 | ${summary['estimated_cost_usd']:.4f} USD |
+| 平均每调用成本 | ${(summary['estimated_cost_usd']/summary['total_llm_calls'] if summary['total_llm_calls'] > 0 else 0):.6f} USD |
+
+### 效率指标
+
+| 指标 | 数值 |
+|------|------|
+| 平均每调用耗时 | {(summary['total_duration_seconds']/summary['total_llm_calls'] if summary['total_llm_calls'] > 0 else 0):.2f} 秒 |
+| 平均每调用Token数 | {(summary['total_tokens']/summary['total_llm_calls'] if summary['total_llm_calls'] > 0 else 0):.0f} |
+| 每千Token成本 | ${(summary['estimated_cost_usd']/(summary['total_tokens']/1000) if summary['total_tokens'] > 0 else 0):.4f} USD |
+
+---
+
+## 📈 阶段分解
+
+### 各阶段性能详情
+
+| 阶段 | 执行时间(秒) | 处理项目数 | LLM调用次数 | Token使用量 |
+|------|-------------|-----------|------------|-----------|
+"""
+
+            # 添加各阶段数据
+            for stage_name, stats in stages_summary.items():
+                stage_name_cn = stage_names_cn.get(stage_name, stage_name)
+                duration = stats['duration_seconds']
+                items = stats['items_processed']
+                tokens = stats['tokens_used']
+                llm_calls = stats['llm_calls']
+
+                report += f"| {stage_name_cn} | {duration:.1f} | {items} | {llm_calls} | {tokens:,} |\n"
+
+            # 阶段效率对比
+            report += "\n### 阶段效率对比\n\n"
+            for stage_name, stats in stages_summary.items():
+                stage_name_cn = stage_names_cn.get(stage_name, stage_name)
+                duration = stats['duration_seconds']
+                items = stats['items_processed']
+                tokens = stats['tokens_used']
+
+                if items > 0:
+                    avg_time_per_item = duration / items
+                    report += f"**{stage_name_cn}**:\n"
+                    report += f"- 平均每项目处理时间: {avg_time_per_item:.2f} 秒\n"
+
+                    if tokens > 0:
+                        avg_tokens_per_item = tokens / items
+                        report += f"- 平均每项目Token数: {avg_tokens_per_item:.0f}\n"
+                    report += "\n"
+
+            # 成本分析
+            total_tokens = summary['total_tokens']
+            report += """
+---
+
+## 💰 成本分析
+
+### Token分布
+
+| 阶段 | Token使用量 | 占比 |
+|------|-----------|------|
+"""
+
+            for stage_name, stats in stages_summary.items():
+                stage_name_cn = stage_names_cn.get(stage_name, stage_name)
+                tokens = stats['tokens_used']
+                percentage = (tokens / total_tokens * 100) if total_tokens > 0 else 0
+                report += f"| {stage_name_cn} | {tokens:,} | {percentage:.1f}% |\n"
+
+            # 成本构成分析
+            report += "\n### 成本构成分析\n\n"
+            for stage_name, stats in stages_summary.items():
+                stage_name_cn = stage_names_cn.get(stage_name, stage_name)
+                tokens = stats['tokens_used']
+                percentage = (tokens / total_tokens * 100) if total_tokens > 0 else 0
+                stage_cost = summary['estimated_cost_usd'] * (percentage / 100)
+                report += f"**{stage_name_cn}**: ${stage_cost:.4f} USD ({percentage:.1f}%)\n"
+
+            report += f"\n**总成本**: ${summary['estimated_cost_usd']:.4f} USD\n"
+
+            # 性能指标
+            report += """
+---
+
+## ⚡ 性能指标
+
+### 吞吐量分析
+
+| 阶段 | 吞吐量 (项目/分钟) | 吞吐量 (Token/秒) |
+|------|------------------|------------------|
+"""
+
+            for stage_name, stats in stages_summary.items():
+                stage_name_cn = stage_names_cn.get(stage_name, stage_name)
+                duration_minutes = stats['duration_seconds'] / 60
+                items = stats['items_processed']
+                tokens = stats['tokens_used']
+
+                items_per_minute = (items / duration_minutes) if duration_minutes > 0 else 0
+                tokens_per_second = (tokens / stats['duration_seconds']) if stats['duration_seconds'] > 0 else 0
+
+                report += f"| {stage_name_cn} | {items_per_minute:.2f} | {tokens_per_second:.0f} |\n"
+
+            # 性能瓶颈识别
+            report += "\n### 性能瓶颈识别\n\n"
+
+            # 识别最慢的阶段
+            slowest_stage = max(stages_summary.items(), key=lambda x: x[1]['duration_seconds'])
+            slowest_stage_cn = stage_names_cn.get(slowest_stage[0], slowest_stage[0])
+            report += f"- **最慢阶段**: {slowest_stage_cn} ({slowest_stage[1]['duration_seconds']:.1f}秒)\n"
+
+            # 识别Token消耗最大的阶段
+            highest_token_stage = max(stages_summary.items(), key=lambda x: x[1]['tokens_used'])
+            highest_token_cn = stage_names_cn.get(highest_token_stage[0], highest_token_stage[0])
+            report += f"- **最高Token消耗**: {highest_token_cn} ({highest_token_stage[1]['tokens_used']:,} tokens)\n"
+
+            # 结论与建议
+            report += """
+---
+
+## 💡 结论与建议
+
+### 关键发现
+
+1. **自动化流程**: Pipeline已实现端到端自动化，从数据抓取到机会评分无需人工干预
+2. **成本可控**: 整个流程成本在可接受范围内，适合定期执行
+3. **输出完整**: 包含多维度分析和性能追踪
+
+### 优化建议
+
+#### 短期优化 (1-2周)
+
+1. **批量处理**: 对更大的数据集进行批量处理，降低单位成本
+2. **缓存优化**: 对相似内容进行缓存，减少重复LLM调用
+3. **并行处理**: 在独立阶段并行处理，缩短总执行时间
+
+#### 中期优化 (1个月)
+
+1. **定期执行**: 设置定时任务，每周/每月自动运行
+2. **数据积累**: 持续积累数据，形成趋势分析
+3. **反馈闭环**: 建立反馈机制，持续改进分析质量
+
+#### 长期优化 (持续)
+
+1. **智能调度**: 根据数据变化自动触发分析
+2. **A/B测试**: 对不同prompt和参数进行A/B测试
+3. **成本优化**: 探索更经济的模型组合
+
+---
+
+*本报告由 Pipeline 自动生成*
+"""
+
+            # 保存报告
+            if output_file is None:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_file = f"docs/reports/pipeline_cost_performance_{timestamp}.md"
+
+            os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+            with open(output_file, 'w', encoding='utf-8') as f:
+                f.write(report)
+
+            logger.info(f"📝 Markdown report saved to: {output_file}")
+            return output_file
+
+        except Exception as e:
+            logger.error(f"Failed to generate markdown report: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return None
+
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(description="Wise Collection Multi-Source Pipeline")
@@ -489,6 +825,13 @@ def main():
     parser.add_argument("--limit-clusters", type=int, help="Limit number of clusters to process")
     parser.add_argument("--limit-opportunities", type=int, help="Limit number of opportunities to score")
 
+    # 性能监控选项
+    parser.add_argument("--no-monitoring", action="store_true", help="Disable performance monitoring")
+    parser.add_argument("--save-metrics", action="store_true", help="Save performance metrics to file")
+    parser.add_argument("--metrics-file", help="Custom metrics file path")
+    parser.add_argument("--generate-report", action="store_true", help="Generate detailed markdown cost/performance report")
+    parser.add_argument("--report-file", help="Custom markdown report file path")
+
     # 其他选项
     parser.add_argument("--stop-on-error", action="store_true", help="Stop pipeline on first error")
     parser.add_argument("--save-results", action="store_true", help="Save results to file")
@@ -498,7 +841,7 @@ def main():
 
     try:
         # 初始化pipeline
-        pipeline = WiseCollectionPipeline()
+        pipeline = WiseCollectionPipeline(enable_monitoring=not args.no_monitoring)
 
         if args.stage == "all":
             # 运行完整pipeline
@@ -509,7 +852,11 @@ def main():
                 limit_clusters=args.limit_clusters,
                 limit_opportunities=args.limit_opportunities,
                 sources=args.sources,
-                stop_on_error=args.stop_on_error
+                stop_on_error=args.stop_on_error,
+                save_metrics=args.save_metrics,
+                metrics_file=args.metrics_file,
+                generate_report=args.generate_report,
+                report_file=args.report_file
             )
         else:
             # 运行单个阶段
@@ -1195,6 +1542,7 @@ def main():
     parser.add_argument("--limit", type=int, default=15, help="最大分析数量")
     parser.add_argument("--legacy-db", action="store_true", help="使用旧的多数据库模式")
     parser.add_argument("--dry-run", action="store_true", help="试运行模式（仅获取数据，不生成报告）")
+    parser.add_argument("--evaluate", action="store_true", help="生成报告后自动评估质量")
 
     args = parser.parse_args()
 
@@ -1202,6 +1550,8 @@ def main():
     logger.info("痛点分析器开始运行")
     logger.info(f"数据库模式: {'多数据库文件' if args.legacy_db else '统一数据库'}")
     logger.info(f"最低评分: {args.min_score}, 最大数量: {args.limit}")
+    if args.evaluate:
+        logger.info("启用自动评估模式")
     logger.info("=" * 50)
 
     try:
@@ -1222,6 +1572,81 @@ def main():
 
         logger.info("开始运行分析...")
         analyzer.run_analysis(min_score=args.min_score, limit=args.limit)
+        logger.info("分析报告生成完成")
+
+        # 如果启用了评估模式，自动评估报告质量
+        if args.evaluate:
+            logger.info("=" * 50)
+            logger.info("开始评估报告质量...")
+            print("\n" + "=" * 60)
+            print("🔍 开始评估报告质量...")
+            print("=" * 60)
+
+            # 导入评估器
+            try:
+                import sys
+                import os
+                # 添加scripts目录到路径
+                scripts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts')
+                if scripts_dir not in sys.path:
+                    sys.path.insert(0, scripts_dir)
+
+                from evaluate_opportunity_reports import OpportunityReportEvaluator
+
+                # 创建评估器，评估报告目录
+                reports_dir = analyzer.output_dir
+                evaluator = OpportunityReportEvaluator(reports_dir)
+
+                # 执行评估
+                evaluations, aggregated = evaluator.evaluate_all()
+
+                if not evaluations:
+                    print("⚠️  未找到可评估的报告")
+                    logger.info("未找到可评估的报告")
+                else:
+                    # 生成评估报告，保存在同一目录
+                    eval_report_path = os.path.join(reports_dir, "opportunity_report_evaluation.md")
+                    eval_json_path = os.path.join(reports_dir, "opportunity_report_evaluation.json")
+
+                    # 生成markdown报告
+                    report_content = evaluator.generate_markdown_report(evaluations, aggregated)
+
+                    # 保存markdown报告
+                    with open(eval_report_path, 'w', encoding='utf-8') as f:
+                        f.write(report_content)
+
+                    logger.info(f"✅ Markdown评估报告已保存: {eval_report_path}")
+                    print(f"✅ Markdown评估报告已保存: {eval_report_path}")
+
+                    # 保存JSON数据
+                    with open(eval_json_path, 'w', encoding='utf-8') as f:
+                        json.dump({
+                            'evaluations': evaluations,
+                            'aggregated': aggregated,
+                            'timestamp': datetime.now().isoformat()
+                        }, f, indent=2, ensure_ascii=False)
+
+                    logger.info(f"✅ JSON评估数据已保存: {eval_json_path}")
+                    print(f"✅ JSON评估数据已保存: {eval_json_path}")
+
+                    # 输出摘要
+                    print(f"\n📊 评估完成!")
+                    print(f"   • 评估报告数: {aggregated.get('total_reports', 0)}")
+                    print(f"   • 平均完整性: 计算中...")
+                    print(f"   • 评估报告位置: {eval_report_path}")
+
+                    logger.info("=" * 50)
+                    logger.info("报告质量评估完成")
+
+            except ImportError as e:
+                logger.error(f"无法导入评估器: {e}")
+                print(f"⚠️  无法导入评估器，请检查 scripts/evaluate_opportunity_reports.py 是否存在")
+            except Exception as e:
+                logger.error(f"评估过程出错: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                print(f"❌ 评估过程出错: {e}")
+
         logger.info("程序执行完成")
     except Exception as e:
         logger.error(f"程序执行失败: {e}")
@@ -1233,59 +1658,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
-
-
-================================================================================
-文件: analyze_pain_points.py
-================================================================================
-
-```python
-#!/usr/bin/env python3
-"""
-快速启动痛点分析脚本
-"""
-
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from pain_point_analyzer import PainPointAnalyzer
-
-if __name__ == "__main__":
-    print("🎯 Reddit Pain Point Finder - 痛点机会分析器")
-    print("=" * 60)
-
-    # 可以通过命令行参数调整
-    min_score = 0.8
-    limit = 15
-
-    if len(sys.argv) > 1:
-        try:
-            min_score = float(sys.argv[1])
-        except:
-            pass
-
-    if len(sys.argv) > 2:
-        try:
-            limit = int(sys.argv[2])
-        except:
-            pass
-
-    print(f"参数设置:")
-    print(f"  • 最低机会评分: {min_score}")
-    print(f"  • 最大分析数量: {limit}")
-    print()
-
-    try:
-        analyzer = PainPointAnalyzer()
-        analyzer.run_analysis(min_score=min_score, limit=limit)
-    except KeyboardInterrupt:
-        print("\n\n⚠️  分析被用户中断")
-    except Exception as e:
-        print(f"\n❌ 分析失败: {e}")
-        import traceback
-        traceback.print_exc()
 ```
 
 
@@ -2508,13 +2880,19 @@ class PainPointExtractor:
             upvotes = post_data.get("score", 0)
             comments_count = post_data.get("num_comments", 0)
 
-            # 调用LLM进行抽取
+            # Load top comments for context
+            top_n_comments = 10
+            comments = db.get_top_comments_for_post(post_data["id"], top_n=top_n_comments)
+            logger.debug(f"Loaded {len(comments)} comments for post {post_data['id']}")
+
+            # 调用LLM进行抽取（包含评论上下文）
             response = llm_client.extract_pain_points(
                 title=title,
                 body=body,
                 subreddit=subreddit,
                 upvotes=upvotes,
-                comments_count=comments_count
+                comments_count=comments_count,
+                top_comments=comments
             )
 
             extraction_result = response["content"]
@@ -2528,7 +2906,9 @@ class PainPointExtractor:
                     "original_score": upvotes,
                     "extraction_model": response["model"],
                     "extraction_timestamp": datetime.now().isoformat(),
-                    "confidence": event.get("confidence", 0.0)
+                    "confidence": event.get("confidence", 0.0),
+                    "comments_used": len(comments),  # 新增：使用的评论数量
+                    "evidence_sources": event.get("evidence_sources", ["post"])  # 新增：证据来源
                 })
 
             self.stats["total_pain_events"] += len(pain_events)
@@ -3121,9 +3501,12 @@ class RedditSourceFetcher:
                 for comment in submission.comments.list()[:20]:  # 获取前20条评论
                     if hasattr(comment, 'author') and comment.author:
                         comments.append({
+                            "id": comment.id,  # 添加评论ID
                             "author": comment.author.name,
                             "body": comment.body,
-                            "score": comment.score
+                            "score": comment.score,
+                            "created_utc": getattr(comment, 'created_utc', None),  # 添加时间戳
+                            "created_at": datetime.fromtimestamp(getattr(comment, 'created_utc', 0)).isoformat() + "Z" if hasattr(comment, 'created_utc') else None
                         })
             except Exception as e:
                 logger.warning(f"Failed to fetch comments for {submission.id}: {e}")
@@ -3202,6 +3585,17 @@ class RedditSourceFetcher:
                 self.processed_posts.add(unified_id)  # 使用统一ID
                 self.stats["total_saved"] += 1
                 logger.info(f"Saved post: {submission.title[:60]}... (Score: {submission.score}, Pain: {post_data['pain_score']:.2f})")
+
+                # 保存评论到独立的 comments 表
+                comments = post_data.get("comments", [])
+                if comments and 'db' in globals():
+                    try:
+                        comment_count = db.insert_comments(unified_id, comments, "reddit")
+                        if comment_count > 0:
+                            logger.info(f"Saved {comment_count} comments for post {unified_id}")
+                    except Exception as e:
+                        logger.error(f"Failed to save comments for {unified_id}: {e}")
+
                 return True
             else:
                 self.stats["errors"] += 1
@@ -4122,9 +4516,12 @@ class HackerNewsFetcher:
                     comment_data = comment_resp.json()
                     if comment_data and comment_data.get("type") == "comment":
                         comments.append({
+                            "id": str(comment_data.get("id", "")),  # 确保id为字符串
                             "author": comment_data.get("by", ""),
                             "body": comment_data.get("text", ""),
-                            "score": 0  # HN评论没有score
+                            "score": 0,  # HN评论没有score
+                            "created_utc": comment_data.get("time"),  # 添加时间戳
+                            "created_at": datetime.fromtimestamp(comment_data.get("time", 0)).isoformat() + "Z" if comment_data.get("time") else None
                         })
             except Exception as e:
                 logger.warning(f"Failed to fetch comment {kid_id}: {e}")
@@ -4217,6 +4614,15 @@ class HackerNewsFetcher:
                             self.stats["total_saved"] += 1
                             saved_count += 1
                             logger.info(f"Saved HN story: {item.get('title', '')[:60]}... (ID: {story_id})")
+
+                            # 保存评论到独立的 comments 表
+                            if story_data.get("comments"):
+                                try:
+                                    comment_count = db.insert_comments(unified_id, story_data["comments"], "hackernews")
+                                    if comment_count > 0:
+                                        logger.info(f"Saved {comment_count} comments for HN story {story_id}")
+                                except Exception as e:
+                                    logger.error(f"Failed to save comments for {unified_id}: {e}")
                         else:
                             self.stats["errors"] += 1
                     except Exception as db_e:
@@ -4673,15 +5079,14 @@ class OpportunityMapper:
             self.stats["viable_opportunities"] = viable_opportunities
             self.stats["processing_time"] = processing_time
 
-            if opportunities_created:
-                self.stats["avg_opportunity_score"] = sum(opp["quality_score"] for opp in opportunities_created) / len(opportunities_created)
+            # Quality scoring is now handled by score_viability.py stage
+            # No need to calculate avg_opportunity_score here
 
             logger.info(f"""
 === Opportunity Mapping Summary ===
 Clusters processed: {len(clusters)}
 Opportunities identified: {len(opportunities_created)}
 Viable opportunities: {viable_opportunities}
-Average opportunity score: {self.stats['avg_opportunity_score']:.2f}
 Processing time: {processing_time:.2f}s
 """)
 
@@ -5770,6 +6175,7 @@ SQLite数据库操作工具
 import sqlite3
 import json
 import logging
+import hashlib
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from contextlib import contextmanager
@@ -5987,6 +6393,24 @@ class WiseCollectionDB:
                 )
             """)
 
+            # 创建评论表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS comments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    post_id TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    source_comment_id TEXT NOT NULL,
+                    author TEXT,
+                    body TEXT NOT NULL,
+                    score INTEGER DEFAULT 0,
+                    created_utc REAL,
+                    created_at TIMESTAMP,
+                    collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+                    UNIQUE(source, source_comment_id)
+                )
+            """)
+
             # 创建所有索引
             # posts表索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_subreddit ON posts(subreddit)")
@@ -6022,6 +6446,11 @@ class WiseCollectionDB:
             # opportunities表索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_score ON opportunities(total_score)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_cluster_id ON opportunities(cluster_id)")
+
+            # comments表索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_comments_post_id_score ON comments(post_id, score DESC)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_comments_source ON comments(source)")
 
             # 添加对齐跟踪列到clusters表（如果不存在）
             self._add_alignment_columns_to_clusters(conn)
@@ -6433,6 +6862,56 @@ class WiseCollectionDB:
             logger.error(f"Failed to insert raw post {post_data.get('id')}: {e}")
             return False
 
+    def insert_comments(self, post_id: str, comments: List[Dict[str, Any]], source: str) -> int:
+        """批量插入评论数据
+
+        Args:
+            post_id: 帖子ID
+            comments: 评论列表，每个评论是包含 id, author, body, score, created_utc, created_at 的字典
+            source: 数据源 ('reddit' 或 'hackernews')
+
+        Returns:
+            成功处理的评论数量（注意：由于使用 INSERT OR IGNORE，重复的评论会被跳过）
+        """
+        try:
+            with self.get_connection("raw") as conn:
+                inserted_count = 0
+                for comment in comments:
+                    comment_id = comment.get("id")
+
+                    # 异常检测：记录缺失ID的评论
+                    if comment_id is None:
+                        logger.warning(
+                            f"Comment for post {post_id} from {source} is missing a source ID. "
+                            f"Author: {comment.get('author', 'unknown')}. "
+                            f"Generating fallback ID."
+                        )
+                        # Fallback ID - use deterministic MD5 hash instead of Python's hash()
+                        body_hash = hashlib.md5(comment.get('body', '').encode('utf-8')).hexdigest()[:12]
+                        comment_id = f"{source}_{comment.get('author', 'unknown')}_{body_hash}"
+
+                    conn.execute("""
+                        INSERT OR IGNORE INTO comments
+                        (post_id, source, source_comment_id, author, body, score, created_utc, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        post_id,
+                        source,
+                        comment_id,
+                        comment.get("author", ""),
+                        comment.get("body", ""),
+                        comment.get("score", 0),
+                        comment.get("created_utc"),
+                        comment.get("created_at")
+                    ))
+                    # Count the comment as processed (INSERT OR IGNORE silently skips duplicates)
+                    inserted_count += 1
+                conn.commit()
+                return inserted_count
+        except Exception as e:
+            logger.error(f"Failed to insert comments for post {post_id}: {e}")
+            return 0
+
     def get_unprocessed_posts(self, limit: int = 100) -> List[Dict]:
         """获取未处理的帖子"""
         try:
@@ -6495,6 +6974,30 @@ class WiseCollectionDB:
                 return [dict(row) for row in cursor.fetchall()]
         except Exception as e:
             logger.error(f"Failed to get unprocessed posts for source {source}: {e}")
+            return []
+
+    def get_top_comments_for_post(self, post_id: str, top_n: int = 10) -> List[Dict[str, Any]]:
+        """获取指定帖子的Top N高赞评论
+
+        Args:
+            post_id: 帖子ID
+            top_n: 返回评论数量，默认10条
+
+        Returns:
+            评论列表，按score降序排列
+        """
+        try:
+            with self.get_connection("raw") as conn:
+                cursor = conn.execute("""
+                    SELECT source_comment_id, author, body, score
+                    FROM comments
+                    WHERE post_id = ?
+                    ORDER BY score DESC
+                    LIMIT ?
+                """, (post_id, top_n))
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Failed to get comments for post {post_id}: {e}")
             return []
 
     # Filtered posts operations
@@ -7461,6 +7964,8 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+from utils.performance_monitor import performance_monitor
+
 logger = logging.getLogger(__name__)
 
 class LLMClient:
@@ -7606,6 +8111,12 @@ class LLMClient:
                     "request_time": request_time
                 }
 
+                # Record in performance monitor
+                performance_monitor.record_llm_call(
+                    stage_name=model_type,
+                    usage=result["usage"]
+                )
+
                 logger.info(f"✅ LLM request {attempt + 1}/{max_retries} completed: {result['usage']['total_tokens']} tokens in {request_time:.2f}s")
                 return result
 
@@ -7644,20 +8155,35 @@ class LLMClient:
         body: str,
         subreddit: str,
         upvotes: int,
-        comments_count: int
+        comments_count: int,
+        top_comments: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
-        """从Reddit帖子中提取痛点"""
+        """从Reddit帖子中提取痛点（支持评论上下文）"""
         prompt = self._get_pain_extraction_prompt()
 
-        messages = [
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": f"""
-Title: {title}
+        # Build user message with comment context
+        user_message = f"""Title: {title}
 Body: {body}
 Subreddit: {subreddit}
 Upvotes: {upvotes}
 Comments: {comments_count}
-"""}
+"""
+
+        # Add top comments if available
+        if top_comments and len(top_comments) > 0:
+            user_message += f"\nTop {len(top_comments)} Comments:\n"
+            for i, comment in enumerate(top_comments, 1):
+                comment_body = comment.get('body', '')
+                comment_score = comment.get('score', 0)
+                comment_author = comment.get('author', 'unknown')
+                # Truncate very long comments to save tokens
+                if len(comment_body) > 500:
+                    comment_body = comment_body[:500] + "... [truncated]"
+                user_message += f"\n{i}. [{comment_score} upvotes] {comment_author}: {comment_body}\n"
+
+        messages = [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": user_message}
         ]
 
         return self.chat_completion(
@@ -7770,13 +8296,13 @@ Comments: {comments_count}
         )
 
     def _get_pain_extraction_prompt(self) -> str:
-        """获取痛点抽取提示"""
-        return """You are an information extraction engine.
+        """获取痛点抽取提示 - 支持评论上下文"""
+        return """You are an information extraction engine specializing in user pain point analysis.
 
 Your task:
-From the following Reddit post, extract concrete PAIN EVENTS.
-A pain event is a specific recurring problem experienced by the author,
-not opinions, not general complaints.
+From the provided Reddit post and its top comments, extract concrete PAIN EVENTS.
+
+A pain event is a specific recurring problem experienced by users, supported by evidence from discussions.
 
 Rules:
 - Do NOT summarize the post
@@ -7784,6 +8310,20 @@ Rules:
 - If no concrete pain exists, return an empty list
 - Be literal and conservative
 - Focus on actionable problems people face repeatedly
+
+**Using Comment Context:**
+Top comments often reveal:
+- Additional specific pain instances mentioned by others
+- Confirmation/refinement of the main pain point
+- Alternative perspectives on the same problem
+- Workarounds people are actually using
+- Frequency indicators (how often this occurs)
+
+When extracting pain events:
+1. Look for pains mentioned in BOTH the post AND comments
+2. Use comments to add specificity to vague problems in the post
+3. Include alternative formulations of the same pain
+4. Note if multiple commenters confirm the same issue
 
 Output JSON only with this format:
 {
@@ -7796,7 +8336,8 @@ Output JSON only with this format:
       "frequency": "how often it happens (explicit or inferred)",
       "emotional_signal": "frustration, anxiety, exhaustion, etc.",
       "mentioned_tools": ["tool1", "tool2"],
-      "confidence": 0.8
+      "confidence": 0.8,
+      "evidence_sources": ["post", "comments"]  # where this pain was mentioned
     }
   ],
   "extraction_summary": "brief summary of findings"
@@ -7805,12 +8346,15 @@ Output JSON only with this format:
 Fields explanation:
 - actor: who has this problem (developer, manager, user, etc.)
 - context: the situation or workflow where the problem occurs
-- problem: specific, concrete issue (not "things are slow" but "compilation takes 30 minutes")
+- problem: specific, concrete issue (e.g., "compilation takes 30 minutes" not "things are slow")
 - current_workaround: current solutions people use (if mentioned)
 - frequency: how often this happens (daily, weekly, occasionally, etc.)
 - emotional_signal: the emotion expressed (frustration, anger, disappointment, etc.)
 - mentioned_tools: tools, software, or methods explicitly mentioned
-- confidence: how confident you are this is a real pain point (0-1)"""
+- confidence: how confident you are this is a real pain point (0-1)
+- evidence_sources: list of where pain was found ("post", "comments", or both)
+
+Be more confident when the same pain appears in both post and comments."""
 
     def _get_workflow_clustering_prompt(self) -> str:
         """Get workflow clustering prompt with continuous scoring"""
@@ -7991,6 +8535,139 @@ Be conservative - only flag clear pain points."""
 
 # 全局LLM客户端实例
 llm_client = LLMClient()
+```
+
+
+================================================================================
+文件: utils/performance_monitor.py
+================================================================================
+
+```python
+"""
+Performance monitoring utility for Phase 3
+Tracks LLM calls, token usage, and execution time
+"""
+import time
+import json
+from datetime import datetime
+from typing import Dict, Any, Optional, Callable
+from functools import wraps
+import logging
+
+logger = logging.getLogger(__name__)
+
+class PerformanceMonitor:
+    """性能监控器"""
+
+    def __init__(self):
+        self.metrics = {
+            "start_time": None,
+            "end_time": None,
+            "stages": {},
+            "llm_calls": {
+                "total_calls": 0,
+                "total_tokens": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_cost": 0.0,
+                "calls_by_stage": {}
+            }
+        }
+
+    def start_stage(self, stage_name: str):
+        """开始一个阶段"""
+        if stage_name not in self.metrics["stages"]:
+            self.metrics["stages"][stage_name] = {
+                "start_time": datetime.now().isoformat(),
+                "end_time": None,
+                "duration_seconds": 0,
+                "items_processed": 0,
+                "llm_calls": 0,
+                "tokens_used": 0
+            }
+        else:
+            self.metrics["stages"][stage_name]["start_time"] = datetime.now().isoformat()
+
+    def end_stage(self, stage_name: str, items_processed: int = 0):
+        """结束一个阶段"""
+        if stage_name in self.metrics["stages"]:
+            self.metrics["stages"][stage_name]["end_time"] = datetime.now().isoformat()
+            start = datetime.fromisoformat(self.metrics["stages"][stage_name]["start_time"])
+            end = datetime.fromisoformat(self.metrics["stages"][stage_name]["end_time"])
+            self.metrics["stages"][stage_name]["duration_seconds"] = (end - start).total_seconds()
+            self.metrics["stages"][stage_name]["items_processed"] = items_processed
+
+    def record_llm_call(self, stage_name: str, usage: Dict[str, Any]):
+        """记录LLM调用"""
+        self.metrics["llm_calls"]["total_calls"] += 1
+
+        prompt_tokens = usage.get("prompt_tokens", 0)
+        completion_tokens = usage.get("completion_tokens", 0)
+        total_tokens = usage.get("total_tokens", 0)
+
+        self.metrics["llm_calls"]["prompt_tokens"] += prompt_tokens
+        self.metrics["llm_calls"]["completion_tokens"] += completion_tokens
+        self.metrics["llm_calls"]["total_tokens"] += total_tokens
+
+        if stage_name not in self.metrics["llm_calls"]["calls_by_stage"]:
+            self.metrics["llm_calls"]["calls_by_stage"][stage_name] = {"calls": 0, "tokens": 0}
+
+        self.metrics["llm_calls"]["calls_by_stage"][stage_name]["calls"] += 1
+        self.metrics["llm_calls"]["calls_by_stage"][stage_name]["tokens"] += total_tokens
+
+        if stage_name in self.metrics["stages"]:
+            self.metrics["stages"][stage_name]["llm_calls"] += 1
+            self.metrics["stages"][stage_name]["tokens_used"] += total_tokens
+
+    def calculate_cost(self, prompt_price_per_1k: float = 0.001,
+                      completion_price_per_1k: float = 0.002):
+        """计算成本（根据实际定价调整）"""
+        prompt_cost = (self.metrics["llm_calls"]["prompt_tokens"] / 1000) * prompt_price_per_1k
+        completion_cost = (self.metrics["llm_calls"]["completion_tokens"] / 1000) * completion_price_per_1k
+        self.metrics["llm_calls"]["total_cost"] = prompt_cost + completion_cost
+        return self.metrics["llm_calls"]["total_cost"]
+
+    def get_summary(self) -> Dict[str, Any]:
+        """获取统计摘要"""
+        if self.metrics["stages"]:
+            total_duration = sum(stage["duration_seconds"] for stage in self.metrics["stages"].values())
+        else:
+            total_duration = 0
+
+        return {
+            "total_duration_seconds": total_duration,
+            "total_duration_minutes": round(total_duration / 60, 2),
+            "total_llm_calls": self.metrics["llm_calls"]["total_calls"],
+            "total_tokens": self.metrics["llm_calls"]["total_tokens"],
+            "estimated_cost_usd": self.calculate_cost(),
+            "stages_summary": {
+                name: {
+                    "duration_seconds": stage["duration_seconds"],
+                    "items_processed": stage["items_processed"],
+                    "llm_calls": stage["llm_calls"],
+                    "tokens_used": stage["tokens_used"]
+                }
+                for name, stage in self.metrics["stages"].items()
+            }
+        }
+
+    def save_metrics(self, filepath: str):
+        """保存指标到文件"""
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(self.metrics, f, indent=2, default=str)
+
+    @classmethod
+    def load_metrics(cls, filepath: str) -> 'PerformanceMonitor':
+        """从文件加载指标"""
+        monitor = cls()
+        with open(filepath, 'r', encoding='utf-8') as f:
+            monitor.metrics = json.load(f)
+        return monitor
+
+
+# 全局监控器实例
+performance_monitor = PerformanceMonitor()
+
 ```
 
 

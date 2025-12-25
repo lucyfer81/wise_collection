@@ -35,8 +35,7 @@ def main():
     # 定义要包含的文件和目录
     files_to_include = [
         "run_pipeline.py",
-        "pain_point_analyzer.py",
-        "analyze_pain_points.py"
+        "pain_point_analyzer.py"
     ]
 
     dirs_to_include = [

@@ -1,0 +1,766 @@
+{
+  "start_time": "2025-12-24T21:05:10.535190",
+  "stages_completed": [
+    "fetch",
+    "filter",
+    "extract",
+    "embed",
+    "cluster",
+    "alignment",
+    "score"
+  ],
+  "stages_failed": [
+    "map_opportunities"
+  ],
+  "stage_results": {
+    "fetch": {
+      "sources_processed": [
+        "reddit",
+        "hackernews"
+      ],
+      "total_saved": 43,
+      "total_filtered": 3079,
+      "total_errors": 0,
+      "source_stats": {
+        "reddit": {
+          "total_fetched": 24,
+          "total_saved": 24,
+          "filtered_out": 3061,
+          "errors": 0,
+          "start_time": "2025-12-24 21:05:11.571217",
+          "runtime_seconds": 125.602256
+        },
+        "hackernews": {
+          "total_fetched": 19,
+          "total_saved": 19,
+          "filtered_out": 18,
+          "errors": 0,
+          "start_time": "2025-12-24 21:07:17.174017",
+          "runtime_seconds": 251.843594
+        }
+      },
+      "runtime_seconds": 377.446837
+    },
+    "filter": {
+      "processed": 887,
+      "filtered": 9,
+      "saved": 9,
+      "filter_stats": {
+        "total_processed": 887,
+        "passed_filter": 9,
+        "filtered_out": 878,
+        "filter_reasons": {
+          "insufficient_keywords; low_emotional_intensity; low_overall_score": 124,
+          "Post too short: 26 < 50": 1,
+          "Post too short: 25 < 50": 5,
+          "Post too short: 36 < 50": 4,
+          "Too few upvotes: 4 < 5": 29,
+          "Too few upvotes: 3 < 5": 34,
+          "Too few comments: 1 < 3": 7,
+          "Too few comments: 2 < 3": 9,
+          "Too few upvotes: 2 < 5": 35,
+          "low_overall_score": 31,
+          "low_emotional_intensity; low_overall_score": 216,
+          "Excluded due to showcase: demo": 30,
+          "Low trust post with insufficient engagement: 0.31 < 0.6": 1,
+          "Post too long: 7807 > 5000": 1,
+          "Type business: too few upvotes: 14 < 15": 6,
+          "low_emotional_intensity": 110,
+          "Type business: too few upvotes: 13 < 15": 1,
+          "Excluded due to off_topic: meme": 2,
+          "Excluded due to showcase: i made": 40,
+          "Post too short: 31 < 50": 2,
+          "Post too short: 45 < 50": 7,
+          "Excluded due to off_topic: general": 19,
+          "Post too short: 21 < 50": 5,
+          "Excluded due to question: looking for advice": 2,
+          "Post too short: 17 < 50": 3,
+          "Low trust post with insufficient engagement: 0.47 < 0.6": 1,
+          "Low trust post with insufficient engagement: 0.54 < 0.6": 2,
+          "Post too long: 12800 > 5000": 1,
+          "Post too short: 46 < 50": 6,
+          "Post too short: 39 < 50": 2,
+          "Post too short: 19 < 50": 6,
+          "Post too short: 24 < 50": 6,
+          "Post too short: 41 < 50": 4,
+          "Post too short: 43 < 50": 3,
+          "Post too short: 27 < 50": 1,
+          "Post too short: 28 < 50": 3,
+          "Post too short: 8 < 50": 1,
+          "Post too short: 20 < 50": 2,
+          "Post too short: 38 < 50": 2,
+          "Too few comments: 0 < 3": 11,
+          "Low trust post with insufficient engagement: 0.36 < 0.6": 1,
+          "Excluded due to job: hiring": 12,
+          "Type discussion: too few comments: 14 < 15": 2,
+          "Post too short: 32 < 50": 1,
+          "Post too long: 7684 > 5000": 1,
+          "Type business: too few upvotes: 10 < 15": 2,
+          "Post too short: 18 < 50": 2,
+          "Post too short: 16 < 50": 1,
+          "Post too short: 48 < 50": 4,
+          "Post too short: 34 < 50": 3,
+          "Post too short: 37 < 50": 3,
+          "Post too short: 33 < 50": 3,
+          "insufficient_keywords; low_overall_score": 4,
+          "Type business: too few upvotes: 7 < 15": 2,
+          "Type business: too few upvotes: 12 < 15": 2,
+          "Excluded due to showcase: my project": 9,
+          "Type discussion: too few comments: 13 < 15": 3,
+          "Post too short: 40 < 50": 1,
+          "Post too short: 44 < 50": 5,
+          "Post too short: 29 < 50": 2,
+          "Post too short: 49 < 50": 1,
+          "Type discussion: too few comments: 12 < 15": 2,
+          "Low trust post with insufficient engagement: 0.38 < 0.6": 1,
+          "Post too short: 42 < 50": 1,
+          "insufficient_keywords": 1,
+          "Post too short: 14 < 50": 3,
+          "Post too short: 35 < 50": 2,
+          "Post too short: 23 < 50": 1,
+          "Post too short: 22 < 50": 2,
+          "Post too short: 13 < 50": 2,
+          "Post too short: 15 < 50": 1,
+          "Low trust post with insufficient engagement: 0.40 < 0.6": 1,
+          "Excluded due to showcase: just launched": 3,
+          "Post too long: 5060 > 5000": 1,
+          "Post too short: 47 < 50": 1,
+          "Excluded due to showcase: showcase": 6,
+          "Low trust post with insufficient engagement: 0.39 < 0.6": 1,
+          "Low trust post with insufficient engagement: 0.42 < 0.6": 1,
+          "Low trust post with insufficient engagement: 0.43 < 0.6": 1,
+          "Excluded due to job: recruiting": 2,
+          "Post too long: 9310 > 5000": 1,
+          "Post too long: 5123 > 5000": 1,
+          "Post too long: 5576 > 5000": 1,
+          "Post too long: 6227 > 5000": 1,
+          "Post too long: 5120 > 5000": 1,
+          "Post too long: 5545 > 5000": 1
+        },
+        "pass_rate": 0.010146561443066516
+      }
+    },
+    "extract": {
+      "processed": 75,
+      "failed": 0,
+      "pain_events_extracted": 14,
+      "pain_events_saved": 14,
+      "extraction_stats": {
+        "total_processed": 0,
+        "total_pain_events": 14,
+        "extraction_errors": 0,
+        "avg_confidence": 0.0,
+        "processing_time": 0.0,
+        "avg_events_per_post": 0,
+        "processing_rate": 0,
+        "llm_stats": {
+          "requests": 75,
+          "tokens_used": 53840,
+          "cost": 0.0,
+          "errors": 0
+        }
+      },
+      "failed_posts": []
+    },
+    "embed": {
+      "processed": 14,
+      "embeddings_created": 14,
+      "embedding_stats": {
+        "total_processed": 14,
+        "embeddings_created": 14,
+        "errors": 0,
+        "processing_time": 2.215315341949463,
+        "cache_hits": 0,
+        "success_rate": 1.0
+      }
+    },
+    "cluster": {
+      "clusters_created": 4,
+      "events_processed": 200,
+      "source_groups": 2,
+      "final_clusters": [
+        {
+          "cluster_name": "reddit: AI Interaction Frustration Due to Overly Restrictive or Unreliable Model Behavior",
+          "cluster_description": "Users repeatedly attempt to use advanced AI models (primarily GPT-5.2, GPT-5.1, Claude, or similar) for legitimate, non-malicious tasks\u2014ranging from factual queries and data extraction to coding and conversation\u2014only to be disrupted by excessive safety responses, inaccurate outputs, hallucinations, or technical failures. The core workflow involves initiating a task with an AI, encountering unhelpful or counterproductive model behavior, and ultimately abandoning or switching from the tool.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_01",
+          "centroid_summary": "Users face inefficiencies in interacting with AI systems or managing digital workflows due to overcautious AI behavior or manual scalability limits",
+          "common_pain": "AI systems impose excessive safety filters or procedural interruptions that obstruct direct information retrieval, or manual processes are too labor-intensive to scale",
+          "common_context": "Users attempt to extract information, test ideas, or manage digital content through AI tools or manual curation, but encounter either AI-driven obstruction or unsustainable manual effort",
+          "example_events": [
+            "Event 1: GPT 5.2 refuses to answer neutral country comparisons with safety warnings, forcing users to switch to alternative AIs",
+            "Event 9: ChatGPT responds to harmless queries with unsolicited emotional support or hotline links, undermining utility"
+          ],
+          "pain_event_ids": [
+            355,
+            354,
+            352,
+            351,
+            350,
+            349,
+            348,
+            337,
+            334,
+            333,
+            332,
+            331,
+            330,
+            329,
+            323,
+            322,
+            321,
+            314,
+            311,
+            308,
+            307,
+            306,
+            305,
+            304,
+            303,
+            302,
+            297,
+            296,
+            295,
+            289,
+            288,
+            287,
+            282,
+            281,
+            280,
+            279,
+            278,
+            277,
+            273,
+            271,
+            270,
+            269,
+            268,
+            267,
+            266,
+            265,
+            264,
+            263,
+            258,
+            257,
+            256,
+            255,
+            254,
+            252,
+            251,
+            250,
+            249,
+            248,
+            241,
+            240,
+            239,
+            229,
+            228,
+            227,
+            226,
+            225,
+            223,
+            222,
+            217,
+            216,
+            213,
+            212,
+            210,
+            209,
+            208,
+            206,
+            205,
+            204,
+            195,
+            194,
+            190,
+            189,
+            182,
+            181,
+            180,
+            172,
+            171,
+            170,
+            169,
+            164,
+            161,
+            160,
+            157
+          ],
+          "cluster_size": 93,
+          "workflow_confidence": 0.9,
+          "workflow_similarity": 0.85,
+          "validation_reasoning": "Events 1, 2, 9, 10, 11, 15, 16 are highly similar: they describe users engaging in normal, good-faith interactions with AI models that respond with unwanted moralizing, accusations, interruptions, or patronizing tone\u2014derailing the intended task. These share the same underlying workflow: user initiates query \u2192 AI overreacts with safety language or misaligned framing \u2192 user becomes frustrated and avoids or replaces the tool. Events 12, 13, 14, 17, 19, and 20 also fit closely: user provides input (data, code, PDF, etc.) \u2192 AI fails technically (crashes, misreads, hallucinates, corrupts) \u2192 user must manually fix or switch tools. While these are technical rather than behavioral failures, they represent the same core workflow: dependence on AI for task execution \u2192 AI unreliability \u2192 manual workaround or tool substitution. The root cause across all is lack of trustworthiness in AI output, whether due to over-cautious alignment or poor technical performance. Minor variations include domain (conversation vs. data processing), but the workflow structure and failure patterns are nearly identical. Hence, similarity is rated 0.85\u2014very strong commonality with minor branching in failure mode type.",
+          "saved_cluster_id": 22
+        },
+        {
+          "cluster_name": "reddit: Navigating Contradictory Communication Expectations in Professional Settings",
+          "cluster_description": "Repeatedly adjusting communication style in response to inconsistent or contradictory feedback from supervisors or clients, particularly around perceived tone (e.g., 'too aggressive' vs. 'too nice' vs. 'no emotion'), leading to confusion, self-doubt, and over-correction in professional interactions.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_02",
+          "centroid_summary": "Employees receive conflicting feedback on communication style in client-facing interactions, leading to confusion and inconsistent behavioral adjustments",
+          "common_pain": "Inconsistent and contradictory feedback on tone and delivery in professional communication, resulting in inability to establish a stable, effective communication style",
+          "common_context": "Client-facing or cross-team professional communication where tone, emphasis, and directness are subjectively evaluated by supervisors without clear guidelines",
+          "example_events": [
+            "Event 1: Receives alternating feedback for being too aggressive, too nice, and then told to convey no emotion, leading to repeated over-correction.",
+            "Event 2: Criticized for bolding 'not' as 'mean,' then instructed to be 'extra nice,' which triggered new feedback for being 'too nice.'"
+          ],
+          "pain_event_ids": [
+            327,
+            326,
+            325,
+            324
+          ],
+          "cluster_size": 4,
+          "workflow_confidence": 0.95,
+          "workflow_similarity": 0.9,
+          "validation_reasoning": "All four events involve a core workflow where the individual attempts to communicate clearly and professionally in work-related interactions (with clients or supervisors), receives conflicting feedback about their tone or style, and then adjusts their behavior accordingly\u2014only to be criticized again for the new approach. The root cause across events is inconsistent or unclear expectations around professional communication tone, and the failure mode is the same: confusion and emotional strain from trying to meet shifting, subjective standards. The context varies slightly (emails, calls, tutorials), but the underlying activity\u2014communicating professionally while navigating ambiguous social feedback\u2014is identical. Minor variations include the specific trigger (bolding text, deferring answers) or the source of feedback (supervisor vs. client), but these do not change the fundamental workflow.",
+          "saved_cluster_id": 23
+        },
+        {
+          "cluster_name": "reddit: Ineffective Knowledge Retention Loop",
+          "cluster_description": "A recurring cycle where a learner engages with technical or academic material through passive or overly administrative methods (e.g., rewatching lectures, organizing notes), leading to poor recall and repeated relearning, with attempts to improve through active explanation or tool optimization.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_03",
+          "centroid_summary": "Ineffective knowledge retention due to passive learning and over-reliance on note organization instead of active recall and explanation",
+          "common_pain": "Poor knowledge retention resulting from passive consumption and superficial note-taking, lacking active retrieval or explanation-based encoding",
+          "common_context": "Self-directed technical learning involving note-taking and study for retention, where learners rely on passive methods (reading, highlighting, organizing) rather than active processing",
+          "example_events": [
+            "Event 1: Explaining topics out loud to oneself to test understanding, because passive study doesn't reveal gaps in comprehension",
+            "Event 4: Forgetting content within two weeks despite detailed notes, leading to repeated re-searching and switching note apps in search of a better system"
+          ],
+          "pain_event_ids": [
+            294,
+            293,
+            166,
+            165
+          ],
+          "cluster_size": 4,
+          "workflow_confidence": 0.85,
+          "workflow_similarity": 0.7,
+          "validation_reasoning": "Events 2, 3, and 4 share a core workflow of engaging with learning material but failing to retain it due to passive or inefficient strategies. Event 2 highlights passive review leading to exam-time forgetting; Events 3 and 4 emphasize over-investment in note organization at the expense of actual learning and retention. All three involve a feedback loop of forgetting and relearning, with workarounds focused on system improvement (Feynman Technique or app switching). Event 1 is more about real-time feedback absence during self-explanation, but it connects to the broader effort to make learning active and verifiable. While Event 1 is part of a corrective strategy used in Event 2, the underlying workflow of struggling with retention and applying meta-learning fixes is strongly similar. Minor variation: Events 3 and 4 focus on tooling, while Event 2 focuses on study method, and Event 1 on self-assessment. Still, the core workflow of trying to stabilize knowledge retention through iterative self-improvement is consistent.",
+          "saved_cluster_id": 24
+        },
+        {
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "cluster_description": "A repeated effort to receive high-priority, time-sensitive alerts reliably while avoiding disruptive low-priority interruptions from existing communication tools.",
+          "source_type": "hackernews",
+          "cluster_id": "hackernews_01",
+          "centroid_summary": "Inability to filter critical alerts from noise in existing notification systems",
+          "common_pain": "Lack of a reliable, low-latency, high-priority alert mechanism that can override noise and ensure acknowledgment",
+          "common_context": "Work environments requiring timely awareness of urgent events while minimizing distraction from low-priority interruptions",
+          "example_events": [
+            "Event 1: Existing notification systems allow too many low-priority interruptions, breaking concentration; disabling them entirely risks missing critical alerts.",
+            "Event 2: No simple, guaranteed alert system exists to cut through noise until acknowledged, especially during on-call handoffs."
+          ],
+          "pain_event_ids": [
+            187,
+            186,
+            185,
+            184
+          ],
+          "cluster_size": 4,
+          "workflow_confidence": 0.9,
+          "workflow_similarity": 0.85,
+          "validation_reasoning": "All four events revolve around the same core workflow: professionals needing to stay informed about critical, urgent matters (e.g., on-call handoffs, time-sensitive alerts) but struggling with tools that either overwhelm with noise (Slack, email, general notifications) or force trade-offs like disabling alerts entirely. The root cause is consistent: existing systems fail to prioritize and escalate only critical messages effectively. The workarounds (disabling notifications, avoiding tools) reflect similar coping mechanisms. The minor variation is in the specific tools mentioned (email, Slack, generic notification systems), but the underlying workflow\u2014filtering and guaranteeing delivery of critical alerts\u2014is identical. This justifies a high similarity score of 0.85.",
+          "saved_cluster_id": 25
+        }
+      ],
+      "clustering_stats": {
+        "total_events_processed": 200,
+        "clusters_created": 4,
+        "llm_validations": 5,
+        "processing_time": 148.46697735786438,
+        "avg_cluster_size": 26.25,
+        "clustering_rate": 0.02,
+        "processing_rate": 1.3471009079542353,
+        "embedding_stats": {
+          "embeddings_created": 200,
+          "cache_hits": 14,
+          "total_tokens": 9426
+        }
+      }
+    },
+    "alignment": {
+      "aligned_problems_count": 1,
+      "aligned_problems": [
+        {
+          "id": "aligned_AP_01_1766583551",
+          "aligned_problem_id": "AP_01",
+          "sources": [
+            "REDDIT",
+            "HACKERNEWS"
+          ],
+          "core_problem": "Information overload and poor signal-to-noise ratio in digital systems, leading to inefficiency and missed critical information.",
+          "why_they_look_different": "The Reddit cluster describes the problem in the context of interacting with AI systems and managing workflows, where 'overcautious AI behavior' creates noise and manual processes hit scalability limits. The HackerNews cluster frames it specifically as an alert/notification system failure, where users cannot filter critical alerts from noise. Both are fundamentally about systems failing to prioritize or surface the most important information for the user, drowning them in irrelevant data or interactions.",
+          "evidence": [
+            {
+              "source": "REDDIT",
+              "cluster_summary": "Users face inefficiencies in interacting with AI systems or managing digital workflows due to overcautious AI behavior or manual scalability limits",
+              "evidence_quote": "overcautious AI behavior or manual scalability limits"
+            },
+            {
+              "source": "HACKERNEWS",
+              "cluster_summary": "Inability to filter critical alerts from noise in existing notification systems",
+              "evidence_quote": "Inability to filter critical alerts from noise"
+            }
+          ],
+          "cluster_ids": [
+            "REDDIT_Cluster_1",
+            "HACKERNEWS_Cluster_1"
+          ],
+          "created_at": "2025-12-24 13:39:11"
+        }
+      ]
+    },
+    "score": {
+      "opportunities_scored": 22,
+      "viable_opportunities": 0,
+      "good_opportunities": 0,
+      "excellent_opportunities": 0,
+      "scored_opportunities": [
+        {
+          "opportunity_id": 89,
+          "opportunity_name": "Critical Ping",
+          "total_score": 2.8325,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 88,
+          "opportunity_name": "ExplainBack",
+          "total_score": 3.115,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 87,
+          "opportunity_name": "ToneCheck Coach",
+          "total_score": 3.5715000000000003,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.60) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 86,
+          "opportunity_name": "Experiment Tracker",
+          "total_score": 3.0975,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 85,
+          "opportunity_name": "ToneFilter",
+          "total_score": 3.712792355371901,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Low trust data sources (trust_level: 0.48) - signals may not be reliable",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 84,
+          "opportunity_name": "PanicButton",
+          "total_score": 2.8075,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 83,
+          "opportunity_name": "RecallNote",
+          "total_score": 3.19,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 82,
+          "opportunity_name": "RetentionAudit",
+          "total_score": 3.1725,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 81,
+          "opportunity_name": "Solo Sprint Tracker",
+          "total_score": 4.156818181818181,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 80,
+          "opportunity_name": "AlertPing",
+          "total_score": 3.1275,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 79,
+          "opportunity_name": "Offer Survival Scorecard",
+          "total_score": 3.0775,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 78,
+          "opportunity_name": "Incident Logger",
+          "total_score": 2.89,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 77,
+          "opportunity_name": "Preflight Validator",
+          "total_score": 4.256367924528302,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 76,
+          "opportunity_name": "Acknowledge Pager",
+          "total_score": 2.8075,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 75,
+          "opportunity_name": "Critical Pager Bridge",
+          "total_score": 2.7075,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 74,
+          "opportunity_name": "Interaction Logger",
+          "total_score": 2.89,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 73,
+          "opportunity_name": "Critical Pager",
+          "total_score": 2.8075,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 72,
+          "opportunity_name": "TechSnap Recall",
+          "total_score": 3.215,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 71,
+          "opportunity_name": "AckPager",
+          "total_score": 2.8575,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 70,
+          "opportunity_name": "QuickRecall",
+          "total_score": 3.14,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 69,
+          "opportunity_name": "AlertSiren",
+          "total_score": 3.2775,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 94,
+          "opportunity_name": "Multi-Source: Information overload and poor signal-to-noise rati...",
+          "total_score": 1.525,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Highly competitive market with established players",
+            "Problem may not be frequent enough to drive adoption"
+          ]
+        }
+      ],
+      "scoring_stats": {
+        "total_opportunities_scored": 22,
+        "viable_opportunities": 0,
+        "good_opportunities": 0,
+        "excellent_opportunities": 0,
+        "processing_time": 242.18218851089478,
+        "avg_total_score": 3.1015899300781085,
+        "skipped_clusters": 25,
+        "viable_rate": 0.0,
+        "good_rate": 0.0,
+        "excellent_rate": 0.0,
+        "processing_rate": 0.09084070193300078
+      }
+    }
+  },
+  "total_runtime_seconds": 3663.0581,
+  "final_summary": {
+    "pipeline_completed": false,
+    "stages_completed": 7,
+    "stages_failed": 1,
+    "total_runtime_minutes": 61.05,
+    "database_statistics": {
+      "raw_posts_count": 1121,
+      "filtered_posts_count": 243,
+      "avg_pain_score": 0.5151006758608888,
+      "pain_events_count": 355,
+      "clusters_count": 25,
+      "opportunities_count": 94,
+      "aligned_problems_count": 1,
+      "clusters_by_alignment_status": {
+        "processed": 25
+      },
+      "posts_by_source": {
+        "hackernews": 369,
+        "reddit": 752
+      }
+    },
+    "top_opportunities": [
+      {
+        "opportunity_name": "Preflight Validator",
+        "total_score": 4.256367924528302,
+        "recommendation": "research - Needs more validation before pursuing",
+        "cluster_name": "reddit: Premature Optimization and Validation Avoidance in Early-Stage SaaS Development"
+      },
+      {
+        "opportunity_name": "Solo Sprint Tracker",
+        "total_score": 4.156818181818181,
+        "recommendation": "research - Needs more validation before pursuing",
+        "cluster_name": "reddit: Sustaining and Growing a SaaS Product Through Early-Stage Challenges"
+      },
+      {
+        "opportunity_name": "ToneFilter",
+        "total_score": 3.712792355371901,
+        "recommendation": "research - Needs more validation before pursuing",
+        "cluster_name": "reddit: AI Interaction Fatigue Due to Output Degradation and Behavioral Annoyances"
+      },
+      {
+        "opportunity_name": "Assumption Forcer",
+        "total_score": 3.6813679245283017,
+        "recommendation": "abandon - \u75db\u70b9\u9891\u7387\u4e0d\u591f\u9ad8 (5.1 < 6)",
+        "cluster_name": "reddit: Premature Optimization and Validation Avoidance in Early-Stage SaaS Development"
+      },
+      {
+        "opportunity_name": "ToneCheck Coach",
+        "total_score": 3.5715000000000003,
+        "recommendation": "research - Needs more validation before pursuing",
+        "cluster_name": "reddit: Navigating Ambiguous Communication Expectations in Client-Facing Roles"
+      },
+      {
+        "opportunity_name": "Assumption Validator",
+        "total_score": 3.5563679245283017,
+        "recommendation": "abandon - \u75db\u70b9\u9891\u7387\u4e0d\u591f\u9ad8 (5.1 < 6)",
+        "cluster_name": "reddit: Premature Optimization and Validation Avoidance in Early-Stage SaaS Development"
+      },
+      {
+        "opportunity_name": "PRContext Snapshot",
+        "total_score": 3.481818181818182,
+        "recommendation": "abandon - \u75db\u70b9\u9891\u7387\u4e0d\u591f\u9ad8 (5.1 < 6)",
+        "cluster_name": "reddit: Sustaining and Growing a SaaS Product Through Early-Stage Challenges"
+      },
+      {
+        "opportunity_name": "AlertEscalate",
+        "total_score": 3.3375,
+        "recommendation": "abandon - \u805a\u7c7b\u89c4\u6a21\u8fc7\u5c0f (4 < 8)",
+        "cluster_name": "reddit: Notification Management for Critical Alerts"
+      },
+      {
+        "opportunity_name": "AlertEscalate",
+        "total_score": 3.3375,
+        "recommendation": "abandon - \u805a\u7c7b\u89c4\u6a21\u8fc7\u5c0f (4 < 8)",
+        "cluster_name": "reddit: Notification Management for Critical Alerts"
+      },
+      {
+        "opportunity_name": "AlertEscalate",
+        "total_score": 3.3125,
+        "recommendation": "abandon - \u805a\u7c7b\u89c4\u6a21\u8fc7\u5c0f (4 < 8)",
+        "cluster_name": "reddit: Notification Management Failure in Monitoring Workflows"
+      }
+    ],
+    "pipeline_efficiency": {
+      "posts_per_minute": 0.704329532747515,
+      "pain_events_per_hour": 13.758995523439827,
+      "opportunities_per_hour": 0.0
+    }
+  }
+}

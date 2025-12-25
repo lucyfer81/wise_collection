@@ -1,5 +1,5 @@
 # A/B Test Report: Comment-Aware Pain Extraction
-**Date:** 2025-12-25 10:43:14
+**Date:** 2025-12-25 11:08:41
 **Test Size:** 10 posts
 ---
 
@@ -7,9 +7,9 @@
 
 | Metric | Old Method | New Method | Change |
 |--------|-----------|-----------|--------|
-| Total Pain Events | 2 | 18 | +16 |
-| Avg Confidence | 0.087 | 0.514 | +0.426 |
-| Avg Problem Length | 8.6 | 67.4 | +58.8 |
+| Total Pain Events | 0 | 14 | +14 |
+| Avg Confidence | 0.000 | 0.435 | +0.435 |
+| Avg Problem Length | 0.0 | 53.7 | +53.7 |
 
 ## Per-Post Comparison
 
@@ -19,13 +19,13 @@
 
 | Metric | Old | New |
 |--------|-----|-----|
-| Events | 0 | 3 |
-| Confidence | 0.00 | 0.85 |
-| Problem Length | 0 | 100 |
+| Events | 0 | 4 |
+| Confidence | 0.00 | 0.82 |
+| Problem Length | 0 | 101 |
 **New Method Sample:**
 ```
 - [post] product reviews are unreliable due to paid commissions, gamed Amazon reviews, sp...
-- [comments] Reddit is flooded with bots and fake reviews, making it difficult to trust the i...
+- [comments] Reddit is flooded with bots and fake reviews, making it hard to trust user opini...
 ```
 
 ### 2. Stop building features. Start watching users debug....
@@ -54,19 +54,9 @@
 
 | Metric | Old | New |
 |--------|-----|-----|
-| Events | 2 | 5 |
-| Confidence | 0.88 | 0.79 |
-| Problem Length | 86 | 90 |
-**Old Method Sample:**
-```
-- using fake company databases with contrived scenarios and questions no one would...
-- interface was not smooth and learning progression was not structured...
-```
-**New Method Sample:**
-```
-- [post, comments] Existing SQL practice platforms use fake company databases with contrived scenar...
-- [post] Some SQL learning tools lack smooth interfaces and structured learning progressi...
-```
+| Events | 0 | 0 |
+| Confidence | 0.00 | 0.00 |
+| Problem Length | 0 | 0 |
 
 ### 5. Tell HN: AI coding is sexy, but accounting is the real low-h...
 
@@ -74,13 +64,13 @@
 
 | Metric | Old | New |
 |--------|-----|-----|
-| Events | 0 | 2 |
-| Confidence | 0.00 | 0.88 |
-| Problem Length | 0 | 130 |
+| Events | 0 | 3 |
+| Confidence | 0.00 | 0.85 |
+| Problem Length | 0 | 141 |
 **New Method Sample:**
 ```
-- [post, comments] repetitive, rule-based tasks like normalizing data from banks/cards/invoices, ap...
-- [comments] experiencing 3-4 days of crunch time requiring overstaffing to complete tasks qu...
+- [post, comments] repetitive, rule-based tasks such as normalizing data from banks/cards/invoices,...
+- [comments] experiencing 3-4 days of crunch time requiring overstaffing to meet deadlines, l...
 ```
 
 ### 6. Show HN: Backlog – a public repository of real work problems...
@@ -91,11 +81,11 @@
 |--------|-----|-----|
 | Events | 0 | 3 |
 | Confidence | 0.00 | 0.90 |
-| Problem Length | 0 | 97 |
+| Problem Length | 0 | 120 |
 **New Method Sample:**
 ```
-- [post, comments] forced to sign up or log in just to view problem details, after potentially fill...
-- [comments] problem statements on the platform are not useful, with unclear or mismatched de...
+- [comments] Must sign up or log in just to view the details of a problem, creating a heavy a...
+- [comments] After filling out the form, user is met with a login/signup requirement right be...
 ```
 
 ### 7. Founders: what product are you building, and what’s the real...
@@ -114,13 +104,13 @@
 
 | Metric | Old | New |
 |--------|-----|-----|
-| Events | 0 | 3 |
-| Confidence | 0.00 | 0.85 |
-| Problem Length | 0 | 179 |
+| Events | 0 | 2 |
+| Confidence | 0.00 | 0.88 |
+| Problem Length | 0 | 120 |
 **New Method Sample:**
 ```
-- [post, comments] seeing only the public-facing 10% of a successful product (the 'iceberg effect')...
-- [post, comments] lacking the dedicated development, sales/marketing, and client relations departm...
+- [post, comments] underestimating the complexity and operational depth of a successful SaaS (only ...
+- [comments] difficulty out-executing a company that already has dedicated dev, sales/marketi...
 ```
 
 ### 9. Become obsessed of your customers (in any business)....
@@ -130,12 +120,12 @@
 | Metric | Old | New |
 |--------|-----|-----|
 | Events | 0 | 2 |
-| Confidence | 0.00 | 0.88 |
-| Problem Length | 0 | 79 |
+| Confidence | 0.00 | 0.90 |
+| Problem Length | 0 | 54 |
 **New Method Sample:**
 ```
-- [post, comments] saying 'yes' to client requests leads to scope creep, resulting in working for f...
-- [post, comments] toxic clients drain energy and negatively impact other client relationships...
+- [comments] saying yes to scope creep leads to working for free...
+- [comments] toxic clients drain energy and mess up other relationships...
 ```
 
 ### 10. 📣✅New Human Verification System for our subreddit!...
@@ -150,6 +140,6 @@
 
 ## Qualitative Assessment
 
-- **Specificity Improvement:** 6/10 posts show more detailed problem descriptions
-- **Evidence Tracking:** 18 pain events now track evidence sources
-- **Avg Description Length:** 67 vs 9 chars (+684% change)
+- **Specificity Improvement:** 5/10 posts show more detailed problem descriptions
+- **Evidence Tracking:** 14 pain events now track evidence sources
+- **Avg Description Length:** 54 chars (old method extracted no events)

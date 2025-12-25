@@ -198,20 +198,35 @@ class LLMClient:
         body: str,
         subreddit: str,
         upvotes: int,
-        comments_count: int
+        comments_count: int,
+        top_comments: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
-        """从Reddit帖子中提取痛点"""
+        """从Reddit帖子中提取痛点（支持评论上下文）"""
         prompt = self._get_pain_extraction_prompt()
 
-        messages = [
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": f"""
-Title: {title}
+        # Build user message with comment context
+        user_message = f"""Title: {title}
 Body: {body}
 Subreddit: {subreddit}
 Upvotes: {upvotes}
 Comments: {comments_count}
-"""}
+"""
+
+        # Add top comments if available
+        if top_comments and len(top_comments) > 0:
+            user_message += f"\nTop {len(top_comments)} Comments:\n"
+            for i, comment in enumerate(top_comments, 1):
+                comment_body = comment.get('body', '')
+                comment_score = comment.get('score', 0)
+                comment_author = comment.get('author', 'unknown')
+                # Truncate very long comments to save tokens
+                if len(comment_body) > 500:
+                    comment_body = comment_body[:500] + "... [truncated]"
+                user_message += f"\n{i}. [{comment_score} upvotes] {comment_author}: {comment_body}\n"
+
+        messages = [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": user_message}
         ]
 
         return self.chat_completion(

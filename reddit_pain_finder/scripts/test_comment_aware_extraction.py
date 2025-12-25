@@ -191,7 +191,12 @@ def generate_comparison_report(results: List[Dict[str, Any]]) -> str:
     improvement_count = sum(1 for r in results if r['new_metrics']['avg_problem_length'] > r['old_metrics']['avg_problem_length'])
     report.append(f"- **Specificity Improvement:** {improvement_count}/{len(results)} posts show more detailed problem descriptions\n")
     report.append(f"- **Evidence Tracking:** {sum(r['new_metrics']['has_evidence_sources'] for r in results)} pain events now track evidence sources\n")
-    report.append(f"- **Avg Description Length:** {new_avg_length:.0f} vs {old_avg_length:.0f} chars ({((new_avg_length/old_avg_length - 1) * 100):+.0f}% change)\n")
+    # Handle division by zero for percentage change
+    if old_avg_length > 0:
+        percent_change = ((new_avg_length/old_avg_length - 1) * 100)
+        report.append(f"- **Avg Description Length:** {new_avg_length:.0f} vs {old_avg_length:.0f} chars ({percent_change:+.0f}% change)\n")
+    else:
+        report.append(f"- **Avg Description Length:** {new_avg_length:.0f} chars (old method extracted no events)\n")
 
     return "".join(report)
 

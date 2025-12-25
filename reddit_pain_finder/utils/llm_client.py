@@ -15,6 +15,8 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+from utils.performance_monitor import performance_monitor
+
 logger = logging.getLogger(__name__)
 
 class LLMClient:
@@ -159,6 +161,12 @@ class LLMClient:
                     },
                     "request_time": request_time
                 }
+
+                # Record in performance monitor
+                performance_monitor.record_llm_call(
+                    stage_name=model_type,
+                    usage=result["usage"]
+                )
 
                 logger.info(f"✅ LLM request {attempt + 1}/{max_retries} completed: {result['usage']['total_tokens']} tokens in {request_time:.2f}s")
                 return result

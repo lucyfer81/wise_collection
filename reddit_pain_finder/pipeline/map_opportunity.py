@@ -379,15 +379,14 @@ class OpportunityMapper:
             self.stats["viable_opportunities"] = viable_opportunities
             self.stats["processing_time"] = processing_time
 
-            if opportunities_created:
-                self.stats["avg_opportunity_score"] = sum(opp["quality_score"] for opp in opportunities_created) / len(opportunities_created)
+            # Quality scoring is now handled by score_viability.py stage
+            # No need to calculate avg_opportunity_score here
 
             logger.info(f"""
 === Opportunity Mapping Summary ===
 Clusters processed: {len(clusters)}
 Opportunities identified: {len(opportunities_created)}
 Viable opportunities: {viable_opportunities}
-Average opportunity score: {self.stats['avg_opportunity_score']:.2f}
 Processing time: {processing_time:.2f}s
 """)
 

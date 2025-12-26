@@ -58,6 +58,71 @@ class DecisionShortlistGenerator:
             }
         }
 
+    def _apply_hard_filters(self) -> List[Dict[str, Any]]:
+        """应用硬性过滤规则
+
+        Returns:
+            通过所有过滤的机会列表
+        """
+        config = self.config
+
+        min_viability = config['min_viability_score']
+        min_cluster_size = config['min_cluster_size']
+        min_trust = config['min_trust_level']
+        ignored_clusters = set(config.get('ignored_clusters', []))
+
+        logger.info(f"Applying hard filters: viability>={min_viability}, "
+                    f"cluster_size>={min_cluster_size}, trust>={min_trust}")
+
+        try:
+            with db.get_connection("clusters") as conn:
+                cursor = conn.execute("""
+                    SELECT
+                        o.id as opportunity_id,
+                        o.opportunity_name,
+                        o.description,
+                        o.total_score as viability_score,
+                        o.trust_level as trust_level,
+                        o.target_users,
+                        o.missing_capability,
+                        o.why_existing_fail,
+                        c.id as cluster_id,
+                        c.cluster_name,
+                        c.cluster_size,
+                        c.source_type,
+                        c.pain_event_ids,
+                        c.centroid_summary as cluster_summary
+                    FROM opportunities o
+                    JOIN clusters c ON o.cluster_id = c.id
+                    WHERE o.total_score >= ?
+                      AND c.cluster_size >= ?
+                      AND o.trust_level >= ?
+                      AND c.cluster_name NOT IN (
+                        SELECT value FROM json_each(?)
+                        WHERE json_valid(?) AND json_each.value IS NOT NULL
+                      )
+                    ORDER BY o.total_score DESC
+                """, (min_viability, min_cluster_size, min_trust,
+                      json.dumps(list(ignored_clusters)),
+                      json.dumps(list(ignored_clusters))))
+
+                opportunities = [dict(row) for row in cursor.fetchall()]
+
+                # 解析 pain_event_ids JSON
+                for opp in opportunities:
+                    if opp.get('pain_event_ids'):
+                        try:
+                            opp['pain_event_ids'] = json.loads(opp['pain_event_ids'])
+                        except:
+                            opp['pain_event_ids'] = []
+
+                logger.info(f"Hard filters: {len(opportunities)} opportunities passed")
+                return opportunities
+
+        except Exception as e:
+            logger.error(f"Failed to apply hard filters: {e}")
+            return []
+
     def generate_shortlist(self) -> Dict[str, Any]:
         """生成决策清单（主方法）"""
         logger.info("=== Decision Shortlist Generation Started ===")

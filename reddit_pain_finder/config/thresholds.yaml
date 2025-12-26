@@ -251,3 +251,25 @@ monitoring:
     max_retries: 3
     retry_delay: 1
     continue_on_error: true
+
+# 决策清单阈值
+decision_shortlist:
+  # 硬性过滤阈值
+  min_viability_score: 7.0      # 最低可行性评分
+  min_cluster_size: 6           # 最小聚类规模
+  min_trust_level: 0.7          # 最低信任度
+  ignored_clusters: []          # 可选：要忽略的 cluster 名称列表
+
+  # 最终评分权重
+  final_score_weights:
+    viability_score: 1.0            # 可行性评分权重 (0-10)
+    cluster_size_log_factor: 2.5    # 聚类规模对数因子权重
+    trust_level: 1.5                # 信任度权重 (0-1)
+    cross_source_bonus: 5.0         # 跨源验证基础加分
+
+  # 输出控制
+  output:
+    min_candidates: 3           # 最少候选数量
+    max_candidates: 5           # 最多候选数量
+    markdown_dir: 'reports'    # Markdown 报告输出目录
+    json_dir: 'data'           # JSON 结果输出目录

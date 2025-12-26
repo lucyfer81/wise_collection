@@ -369,6 +369,45 @@ class DecisionShortlistGenerator:
             'why_now': f"High demand from {cluster.get('cluster_size', 0)} users indicates immediate market need"
         }
 
+    def _sort_priority_key(self, candidate: Dict) -> tuple:
+        """生成排序键，确保跨源验证的机会排在前面
+
+        排序优先级：
+        1. 跨源验证等级（Level 1 > Level 2 > Level 3 > No validation）
+        2. 最终评分（降序）
+        3. 聚类规模（降序）
+
+        Args:
+            candidate: 候选机会字典
+
+        Returns:
+            排序键元组
+        """
+        cross_source = candidate.get('cross_source_validation', {})
+        validation_level = cross_source.get('validation_level', 0)
+
+        # 验证等级：Level 1 最优先，Level 0（无验证）最低
+        # 使用反向映射：1 -> 3, 2 -> 2, 3 -> 1, 0 -> 0
+        if validation_level == 1:
+            priority_score = 3
+        elif validation_level == 2:
+            priority_score = 2
+        elif validation_level == 3:
+            priority_score = 1
+        else:
+            priority_score = 0
+
+        # 用负数实现降序：优先级高的排在前面
+        priority_score = -priority_score
+
+        # 最终评分降序
+        final_score = -candidate.get('final_score', 0)
+
+        # 聚类规模降序
+        cluster_size = -candidate.get('cluster_size', 0)
+
+        return (priority_score, final_score, cluster_size)
+
     def generate_shortlist(self) -> Dict[str, Any]:
         """生成决策清单（主方法）
 
@@ -417,9 +456,10 @@ class DecisionShortlistGenerator:
 
         logger.info(f"✅ Scored {len(scored_opportunities)} opportunities")
 
-        # 步骤 4: 按评分排序并选择 Top 候选
+        # 步骤 4: 按照优先级排序并选择 Top 候选
         logger.info("Step 4: Selecting top candidates...")
-        scored_opportunities.sort(key=lambda x: x['final_score'], reverse=True)
+        # 按照优先级排序：跨源验证 > 最终评分 > 聚类规模
+        scored_opportunities.sort(key=self._sort_priority_key)
 
         top_candidates = self._select_top_candidates_with_diversity(scored_opportunities)
         logger.info(f"✅ Selected {len(top_candidates)} top candidates")

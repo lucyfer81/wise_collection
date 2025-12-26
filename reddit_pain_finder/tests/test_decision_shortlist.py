@@ -476,3 +476,122 @@ def test_markdown_report_no_badge_without_validation(tmp_path):
     assert 'Multi-Subreddit Validation' not in content
     assert 'Weak Cross-Source Signal' not in content
     assert 'Validated Problem**: ❌ No' in content
+
+
+def test_sort_priority_key():
+    """测试跨源验证排序键函数"""
+    generator = DecisionShortlistGenerator()
+
+    # Create test candidates with different validation levels
+    candidates = [
+        {
+            'opportunity_name': 'No Validation - Low Score',
+            'final_score': 6.0,
+            'cluster_size': 10,
+            'cross_source_validation': {'validation_level': 0}
+        },
+        {
+            'opportunity_name': 'Level 3 - High Score',
+            'final_score': 9.0,
+            'cluster_size': 20,
+            'cross_source_validation': {'validation_level': 3}
+        },
+        {
+            'opportunity_name': 'Level 1 - Medium Score',
+            'final_score': 8.0,
+            'cluster_size': 15,
+            'cross_source_validation': {'validation_level': 1}
+        },
+        {
+            'opportunity_name': 'Level 2 - High Score',
+            'final_score': 8.5,
+            'cluster_size': 25,
+            'cross_source_validation': {'validation_level': 2}
+        },
+        {
+            'opportunity_name': 'No Validation - High Score',
+            'final_score': 9.5,
+            'cluster_size': 30,
+            'cross_source_validation': {'validation_level': 0}
+        }
+    ]
+
+    # Sort using the priority key function
+    sorted_candidates = sorted(candidates, key=generator._sort_priority_key)
+
+    # Verify order: Level 1 > Level 2 > Level 3 > No validation
+    assert sorted_candidates[0]['opportunity_name'] == 'Level 1 - Medium Score'
+    assert sorted_candidates[1]['opportunity_name'] == 'Level 2 - High Score'
+    assert sorted_candidates[2]['opportunity_name'] == 'Level 3 - High Score'
+    assert sorted_candidates[3]['opportunity_name'] == 'No Validation - High Score'
+    assert sorted_candidates[4]['opportunity_name'] == 'No Validation - Low Score'
+
+
+def test_sort_priority_key_same_level():
+    """测试同一验证等级内按最终评分和聚类大小排序"""
+    generator = DecisionShortlistGenerator()
+
+    # Create candidates with same validation level but different scores
+    candidates = [
+        {
+            'opportunity_name': 'Level 1 - Low Score - Small Cluster',
+            'final_score': 7.0,
+            'cluster_size': 10,
+            'cross_source_validation': {'validation_level': 1}
+        },
+        {
+            'opportunity_name': 'Level 1 - High Score - Large Cluster',
+            'final_score': 9.0,
+            'cluster_size': 30,
+            'cross_source_validation': {'validation_level': 1}
+        },
+        {
+            'opportunity_name': 'Level 1 - Medium Score - Medium Cluster',
+            'final_score': 8.0,
+            'cluster_size': 20,
+            'cross_source_validation': {'validation_level': 1}
+        }
+    ]
+
+    # Sort using the priority key function
+    sorted_candidates = sorted(candidates, key=generator._sort_priority_key)
+
+    # Within same validation level, sort by final_score (desc), then cluster_size (desc)
+    assert sorted_candidates[0]['opportunity_name'] == 'Level 1 - High Score - Large Cluster'
+    assert sorted_candidates[1]['opportunity_name'] == 'Level 1 - Medium Score - Medium Cluster'
+    assert sorted_candidates[2]['opportunity_name'] == 'Level 1 - Low Score - Small Cluster'
+
+
+def test_sort_priority_key_same_score_different_cluster():
+    """测试相同最终评分时按聚类大小排序"""
+    generator = DecisionShortlistGenerator()
+
+    # Create candidates with same final score but different cluster sizes
+    candidates = [
+        {
+            'opportunity_name': 'Level 2 - Small Cluster',
+            'final_score': 8.0,
+            'cluster_size': 10,
+            'cross_source_validation': {'validation_level': 2}
+        },
+        {
+            'opportunity_name': 'Level 2 - Large Cluster',
+            'final_score': 8.0,
+            'cluster_size': 30,
+            'cross_source_validation': {'validation_level': 2}
+        },
+        {
+            'opportunity_name': 'Level 2 - Medium Cluster',
+            'final_score': 8.0,
+            'cluster_size': 20,
+            'cross_source_validation': {'validation_level': 2}
+        }
+    ]
+
+    # Sort using the priority key function
+    sorted_candidates = sorted(candidates, key=generator._sort_priority_key)
+
+    # Same final score, sort by cluster_size (desc)
+    assert sorted_candidates[0]['opportunity_name'] == 'Level 2 - Large Cluster'
+    assert sorted_candidates[1]['opportunity_name'] == 'Level 2 - Medium Cluster'
+    assert sorted_candidates[2]['opportunity_name'] == 'Level 2 - Small Cluster'

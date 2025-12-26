@@ -113,7 +113,7 @@ def cleanup_test_data():
         return False
 
 
-def test_output_count(shortlist_result):
+def check_output_count(shortlist_result):
     """Test 1: Validate output count (3-5 candidates)"""
     print("\n" + "="*60)
     print("TEST 1: Output Count Validation")
@@ -130,7 +130,7 @@ def test_output_count(shortlist_result):
         return False
 
 
-def test_candidate_completeness(shortlist_result):
+def check_candidate_completeness(shortlist_result):
     """Test 2: Validate candidate completeness (problem, mvp, why_now)"""
     print("\n" + "="*60)
     print("TEST 2: Candidate Completeness Validation")
@@ -167,7 +167,7 @@ def test_candidate_completeness(shortlist_result):
         return False
 
 
-def test_file_generation(shortlist_result):
+def check_file_generation(shortlist_result):
     """Test 3: Validate file generation (markdown + JSON)"""
     print("\n" + "="*60)
     print("TEST 3: File Generation Validation")
@@ -200,7 +200,7 @@ def test_file_generation(shortlist_result):
         return False
 
 
-def test_json_format(shortlist_result):
+def check_json_format(shortlist_result):
     """Test 4: Validate JSON format"""
     print("\n" + "="*60)
     print("TEST 4: JSON Format Validation")
@@ -297,10 +297,10 @@ def main():
         # Run all tests
         test_results = []
 
-        test_results.append(("Output Count (3-5)", test_output_count(result)))
-        test_results.append(("Candidate Completeness", test_candidate_completeness(result)))
-        test_results.append(("File Generation", test_file_generation(result)))
-        test_results.append(("JSON Format", test_json_format(result)))
+        test_results.append(("Output Count (3-5)", check_output_count(result)))
+        test_results.append(("Candidate Completeness", check_candidate_completeness(result)))
+        test_results.append(("File Generation", check_file_generation(result)))
+        test_results.append(("JSON Format", check_json_format(result)))
 
         # Summary
         print("\n" + "="*60)

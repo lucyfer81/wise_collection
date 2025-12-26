@@ -480,6 +480,11 @@ Processing time: {processing_time:.2f}s
             cluster_summary = self._create_cluster_summary(pain_events)
             cluster_info["cluster_summary"] = cluster_summary
 
+            # 反序列化JTBD字段
+            cluster_info["job_steps"] = json.loads(cluster_info.get("job_steps", "[]"))
+            cluster_info["desired_outcomes"] = json.loads(cluster_info.get("desired_outcomes", "[]"))
+            cluster_info["example_events"] = json.loads(cluster_info.get("example_events", "[]"))
+
             return cluster_info
 
         except Exception as e:
@@ -529,6 +534,69 @@ Processing time: {processing_time:.2f}s
             "processing_time": 0.0,
             "avg_cluster_size": 0.0
         }
+
+    def get_clusters_by_semantic_category(self, category: str) -> List[Dict[str, Any]]:
+        """按语义分类获取聚类"""
+        try:
+            with db.get_connection("clusters") as conn:
+                cursor = conn.execute("""
+                    SELECT id, cluster_name, job_statement, customer_profile,
+                           semantic_category, product_impact, cluster_size
+                    FROM clusters
+                    WHERE semantic_category = ?
+                    ORDER BY product_impact DESC
+                """, (category,))
+
+                clusters = []
+                for row in cursor.fetchall():
+                    cluster = dict(row)
+                    cluster["job_steps"] = json.loads(cluster.get("job_steps", "[]"))
+                    clusters.append(cluster)
+
+                return clusters
+
+        except Exception as e:
+            logger.error(f"Failed to get clusters by semantic category: {e}")
+            return []
+
+    def get_high_impact_clusters(self, min_impact: float = 0.7) -> List[Dict[str, Any]]:
+        """获取高产品影响聚类"""
+        try:
+            with db.get_connection("clusters") as conn:
+                cursor = conn.execute("""
+                    SELECT id, cluster_name, job_statement, customer_profile,
+                           semantic_category, product_impact, cluster_size
+                    FROM clusters
+                    WHERE product_impact >= ?
+                    ORDER BY product_impact DESC
+                """, (min_impact,))
+
+                return [dict(row) for row in cursor.fetchall()]
+
+        except Exception as e:
+            logger.error(f"Failed to get high impact clusters: {e}")
+            return []
+
+    def get_all_semantic_categories(self) -> List[Dict[str, Any]]:
+        """获取所有语义分类及其统计"""
+        try:
+            with db.get_connection("clusters") as conn:
+                cursor = conn.execute("""
+                    SELECT semantic_category,
+                           COUNT(*) as cluster_count,
+                           AVG(product_impact) as avg_impact,
+                           SUM(cluster_size) as total_events
+                    FROM clusters
+                    WHERE semantic_category IS NOT NULL AND semantic_category != ''
+                    GROUP BY semantic_category
+                    ORDER BY avg_impact DESC
+                """)
+
+                return [dict(row) for row in cursor.fetchall()]
+
+        except Exception as e:
+            logger.error(f"Failed to get semantic categories: {e}")
+            return []
 
 def main():
     """主函数"""

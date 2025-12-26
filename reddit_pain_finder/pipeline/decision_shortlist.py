@@ -123,6 +123,111 @@ class DecisionShortlistGenerator:
             logger.error(f"Failed to apply hard filters: {e}")
             return []
 
+    def _check_cross_source_validation(self, opportunity: Dict) -> Dict[str, Any]:
+        """检查跨源验证，返回验证信息和加分
+
+        三层优先级：
+        - Level 1 (强信号): source_type='aligned' 或在 aligned_problems 表中
+        - Level 2 (中等信号): cluster_size >= 10 AND 跨 >=3 subreddits
+        - Level 3 (弱信号): cluster_size >= 8 AND 跨 >=2 subreddits
+        """
+        cluster = opportunity
+
+        # Level 1: 检查 source_type
+        if cluster.get('source_type') == 'aligned':
+            return {
+                "has_cross_source": True,
+                "validation_level": 1,
+                "boost_score": 2.0,
+                "validated_problem": True,
+                "evidence": "source_type='aligned'"
+            }
+
+        # Level 1: 检查 aligned_problems 表
+        aligned_problem = self._check_aligned_problems_table(cluster['cluster_name'])
+        if aligned_problem:
+            return {
+                "has_cross_source": True,
+                "validation_level": 1,
+                "boost_score": 2.0,
+                "validated_problem": True,
+                "evidence": f"Found in aligned_problems: {aligned_problem['aligned_problem_id']}"
+            }
+
+        # Level 2 & 3: 检查 cluster_size + 跨 subreddit
+        pain_event_ids = cluster.get('pain_event_ids', [])
+        if not pain_event_ids:
+            return {
+                "has_cross_source": False,
+                "validation_level": 0,
+                "boost_score": 0.0,
+                "validated_problem": False,
+                "evidence": "No pain events"
+            }
+
+        subreddit_count = self._count_subreddits(pain_event_ids)
+        cluster_size = cluster['cluster_size']
+
+        # Level 2
+        if cluster_size >= 10 and subreddit_count >= 3:
+            return {
+                "has_cross_source": True,
+                "validation_level": 2,
+                "boost_score": 1.0,
+                "validated_problem": True,
+                "evidence": f"Large cluster ({cluster_size}) across {subreddit_count} subreddits"
+            }
+
+        # Level 3
+        if cluster_size >= 8 and subreddit_count >= 2:
+            return {
+                "has_cross_source": True,
+                "validation_level": 3,
+                "boost_score": 0.5,
+                "validated_problem": False,
+                "evidence": f"Medium cluster ({cluster_size}) across {subreddit_count} subreddits"
+            }
+
+        # 无跨源验证
+        return {
+            "has_cross_source": False,
+            "validation_level": 0,
+            "boost_score": 0.0,
+            "validated_problem": False,
+            "evidence": "No cross-source validation"
+        }
+
+    def _check_aligned_problems_table(self, cluster_name: str) -> Optional[Dict]:
+        """检查 cluster 是否在 aligned_problems 表中"""
+        try:
+            with db.get_connection("clusters") as conn:
+                cursor = conn.execute("""
+                    SELECT aligned_problem_id, sources, alignment_score
+                    FROM aligned_problems
+                    WHERE cluster_ids LIKE ?
+                """, (f'%{cluster_name}%',))
+                result = cursor.fetchone()
+                return dict(result) if result else None
+        except Exception as e:
+            logger.error(f"Failed to check aligned_problems: {e}")
+            return None
+
+    def _count_subreddits(self, pain_event_ids: List[int]) -> int:
+        """计算涉及的不同 subreddit 数量"""
+        try:
+            with db.get_connection("pain") as conn:
+                placeholders = ','.join('?' for _ in pain_event_ids)
+                cursor = conn.execute(f"""
+                    SELECT COUNT(DISTINCT fp.subreddit) as count
+                    FROM pain_events pe
+                    JOIN filtered_posts fp ON pe.post_id = fp.id
+                    WHERE pe.id IN ({placeholders})
+                """, pain_event_ids)
+                return cursor.fetchone()['count']
+        except Exception as e:
+            logger.error(f"Failed to count subreddits: {e}")
+            return 1  # 默认为 1，避免 0
+
     def generate_shortlist(self) -> Dict[str, Any]:
         """生成决策清单（主方法）"""
         logger.info("=== Decision Shortlist Generation Started ===")

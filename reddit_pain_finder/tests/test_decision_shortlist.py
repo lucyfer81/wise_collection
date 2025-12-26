@@ -108,3 +108,129 @@ def test_apply_hard_filters_error_handling():
 
     # 恢复配置
     generator.config = original_config
+
+
+def test_check_cross_source_validation():
+    """测试跨源验证逻辑"""
+    generator = DecisionShortlistGenerator()
+
+    # Test Level 1: source_type='aligned'
+    mock_opp = {
+        'cluster_id': 1,
+        'cluster_name': 'test_cluster',
+        'cluster_size': 15,
+        'source_type': 'aligned',
+        'pain_event_ids': [1, 2, 3, 4, 5]
+    }
+
+    result = generator._check_cross_source_validation(mock_opp)
+
+    assert result['has_cross_source'] == True
+    assert result['validation_level'] == 1
+    assert result['boost_score'] == 2.0
+    assert result['validated_problem'] == True
+    assert result['evidence'] == "source_type='aligned'"
+
+
+def test_cross_source_validation_no_pain_events():
+    """测试没有 pain events 的情况"""
+    generator = DecisionShortlistGenerator()
+
+    mock_opp = {
+        'cluster_id': 1,
+        'cluster_name': 'test_cluster',
+        'cluster_size': 15,
+        'source_type': 'reddit',
+        'pain_event_ids': []  # Empty list
+    }
+
+    result = generator._check_cross_source_validation(mock_opp)
+
+    assert result['has_cross_source'] == False
+    assert result['validation_level'] == 0
+    assert result['boost_score'] == 0.0
+    assert result['validated_problem'] == False
+    assert result['evidence'] == "No pain events"
+
+
+def test_cross_source_validation_level3():
+    """测试 Level 3 验证（中等聚类，2个subreddit）"""
+    generator = DecisionShortlistGenerator()
+
+    # Create test data with multiple subreddits
+    try:
+        with db.get_connection("pain") as conn:
+            # Create test posts from different subreddits
+            conn.execute("""
+                INSERT INTO filtered_posts (title, body, subreddit, url, score, num_comments, upvote_ratio, pain_score)
+                VALUES
+                    ('Test 1', 'Body 1', 'test_subreddit_1', 'http://test1.com', 10, 5, 0.8, 0.7),
+                    ('Test 2', 'Body 2', 'test_subreddit_2', 'http://test2.com', 10, 5, 0.8, 0.7),
+                    ('Test 3', 'Body 3', 'test_subreddit_1', 'http://test3.com', 10, 5, 0.8, 0.7),
+                    ('Test 4', 'Body 4', 'test_subreddit_2', 'http://test4.com', 10, 5, 0.8, 0.7)
+            """)
+            conn.commit()
+
+            # Get post IDs
+            posts = conn.execute("SELECT id FROM filtered_posts ORDER BY id DESC LIMIT 4").fetchall()
+            post_ids = [p['id'] for p in posts]
+
+            # Create pain events
+            for post_id in post_ids:
+                conn.execute("""
+                    INSERT INTO pain_events (post_id, problem, context)
+                    VALUES (?, 'Test pain problem', 'Test context')
+                """, (post_id,))
+            conn.commit()
+
+            # Get pain event IDs
+            pain_events = conn.execute("SELECT id FROM pain_events ORDER BY id DESC LIMIT 4").fetchall()
+            pain_event_ids = [pe['id'] for pe in pain_events]
+
+            mock_opp = {
+                'cluster_id': 1,
+                'cluster_name': 'test_cluster',
+                'cluster_size': 8,  # Meets Level 3 threshold
+                'source_type': 'reddit',
+                'pain_event_ids': pain_event_ids
+            }
+
+            result = generator._check_cross_source_validation(mock_opp)
+
+            assert result['has_cross_source'] == True
+            assert result['validation_level'] == 3
+            assert result['boost_score'] == 0.5
+            assert result['validated_problem'] == False  # Level 3 doesn't validate
+            assert "Medium cluster" in result['evidence']
+            assert "subreddits" in result['evidence']
+
+            # Cleanup
+            placeholders = ','.join('?' for _ in pain_event_ids)
+            conn.execute(f"DELETE FROM pain_events WHERE id IN ({placeholders})", pain_event_ids)
+            placeholders = ','.join('?' for _ in post_ids)
+            conn.execute(f"DELETE FROM filtered_posts WHERE id IN ({placeholders})", post_ids)
+            conn.commit()
+
+    except Exception as e:
+        pytest.fail(f"Test failed with exception: {e}")
+
+
+def test_cross_source_validation_no_validation():
+    """测试没有跨源验证的情况（小聚类）"""
+    generator = DecisionShortlistGenerator()
+
+    mock_opp = {
+        'cluster_id': 1,
+        'cluster_name': 'test_cluster',
+        'cluster_size': 5,  # Below Level 3 threshold
+        'source_type': 'reddit',
+        'pain_event_ids': [1, 2]
+    }
+
+    result = generator._check_cross_source_validation(mock_opp)
+
+    assert result['has_cross_source'] == False
+    assert result['validation_level'] == 0
+    assert result['boost_score'] == 0.0
+    assert result['validated_problem'] == False
+    assert result['evidence'] == "No cross-source validation"

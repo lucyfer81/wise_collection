@@ -49,6 +49,7 @@ def format_opportunity(opportunity: Dict, detailed: bool = False) -> str:
         f"{'='*80}",
         f"\n{badge}" if badge else "",
         f"\nScores:",
+        # Note: 'total_score' matches the field name from the database schema (opportunities.total_score)
         f"  - Final Score: {opportunity.get('total_score', 0):.2f}/10.0",
         f"  - Cluster Size: {opportunity.get('cluster_size', 0)}",
         f"  - Trust Level: {opportunity.get('trust_level', 0):.2f}",
@@ -125,8 +126,8 @@ Examples:
   # 仅显示 Level 1 的多平台验证
   python scripts/show_cross_source_pain_points.py --min-level 1
 
-  # 仅显示 validated_problem=True 的
-  python scripts/show_cross_source_pain_points.py --validated-only
+  # 包含未验证的痛点（validated_problem=False）
+  python scripts/show_cross_source_pain_points.py --include-unvalidated
 
   # 导出到 JSON
   python scripts/show_cross_source_pain_points.py --export cross_source.json
@@ -142,9 +143,9 @@ Examples:
     )
 
     parser.add_argument(
-        '--validated-only',
+        '--include-unvalidated',
         action='store_true',
-        help='Show only validated_problem=True opportunities'
+        help='Include opportunities with validated_problem=False (default: False - show only validated)'
     )
 
     parser.add_argument(
@@ -175,7 +176,7 @@ Examples:
     try:
         opportunities = db.get_cross_source_validated_opportunities(
             min_validation_level=args.min_level,
-            include_validated_only=args.validated_only
+            include_validated_only=not args.include_unvalidated
         )
 
         # 应用限制
@@ -191,7 +192,7 @@ Examples:
                 'generated_at': __import__('datetime').datetime.now().isoformat(),
                 'filter': {
                     'min_validation_level': args.min_level,
-                    'validated_only': args.validated_only
+                    'validated_only': not args.include_unvalidated
                 },
                 'total_count': len(opportunities),
                 'opportunities': opportunities

@@ -180,7 +180,15 @@ class WiseCollectionDB:
                     avg_pain_score REAL,
                     workflow_confidence REAL,
                     workflow_similarity REAL DEFAULT 0.0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    -- JTBD产品语义字段
+                    job_statement TEXT,
+                    job_steps TEXT,
+                    desired_outcomes TEXT,
+                    job_context TEXT,
+                    customer_profile TEXT,
+                    semantic_category TEXT,
+                    product_impact REAL DEFAULT 0.0
                 )
             """)
 
@@ -299,6 +307,9 @@ class WiseCollectionDB:
 
             # 添加Phase 3字段到opportunities表（如果不存在）
             self._add_phase3_opportunities_columns(conn)
+
+            # 添加JTBD字段到clusters表（如果不存在）
+            self._add_jtbd_columns(conn)
 
             conn.commit()
             logger.info("Unified database initialized successfully")
@@ -435,7 +446,15 @@ class WiseCollectionDB:
                     avg_pain_score REAL,
                     workflow_confidence REAL,
                     workflow_similarity REAL DEFAULT 0.0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    -- JTBD产品语义字段
+                    job_statement TEXT,
+                    job_steps TEXT,
+                    desired_outcomes TEXT,
+                    job_context TEXT,
+                    customer_profile TEXT,
+                    semantic_category TEXT,
+                    product_impact REAL DEFAULT 0.0
                 )
             """)
 
@@ -494,6 +513,9 @@ class WiseCollectionDB:
 
             # 添加Phase 3字段到opportunities表（如果不存在）
             self._add_phase3_opportunities_columns(conn)
+
+            # 添加JTBD字段到clusters表（如果不存在）
+            self._add_jtbd_columns(conn)
 
             conn.commit()
 
@@ -654,6 +676,37 @@ class WiseCollectionDB:
 
         except Exception as e:
             logger.error(f"Failed to add Phase 3 columns to opportunities table: {e}")
+
+    def _add_jtbd_columns(self, conn):
+        """为clusters表添加JTBD产品语义字段（如果不存在）"""
+        try:
+            cursor = conn.execute("PRAGMA table_info(clusters)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            jtbd_columns = {
+                'job_statement': 'TEXT',
+                'job_steps': 'TEXT',  # JSON数组
+                'desired_outcomes': 'TEXT',  # JSON数组
+                'job_context': 'TEXT',
+                'customer_profile': 'TEXT',
+                'semantic_category': 'TEXT',
+                'product_impact': 'REAL DEFAULT 0.0'
+            }
+
+            for column_name, column_def in jtbd_columns.items():
+                if column_name not in existing_columns:
+                    conn.execute(f"""
+                        ALTER TABLE clusters
+                        ADD COLUMN {column_name} {column_def}
+                    """)
+                    logger.info(f"Added {column_name} column to clusters table")
+
+            # 创建索引
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_clusters_semantic_category ON clusters(semantic_category)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_clusters_product_impact ON clusters(product_impact)")
+
+        except Exception as e:
+            logger.error(f"Failed to add JTBD columns to clusters table: {e}")
 
     # Raw posts operations
     def insert_raw_post(self, post_data: Dict[str, Any]) -> bool:
@@ -985,15 +1038,17 @@ class WiseCollectionDB:
 
     # Clusters operations
     def insert_cluster(self, cluster_data: Dict[str, Any]) -> Optional[int]:
-        """插入聚类"""
+        """插入聚类（包含JTBD字段）"""
         try:
             with self.get_connection("clusters") as conn:
                 cursor = conn.execute("""
                     INSERT INTO clusters
                     (cluster_name, cluster_description, source_type, centroid_summary,
                      common_pain, common_context, example_events, pain_event_ids, cluster_size,
-                     avg_pain_score, workflow_confidence, workflow_similarity)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     avg_pain_score, workflow_confidence, workflow_similarity,
+                     job_statement, job_steps, desired_outcomes, job_context,
+                     customer_profile, semantic_category, product_impact)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     cluster_data["cluster_name"],
                     cluster_data.get("cluster_description", ""),
@@ -1006,7 +1061,14 @@ class WiseCollectionDB:
                     cluster_data["cluster_size"],
                     cluster_data.get("avg_pain_score", 0.0),
                     cluster_data.get("workflow_confidence", 0.0),
-                    cluster_data.get("workflow_similarity", 0.0)
+                    cluster_data.get("workflow_similarity", 0.0),
+                    cluster_data.get("job_statement"),  # JTBD fields
+                    json.dumps(cluster_data.get("job_steps", [])),
+                    json.dumps(cluster_data.get("desired_outcomes", [])),
+                    cluster_data.get("job_context"),
+                    cluster_data.get("customer_profile"),
+                    cluster_data.get("semantic_category"),
+                    cluster_data.get("product_impact", 0.0)
                 ))
                 cluster_id = cursor.lastrowid
                 conn.commit()

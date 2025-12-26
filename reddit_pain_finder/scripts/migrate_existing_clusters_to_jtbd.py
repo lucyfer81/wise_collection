@@ -33,9 +33,15 @@ def migrate_cluster(cluster_id: int) -> bool:
 
             cluster_dict = dict(cluster)
 
-            # 如果已有job_statement，跳过
-            if cluster_dict.get("job_statement"):
-                logger.info(f"Cluster {cluster_id} already has JTBD, skipping")
+            # 检查是否需要更新：job_statement为空 OR desired_outcomes为空
+            needs_update = (
+                not cluster_dict.get("job_statement") or
+                not cluster_dict.get("desired_outcomes") or
+                cluster_dict.get("desired_outcomes") == "[]"
+            )
+
+            if not needs_update:
+                logger.info(f"Cluster {cluster_id} already has complete JTBD, skipping")
                 return False
 
             # 生成JTBD
@@ -84,9 +90,11 @@ def migrate_cluster(cluster_id: int) -> bool:
 def main():
     """迁移所有现有clusters"""
     with db.get_connection("clusters") as conn:
+        # 查找需要更新的clusters：job_statement为空 OR desired_outcomes为空
         cursor = conn.execute("""
             SELECT id FROM clusters
             WHERE job_statement IS NULL OR job_statement = ''
+               OR desired_outcomes IS NULL OR desired_outcomes = '' OR desired_outcomes = '[]'
             ORDER BY id
         """)
 

@@ -292,6 +292,59 @@ Comments: {comments_count}
             json_mode=True
         )
 
+    def generate_jtbd_from_cluster(
+        self,
+        cluster_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """从已验证的聚类生成详细JTBD分析"""
+        prompt = """You are a product analyst specializing in Jobs To Be Done (JTBD) framework.
+
+Given this cluster information, extract a detailed JTBD analysis.
+
+CLUSTER DATA:
+- Name: {cluster_name}
+- Description: {cluster_description}
+- Common Pain: {common_pain}
+- Context: {common_context}
+- Representative Events: {example_events}
+
+Your task:
+1. Refine the JTBD statement to follow exact format: "当[某类人]想完成[某个任务]时，会因为[某个结构性原因]而失败。"
+2. Break down the task into explicit steps
+3. Identify where exactly the failure occurs
+4. Describe the user profile precisely
+5. Categorize the semantic type
+
+Return JSON only:
+{{
+  "job_statement": "当[用户类型]想完成[核心任务]时，会因为[结构性障碍]而失败",
+  "job_steps": ["步骤1: ...", "步骤2: ...", "步骤3: ..."],
+  "desired_outcomes": ["期望结果1", "期望结果2", "期望结果3"],
+  "job_context": "detailed context description",
+  "customer_profile": "specific user role and context",
+  "semantic_category": "category_name",
+  "product_impact": 0.85
+}}
+
+Be actionable and precise.""".format(
+            cluster_name=cluster_data.get('cluster_name', ''),
+            cluster_description=cluster_data.get('cluster_description', ''),
+            common_pain=cluster_data.get('common_pain', ''),
+            common_context=cluster_data.get('common_context', ''),
+            example_events=json.dumps(cluster_data.get('example_events', [])[:3])
+        )
+
+        messages = [
+            {"role": "system", "content": "You are a JTBD analysis expert. Extract precise, actionable product insights."},
+            {"role": "user", "content": prompt}
+        ]
+
+        return self.chat_completion(
+            messages=messages,
+            model_type="cluster_summarizer",
+            json_mode=True
+        )
+
     def map_opportunity(
         self,
         cluster_summary: Dict[str, Any]
@@ -408,8 +461,8 @@ Fields explanation:
 Be more confident when the same pain appears in both post and comments."""
 
     def _get_workflow_clustering_prompt(self) -> str:
-        """Get workflow clustering prompt with continuous scoring"""
-        return """You are analyzing user pain events.
+        """Get workflow clustering prompt with JTBD extraction"""
+        return """You are analyzing user pain events to extract product opportunities.
 
 Given the following pain events, rate how similar their UNDERLYING WORKFLOWS are on a continuous scale.
 
@@ -425,25 +478,24 @@ Your task: Rate the workflow similarity from 0.0 to 1.0:
 - 0.7 = Strong similarity with minor variations
 - 1.0 = Identical workflows
 
-If similarity >= 0.7:
-- Give the workflow a short descriptive name
-- Provide a brief description
-- Explain your reasoning
+Additionally, extract the JTBD (Job To Be Done) format.
+JTBD follows this pattern: "当[某类人]想完成[某个任务]时，会因为[某个结构性原因]而失败。"
 
-If similarity < 0.7:
-- Still provide a workflow name and description
-- But note the key differences in reasoning
+Translation: "When [certain people] want to complete [a task], they fail because of [a structural reason]."
 
 Return JSON only with this format:
 {
   "workflow_similarity": 0.75,
-  "workflow_name": "name of the workflow (even if low similarity)",
+  "workflow_name": "name of the workflow",
   "workflow_description": "description of what these events have in common",
   "confidence": 0.8,
-  "reasoning": "brief explanation of your rating"
+  "reasoning": "brief explanation of your rating",
+  "job_statement": "当[用户类型]想完成[核心任务]时，会因为[结构性障碍]而失败",
+  "customer_profile": "describe who faces this problem (role, context, expertise level)",
+  "desired_outcomes": ["outcome 1", "outcome 2", "outcome 3"]
 }
 
-Be precise with your similarity score - use the full 0.0-1.0 range."""
+Be precise with your similarity score and JTBD statement. The job_statement MUST follow the exact format."""
 
     def _get_opportunity_mapping_prompt(self) -> str:
         """获取机会映射提示 - Phase 3 简化版（仅定性描述）"""
@@ -518,19 +570,27 @@ Return JSON only with this format:
 Be realistic and conservative in scoring."""
 
     def _get_cluster_summarizer_prompt(self) -> str:
-        """获取聚类摘要提示"""
-        return """You are a cluster summarizer for pain events.
+        """获取聚类摘要提示（增强JTBD版本）"""
+        return """You are a cluster summarizer for pain events with focus on product semantics.
 
 These pain events come from the same source and discourse style.
-Your task is to summarize the SHARED UNDERLYING PROBLEM, ignoring emotional tone and individual details.
+Your task is to extract:
+1. The common problem pattern
+2. The Job To Be Done (JTBD) structure
+3. Task steps where failures occur
+4. User context and profile
+
+JTBD Format: "当[某类人]想完成[某个任务]时，会因为[某个结构性原因]而失败。"
+
+Translation: "When [certain people] want to complete [a task], they fail because of [a structural reason]."
 
 Focus on:
 1. What is the common problem across all these events?
-2. What shared context or workflow is involved?
-3. What is the essential pain point, stripped of emotional language?
-4. Provide 2-3 representative examples that capture the essence
-
-BE CONSERVATIVE - only identify patterns that truly exist across multiple events.
+2. What shared task are users trying to accomplish?
+3. Where exactly does the task fail? (which step)
+4. What is the structural root cause?
+5. Who are these users? (role, expertise, context)
+6. What outcomes do they desire?
 
 Return JSON only with this format:
 {
@@ -541,11 +601,21 @@ Return JSON only with this format:
     "Event 1: representative problem description",
     "Event 2: representative problem description"
   ],
-  "coherence_score": 0.8,  # how well do these events belong together (0-1)
-  "reasoning": "brief explanation of why these belong together"
+  "job_statement": "当[用户类型]想完成[核心任务]时，会因为[结构性障碍]而失败",
+  "job_steps": [
+    "步骤1: 用户尝试[动作]",
+    "步骤2: 遇到[具体障碍]",
+    "步骤3: 寻找[替代方案]但[为什么失败]"
+  ],
+  "job_context": "detailed description of when/where/why this task is performed",
+  "customer_profile": "specific user type (role, expertise level, tools they use)",
+  "semantic_category": "category name (e.g., 'ai_integration', 'data_processing', 'automation')",
+  "product_impact": 0.85,
+  "coherence_score": 0.8,
+  "reasoning": "brief explanation"
 }
 
-Do not exaggerate similarities. Be literal and precise."""
+BE PRECISE - extract real patterns, don't invent. The job_statement MUST follow the exact format."""
 
     def _get_signal_validation_prompt(self) -> str:
         """获取信号验证提示"""

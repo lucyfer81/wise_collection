@@ -482,6 +482,46 @@ class DecisionShortlistGenerator:
 
         return scored_opportunities[:selected_count]
 
+    def _get_cross_source_badge(self, cross_source: Dict) -> str:
+        """生成跨源验证的徽章标识
+
+        Args:
+            cross_source: 跨源验证信息字典
+
+        Returns:
+            徽章字符串（Markdown格式）
+        """
+        if not cross_source.get('has_cross_source'):
+            return ""
+
+        validation_level = cross_source.get('validation_level', 0)
+
+        if validation_level == 1:
+            # Level 1: 最强信号 - 多平台独立验证
+            return """
+<div align="center">
+
+### 🎯 INDEPENDENT VALIDATION ACROSS REDDIT + HACKER NEWS
+
+**This pain point has been independently validated across multiple communities**
+
+</div>
+"""
+        elif validation_level == 2:
+            # Level 2: 中等信号 - 多 subreddit 验证
+            return """
+### ✓ Multi-Subreddit Validation
+*Validated across 3+ subreddits with strong cluster size*
+"""
+        elif validation_level == 3:
+            # Level 3: 弱信号
+            return """
+### ◐ Weak Cross-Source Signal
+*Initial cross-community detection signal*
+"""
+        else:
+            return ""
+
     def _export_markdown_report(self, shortlist: List[Dict]) -> str:
         """导出 Markdown 格式的报告
 
@@ -513,19 +553,26 @@ class DecisionShortlistGenerator:
             cross_source = candidate.get('cross_source_validation', {})
 
             report_lines.extend([
-                f"## {idx}. {candidate['opportunity_name']}",
-                f"\n**Final Score**: {candidate['final_score']:.2f}/10.0  ",
+                f"## {idx}. {candidate['opportunity_name']}"
+            ])
+
+            # 添加跨源验证徽章（在最前面，最醒目）
+            badge = self._get_cross_source_badge(cross_source)
+            if badge:
+                report_lines.extend([
+                    f"\n{badge}",
+                    f"**Validation Level**: {cross_source.get('validation_level', 0)}  ",
+                    f"**Boost Applied**: +{cross_source.get('boost_score', 0.0):.1f} to final score",
+                    ""
+                ])
+
+            report_lines.extend([
+                f"**Final Score**: {candidate['final_score']:.2f}/10.0  ",
                 f"**Viability Score**: {candidate['viability_score']:.1f}  ",
                 f"**Cluster Size**: {candidate['cluster_size']}  ",
                 f"**Trust Level**: {candidate['trust_level']:.2f}  ",
-                f"**Cross-Source Validation**: {'✅ Yes' if cross_source.get('has_cross_source') else '❌ No'}"
+                f"**Validated Problem**: {'✅ Yes' if cross_source.get('validated_problem') else '❌ No'}"
             ])
-
-            if cross_source.get('has_cross_source'):
-                report_lines.append(
-                    f"**Validation Level**: {cross_source.get('validation_level', 0)}  "
-                    f"({cross_source.get('evidence', 'N/A')})"
-                )
 
             report_lines.extend([
                 "\n### Problem",

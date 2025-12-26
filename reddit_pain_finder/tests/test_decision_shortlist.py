@@ -305,3 +305,174 @@ def test_calculate_final_score_minimum():
     # log10(1) = 0
     # base = 0.0 * 1.0 + 0.0 * 2.5 + 0.0 * 1.5 = 0.0
     assert result == 0.0, f"Expected 0.0, got {result}"
+
+
+def test_get_cross_source_badge_level1():
+    """测试 Level 1 徽章生成"""
+    generator = DecisionShortlistGenerator()
+
+    cross_source = {
+        'has_cross_source': True,
+        'validation_level': 1,
+        'boost_score': 2.0
+    }
+
+    badge = generator._get_cross_source_badge(cross_source)
+
+    assert 'INDEPENDENT VALIDATION ACROSS REDDIT + HACKER NEWS' in badge
+    assert '🎯' in badge
+    assert 'multiple communities' in badge
+
+
+def test_get_cross_source_badge_level2():
+    """测试 Level 2 徽章生成"""
+    generator = DecisionShortlistGenerator()
+
+    cross_source = {
+        'has_cross_source': True,
+        'validation_level': 2,
+        'boost_score': 1.0
+    }
+
+    badge = generator._get_cross_source_badge(cross_source)
+
+    assert 'Multi-Subreddit Validation' in badge
+    assert '✓' in badge
+    assert '3+ subreddits' in badge
+    assert 'strong cluster size' in badge
+
+
+def test_get_cross_source_badge_level3():
+    """测试 Level 3 徽章生成"""
+    generator = DecisionShortlistGenerator()
+
+    cross_source = {
+        'has_cross_source': True,
+        'validation_level': 3,
+        'boost_score': 0.5
+    }
+
+    badge = generator._get_cross_source_badge(cross_source)
+
+    assert 'Weak Cross-Source Signal' in badge
+    assert '◐' in badge
+    assert 'Initial cross-community detection' in badge
+
+
+def test_get_cross_source_badge_no_validation():
+    """测试没有跨源验证时徽章为空"""
+    generator = DecisionShortlistGenerator()
+
+    cross_source = {
+        'has_cross_source': False,
+        'validation_level': 0,
+        'boost_score': 0.0
+    }
+
+    badge = generator._get_cross_source_badge(cross_source)
+
+    assert badge == ""
+
+
+def test_markdown_report_includes_badges(tmp_path):
+    """测试 Markdown 报告包含徽章"""
+    import os
+    import tempfile
+
+    generator = DecisionShortlistGenerator()
+
+    # Create a mock shortlist with cross-source validation
+    shortlist = [
+        {
+            'opportunity_name': 'Test Opportunity',
+            'final_score': 9.0,
+            'viability_score': 8.5,
+            'cluster_size': 50,
+            'trust_level': 0.85,
+            'target_users': 'Test users',
+            'missing_capability': 'Test capability',
+            'why_existing_fail': 'Test reason',
+            'readable_content': {
+                'problem': 'Test problem',
+                'mvp': 'Test MVP',
+                'why_now': 'Test timing'
+            },
+            'cross_source_validation': {
+                'has_cross_source': True,
+                'validation_level': 1,
+                'boost_score': 2.0,
+                'validated_problem': True
+            }
+        }
+    ]
+
+    # Temporarily override the output directory
+    original_dir = generator.config['output']['markdown_dir']
+    generator.config['output']['markdown_dir'] = tmp_path
+
+    # Generate the report
+    report_path = generator._export_markdown_report(shortlist)
+
+    # Read the report content
+    with open(report_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # Restore original directory
+    generator.config['output']['markdown_dir'] = original_dir
+
+    # Verify badge is in the report
+    assert 'INDEPENDENT VALIDATION ACROSS REDDIT + HACKER NEWS' in content
+    assert '🎯' in content
+    assert 'Validation Level**: 1' in content
+    assert 'Boost Applied**: +2.0' in content
+    assert 'Validated Problem**: ✅ Yes' in content
+
+
+def test_markdown_report_no_badge_without_validation(tmp_path):
+    """测试没有跨源验证时不显示徽章"""
+    generator = DecisionShortlistGenerator()
+
+    # Create a mock shortlist without cross-source validation
+    shortlist = [
+        {
+            'opportunity_name': 'Test Opportunity',
+            'final_score': 7.5,
+            'viability_score': 7.5,
+            'cluster_size': 10,
+            'trust_level': 0.75,
+            'target_users': 'Test users',
+            'missing_capability': 'Test capability',
+            'why_existing_fail': 'Test reason',
+            'readable_content': {
+                'problem': 'Test problem',
+                'mvp': 'Test MVP',
+                'why_now': 'Test timing'
+            },
+            'cross_source_validation': {
+                'has_cross_source': False,
+                'validation_level': 0,
+                'boost_score': 0.0,
+                'validated_problem': False
+            }
+        }
+    ]
+
+    # Temporarily override the output directory
+    original_dir = generator.config['output']['markdown_dir']
+    generator.config['output']['markdown_dir'] = tmp_path
+
+    # Generate the report
+    report_path = generator._export_markdown_report(shortlist)
+
+    # Read the report content
+    with open(report_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # Restore original directory
+    generator.config['output']['markdown_dir'] = original_dir
+
+    # Verify no badge is in the report
+    assert 'INDEPENDENT VALIDATION' not in content
+    assert 'Multi-Subreddit Validation' not in content
+    assert 'Weak Cross-Source Signal' not in content
+    assert 'Validated Problem**: ❌ No' in content

@@ -1309,6 +1309,147 @@ class WiseCollectionDB:
             logger.error(f"Failed to get clusters for opportunity mapping: {e}")
             return []
 
+    def get_cross_source_validated_opportunities(
+        self,
+        min_validation_level: int = 1,
+        include_validated_only: bool = True
+    ) -> List[Dict[str, Any]]:
+        """查询所有跨源验证的机会
+
+        Args:
+            min_validation_level: 最低验证等级（1-3），默认为 1
+            include_validated_only: 是否仅包含 validated_problem=True 的，默认为 True
+
+        Returns:
+            跨源验证的机会列表
+        """
+        try:
+            with self.get_connection("opportunities") as conn:
+                query = """
+                    SELECT
+                        o.opportunity_name,
+                        o.total_score,
+                        o.trust_level,
+                        o.target_users,
+                        o.missing_capability,
+                        o.why_existing_fail,
+                        c.cluster_name,
+                        c.cluster_size,
+                        c.source_type,
+                        c.alignment_status,
+                        c.aligned_problem_id
+                    FROM opportunities o
+                    LEFT JOIN clusters c ON o.cluster_id = c.id
+                    WHERE 1=1
+                """
+
+                params = []
+
+                query += " ORDER BY o.total_score DESC"
+
+                cursor = conn.execute(query, params)
+                results = [dict(row) for row in cursor.fetchall()]
+
+                # 在 Python 中进行跨源验证过滤
+                filtered_results = []
+                for result in results:
+                    validation_info = self._check_cross_source_validation_sync(
+                        result['cluster_name'],
+                        result.get('source_type'),
+                        result.get('aligned_problem_id'),
+                        result.get('cluster_size', 0)
+                    )
+
+                    validation_level = validation_info.get('validation_level', 0)
+
+                    # 过滤条件
+                    if validation_level >= min_validation_level:
+                        if include_validated_only:
+                            if validation_info.get('validated_problem'):
+                                result['cross_source_validation'] = validation_info
+                                filtered_results.append(result)
+                        else:
+                            result['cross_source_validation'] = validation_info
+                            filtered_results.append(result)
+
+                return filtered_results
+
+        except Exception as e:
+            logger.error(f"Failed to get cross-source validated opportunities: {e}")
+            return []
+
+    def _check_cross_source_validation_sync(
+        self,
+        cluster_name: str,
+        source_type: Optional[str],
+        aligned_problem_id: Optional[str],
+        cluster_size: int
+    ) -> Dict[str, Any]:
+        """同步版本的跨源验证检查（用于数据库查询）
+
+        Args:
+            cluster_name: 聚类名称
+            source_type: 来源类型
+            aligned_problem_id: 对齐问题ID
+            cluster_size: 聚类规模
+
+        Returns:
+            验证信息字典
+        """
+        # Level 1: 检查 aligned source_type 或 aligned_problem_id
+        if source_type == 'aligned' or aligned_problem_id:
+            return {
+                "has_cross_source": True,
+                "validation_level": 1,
+                "boost_score": 2.0,
+                "validated_problem": True,
+                "evidence": "Independent validation across Reddit + Hacker News"
+            }
+
+        # Level 2 & 3: 需要 subreddit 计数（从 pain_events 中查询）
+        try:
+            with self.get_connection("clusters") as conn:
+                cursor = conn.execute("""
+                    SELECT DISTINCT subreddit
+                    FROM pain_events
+                    WHERE cluster_name = ?
+                """, (cluster_name,))
+
+                subreddits = set(row[0] for row in cursor.fetchall())
+                subreddit_count = len(subreddits)
+
+                # Level 2
+                if cluster_size >= 10 and subreddit_count >= 3:
+                    return {
+                        "has_cross_source": True,
+                        "validation_level": 2,
+                        "boost_score": 1.0,
+                        "validated_problem": True,
+                        "evidence": f"Validated across {subreddit_count}+ subreddits"
+                    }
+
+                # Level 3
+                if cluster_size >= 8 and subreddit_count >= 2:
+                    return {
+                        "has_cross_source": True,
+                        "validation_level": 3,
+                        "boost_score": 0.5,
+                        "validated_problem": False,
+                        "evidence": f"Detected across {subreddit_count}+ subreddits"
+                    }
+
+        except Exception as e:
+            logger.warning(f"Failed to check cross-source validation for {cluster_name}: {e}")
+
+        # 无跨源验证
+        return {
+            "has_cross_source": False,
+            "validation_level": 0,
+            "boost_score": 0.0,
+            "validated_problem": False,
+            "evidence": "No cross-source validation"
+        }
+
     def get_clusters_for_aligned_problem(self, aligned_problem_id: str) -> List[Dict]:
         """获取对齐问题的支持聚类"""
         try:

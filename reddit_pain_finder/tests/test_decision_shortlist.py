@@ -234,3 +234,74 @@ def test_cross_source_validation_no_validation():
     assert result['boost_score'] == 0.0
     assert result['validated_problem'] == False
     assert result['evidence'] == "No cross-source validation"
+
+
+def test_calculate_final_score():
+    """测试最终评分计算"""
+    generator = DecisionShortlistGenerator()
+
+    # Test case from specification: viability_score=8.0, cluster_size=50, trust_level=0.8, boost=2.0
+    opportunity = {
+        'viability_score': 8.0,
+        'cluster_size': 50,
+        'trust_level': 0.8
+    }
+
+    cross_source_info = {
+        'has_cross_source': True,
+        'boost_score': 2.0
+    }
+
+    result = generator._calculate_final_score(opportunity, cross_source_info)
+
+    # Expected calculation:
+    # log10(50) ≈ 1.7
+    # base = 8.0 * 1.0 + 1.7 * 2.5 + 0.8 * 1.5 = 8.0 + 4.25 + 1.2 = 13.45
+    # bonus = 5.0 * 2.0 * 0.1 = 1.0
+    # total = 13.45 + 1.0 = 14.45 → capped at 10.0
+    assert result == 10.0, f"Expected 10.0 (capped), got {result}"
+
+
+def test_calculate_final_score_no_cross_source():
+    """测试没有跨源验证的评分计算"""
+    generator = DecisionShortlistGenerator()
+
+    opportunity = {
+        'viability_score': 7.0,
+        'cluster_size': 10,
+        'trust_level': 0.7
+    }
+
+    cross_source_info = {
+        'has_cross_source': False,
+        'boost_score': 0.0
+    }
+
+    result = generator._calculate_final_score(opportunity, cross_source_info)
+
+    # Expected calculation:
+    # log10(10) = 1.0
+    # base = 7.0 * 1.0 + 1.0 * 2.5 + 0.7 * 1.5 = 7.0 + 2.5 + 1.05 = 10.55 → capped at 10.0
+    assert result == 10.0, f"Expected 10.0 (capped), got {result}"
+
+
+def test_calculate_final_score_minimum():
+    """测试最低评分"""
+    generator = DecisionShortlistGenerator()
+
+    opportunity = {
+        'viability_score': 0.0,
+        'cluster_size': 1,
+        'trust_level': 0.0
+    }
+
+    cross_source_info = {
+        'has_cross_source': False,
+        'boost_score': 0.0
+    }
+
+    result = generator._calculate_final_score(opportunity, cross_source_info)
+
+    # log10(1) = 0
+    # base = 0.0 * 1.0 + 0.0 * 2.5 + 0.0 * 1.5 = 0.0
+    assert result == 0.0, f"Expected 0.0, got {result}"

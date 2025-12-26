@@ -1,0 +1,1211 @@
+{
+  "start_time": "2025-12-25T17:02:21.211545",
+  "stages_completed": [
+    "fetch",
+    "filter",
+    "extract",
+    "embed",
+    "cluster",
+    "alignment",
+    "map_opportunities",
+    "score"
+  ],
+  "stages_failed": [],
+  "stage_results": {
+    "fetch": {
+      "sources_processed": [
+        "reddit",
+        "hackernews"
+      ],
+      "total_saved": 2,
+      "total_filtered": 5948,
+      "total_errors": 0,
+      "source_stats": {
+        "reddit": {
+          "total_fetched": 2,
+          "total_saved": 2,
+          "filtered_out": 5933,
+          "errors": 0,
+          "start_time": "2025-12-25 17:02:21.224757",
+          "runtime_seconds": 220.581735
+        },
+        "hackernews": {
+          "total_fetched": 0,
+          "total_saved": 0,
+          "filtered_out": 15,
+          "errors": 0,
+          "start_time": "2025-12-25 17:06:01.807078",
+          "runtime_seconds": 129.808474
+        }
+      },
+      "runtime_seconds": 350.39093
+    },
+    "filter": {
+      "processed": 1000,
+      "filtered": 103,
+      "saved": 103,
+      "filter_stats": {
+        "total_processed": 1000,
+        "passed_filter": 103,
+        "filtered_out": 897,
+        "filter_reasons": {
+          "Excluded due to personal_story: vent": 43,
+          "Post too short: 35 < 50": 3,
+          "insufficient_keywords; low_emotional_intensity; low_overall_score": 113,
+          "Post too short: 11 < 50": 1,
+          "low_emotional_intensity; low_overall_score": 226,
+          "Too few upvotes: 2 < 5": 38,
+          "low_emotional_intensity": 81,
+          "Excluded due to advice_seeking: should i": 18,
+          "Low trust post with insufficient engagement: 0.37 < 0.6": 1,
+          "Excluded due to showcase: i made": 39,
+          "low_overall_score": 21,
+          "Excluded due to showcase: my project": 4,
+          "Excluded due to off_topic: general": 20,
+          "Excluded due to off_topic: meme": 5,
+          "Excluded due to advice_seeking: need advice on": 1,
+          "Post too long: 12400 > 5000": 1,
+          "Excluded due to personal_story: rant": 13,
+          "Excluded due to showcase: demo": 17,
+          "Excluded due to question: looking for advice": 6,
+          "Excluded due to advice_seeking: what do you think": 2,
+          "Type business: too few upvotes: 7 < 15": 4,
+          "Type business: too few upvotes: 12 < 15": 4,
+          "Type business: too few upvotes: 8 < 15": 1,
+          "Type business: too few upvotes: 9 < 15": 1,
+          "Type business: too few comments: 7 < 8": 1,
+          "Type business: too few upvotes: 6 < 15": 1,
+          "Excluded due to question: any recommendations": 1,
+          "Excluded due to personal_story: personal experience": 1,
+          "Post too long: 12220 > 5000": 1,
+          "Post too long: 10419 > 5000": 1,
+          "Type business: too few upvotes: 14 < 15": 6,
+          "Post too long: 5184 > 5000": 1,
+          "Excluded due to showcase: showcase": 1,
+          "Too few upvotes: 3 < 5": 30,
+          "Post too short: 30 < 50": 2,
+          "Post too short: 24 < 50": 7,
+          "Too few comments: 1 < 3": 7,
+          "Too few comments: 2 < 3": 8,
+          "Low trust post with insufficient engagement: 0.39 < 0.6": 2,
+          "Low trust post with insufficient engagement: 0.30 < 0.6": 1,
+          "Too few upvotes: 4 < 5": 23,
+          "Post too short: 45 < 50": 7,
+          "Post too short: 23 < 50": 3,
+          "Post too short: 36 < 50": 5,
+          "Post too short: 31 < 50": 3,
+          "Post too short: 22 < 50": 3,
+          "Post too short: 28 < 50": 5,
+          "Post too short: 48 < 50": 5,
+          "Post too short: 25 < 50": 4,
+          "Post too short: 43 < 50": 5,
+          "Post too short: 19 < 50": 7,
+          "Post too short: 40 < 50": 2,
+          "Too few comments: 0 < 3": 9,
+          "Low trust post with insufficient engagement: 0.53 < 0.6": 1,
+          "Post too short: 26 < 50": 1,
+          "Low trust post with insufficient engagement: 0.31 < 0.6": 1,
+          "Post too long: 7807 > 5000": 1,
+          "Type business: too few upvotes: 13 < 15": 1,
+          "Post too short: 21 < 50": 4,
+          "Post too short: 17 < 50": 3,
+          "Low trust post with insufficient engagement: 0.47 < 0.6": 1,
+          "Low trust post with insufficient engagement: 0.54 < 0.6": 2,
+          "Post too long: 12800 > 5000": 1,
+          "Post too short: 46 < 50": 6,
+          "Post too short: 39 < 50": 2,
+          "Post too short: 41 < 50": 3,
+          "Post too short: 27 < 50": 1,
+          "Post too short: 8 < 50": 1,
+          "Post too short: 20 < 50": 2,
+          "Post too short: 38 < 50": 2,
+          "Low trust post with insufficient engagement: 0.36 < 0.6": 1,
+          "Excluded due to job: hiring": 9,
+          "Type discussion: too few comments: 14 < 15": 1,
+          "Post too short: 32 < 50": 1,
+          "Post too long: 7684 > 5000": 1,
+          "Type business: too few upvotes: 10 < 15": 1,
+          "Post too short: 18 < 50": 2,
+          "Post too short: 16 < 50": 1,
+          "Post too short: 34 < 50": 2,
+          "Post too short: 37 < 50": 3,
+          "Post too short: 33 < 50": 3,
+          "insufficient_keywords; low_overall_score": 4,
+          "Type discussion: too few comments: 13 < 15": 1,
+          "Post too short: 44 < 50": 4,
+          "Post too short: 29 < 50": 2,
+          "Post too short: 49 < 50": 1,
+          "Type discussion: too few comments: 12 < 15": 1,
+          "Low trust post with insufficient engagement: 0.38 < 0.6": 1,
+          "Post too short: 42 < 50": 1,
+          "insufficient_keywords": 1,
+          "Post too short: 14 < 50": 2,
+          "Excluded due to advice_seeking: advice needed": 1,
+          "Post too short: 13 < 50": 2,
+          "Post too short: 15 < 50": 1,
+          "Excluded due to showcase: just launched": 1,
+          "Post too long: 5060 > 5000": 1
+        },
+        "pass_rate": 0.103
+      }
+    },
+    "extract": {
+      "processed": 100,
+      "failed": 0,
+      "pain_events_extracted": 246,
+      "pain_events_saved": 246,
+      "extraction_stats": {
+        "total_processed": 0,
+        "total_pain_events": 246,
+        "extraction_errors": 0,
+        "avg_confidence": 0.0,
+        "processing_time": 0.0,
+        "avg_events_per_post": 0,
+        "processing_rate": 0,
+        "llm_stats": {
+          "requests": 100,
+          "tokens_used": 198854,
+          "cost": 0.0,
+          "errors": 0
+        }
+      },
+      "failed_posts": []
+    },
+    "embed": {
+      "processed": 200,
+      "embeddings_created": 200,
+      "embedding_stats": {
+        "total_processed": 200,
+        "embeddings_created": 200,
+        "errors": 0,
+        "processing_time": 25.55539345741272,
+        "cache_hits": 0,
+        "success_rate": 1.0
+      }
+    },
+    "cluster": {
+      "clusters_created": 6,
+      "events_processed": 200,
+      "source_groups": 2,
+      "final_clusters": [
+        {
+          "cluster_name": "reddit: Language Learning Partner and Practice Environment Selection",
+          "cluster_description": "A repeated effort to find or create optimal speaking practice environments in a target language by selecting conversation partners and managing linguistic dynamics to maximize immersion and minimize reliance on the learner's native language.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_01",
+          "centroid_summary": "Difficulty achieving authentic, uninterrupted target language practice due to native speakers defaulting to the learner's native language",
+          "common_pain": "Native speakers' linguistic dominance (switching to learner's L1) undermines immersive practice in the target language",
+          "common_context": "One-on-one or small-group language exchange where one participant is fluent in both the target language and the learner's native language",
+          "example_events": [
+            "Event 1: Difficulty finding native speakers who do not speak the learner's native language, limiting low-pressure practice opportunities",
+            "Event 2: Native speakers switch to the learner's native language (e.g., English) because it is easier, disrupting target language immersion"
+          ],
+          "pain_event_ids": [
+            759,
+            758,
+            757,
+            713,
+            712,
+            709,
+            678,
+            677,
+            676,
+            670,
+            641,
+            640,
+            639,
+            636,
+            635,
+            634,
+            626,
+            625,
+            624,
+            595,
+            594,
+            593,
+            592,
+            584,
+            583,
+            582,
+            565
+          ],
+          "cluster_size": 27,
+          "workflow_confidence": 0.85,
+          "workflow_similarity": 0.8,
+          "validation_reasoning": "Events 1, 2, and 3 share a strong core workflow: the learner is trying to practice speaking their target language (TL) with native speakers, but faces challenges due to the native speaker\u2019s fluency in the learner\u2019s native language (NL), which undermines immersion. The root cause across all three is asymmetry in language proficiency\u2014native speakers defaulting to the learner\u2019s NL (Event 2), the emotional impact of this imbalance (Event 3), and the difficulty finding partners without NL proficiency (Event 1). The workaround strategies (filtering partners, seeking monolingual natives, setting expectations) are variations of the same behavioral pattern. While Events 1 and 3 focus more on partner selection and Event 2 on interaction dynamics, they are part of the same workflow loop: identify partner \u2192 manage language use \u2192 sustain TL practice. Events outside this cluster (e.g., Notion use, AI concerns, study burnout) involve different domains and root causes. However, Events 1\u20133 are not perfectly identical\u2014Event 1 is about access, Event 2 about behavior during interaction, and Event 3 about emotional response\u2014hence the 0.8 rating rather than 0.9 or 1.0.",
+          "saved_cluster_id": 30
+        },
+        {
+          "cluster_name": "reddit: Goal-Action Misalignment and Sustainability Loop",
+          "cluster_description": "A recurring pattern where individuals initiate goal-directed behaviors (e.g., routines, habits, annual goals, skill development) with initial discipline or motivation, but fail to sustain them due to lack of clarity in purpose, poor system design, or misalignment with internal values, leading to burnout, stagnation, or distraction.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_02",
+          "centroid_summary": "Failure to sustain effort due to misaligned or externally imposed goals without internal clarity or systemic support",
+          "common_pain": "Inability to maintain consistent action due to lack of internally grounded purpose and absence of sustainable execution systems",
+          "common_context": "Attempting to build discipline, follow routines, or achieve personal/professional goals based on external expectations or abstract ideals, without aligning actions with internal motivation or implementing structural supports",
+          "example_events": [
+            "Event 1: Stalling in corporate advancement due to unclear personal 'why', leading to directionlessness despite disciplined effort",
+            "Event 5: Motivation vanishes after 3 months of healthy habits because actions are not tied to intrinsic values, resulting in perceived pointlessness"
+          ],
+          "pain_event_ids": [
+            620,
+            619,
+            618,
+            605,
+            604,
+            581,
+            580,
+            579
+          ],
+          "cluster_size": 8,
+          "workflow_confidence": 0.85,
+          "workflow_similarity": 0.8,
+          "validation_reasoning": "All events revolve around the same core workflow: attempting to execute disciplined or structured personal development efforts (habits, goals, routines) that initially show progress but eventually stall due to underlying misalignment between action and purpose, lack of sustainable systems, or emotional triggers. The root cause across events is the disconnect between external behaviors and internal drivers\u2014whether it's unclear 'why' (Event 1), lack of systems (Event 4), unconscious avoidance (Event 2), mindless routine (Event 3), cyclical motivation loss (Event 5), flawed goal framing (Event 6), execution failure (Event 7), or overcommitment (Event 8). The key difference is context\u2014some focus on daily habits, others on long-term goals\u2014but the underlying failure mode is consistent: unsustainable execution due to missing alignment and systems. This justifies a high similarity score of 0.8, with minor variation in scope and trigger.",
+          "saved_cluster_id": 31
+        },
+        {
+          "cluster_name": "reddit: Overcoming Affective Barriers to Sustained Physical Activity",
+          "cluster_description": "A repeated process of attempting to adopt or maintain physical activity despite negative affective responses\u2014such as boredom, discomfort, breathlessness, or emotional aversion\u2014leading to experimentation with alternative forms of movement and gradual adaptation through trial, persistence, or compromise.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_03",
+          "centroid_summary": "Difficulty engaging in physical activity due to lack of enjoyment or discomfort, despite recognizing its necessity",
+          "common_pain": "Lack of intrinsic reward or pleasure in physical exercise, leading to low adherence",
+          "common_context": "Attempting to establish or resume a regular exercise routine after sedentary behavior or medical restriction",
+          "example_events": [
+            "Event 1: Finding exercise challenging to adopt due to mental and physical discomfort from unfamiliar movements after a sedentary lifestyle",
+            "Event 3: Finding exercise boring and unenjoyable, leading to avoidance despite attempts to engage in routines"
+          ],
+          "pain_event_ids": [
+            697,
+            696,
+            694,
+            564,
+            561
+          ],
+          "cluster_size": 5,
+          "workflow_confidence": 0.85,
+          "workflow_similarity": 0.8,
+          "validation_reasoning": "All five events revolve around the core workflow of engaging with physical activity while confronting intrinsic, affective resistance (discomfort, boredom, dislike, or loss of prior enjoyment). The root cause across events is not logistical or structural (e.g., lack of time or access), but experiential: the internal, subjective unpleasantness of exercise. Each individual iteratively tests alternatives (walking, yoga, low-impact workouts, etc.) or persists despite dislike, indicating a shared pattern of affective regulation and behavioral adaptation. The key difference is in triggering context\u2014initiating activity (Events 1\u20134) vs. replacing a lost activity (Event 5)\u2014but the underlying cycle of aversion, experimentation, and compromise is nearly identical. This strong commonality in workflow justifies a high similarity score of 0.8, with minor variation due to differing starting points (new adoption vs. replacement).",
+          "saved_cluster_id": 32
+        },
+        {
+          "cluster_name": "reddit: Insurance Rate Optimization Through Churn",
+          "cluster_description": "A recurring process where customers actively shop for better insurance rates due to unexplained premium increases or loyalty penalties, often triggered at renewal time, and involving comparison across providers to avoid overpayment.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_04",
+          "centroid_summary": "Consumers face systemic inefficiencies and disincentives when seeking competitive insurance rates due to loyalty penalties and fragmented quote processes.",
+          "common_pain": "Inability to obtain transparent, stable, and competitive pricing due to loyalty-based price discrimination and fragmented quote acquisition workflows",
+          "common_context": "Annual policy renewal cycles where consumers must actively shop around to avoid price hikes despite no change in risk profile",
+          "example_events": [
+            "Event 1: Long-term customers pay higher premiums than new customers despite identical risk factors.",
+            "Event 4: Premium increases by over 90% without changes to driving record, coverage, or vehicle, forcing a switch."
+          ],
+          "pain_event_ids": [
+            655,
+            654,
+            653,
+            652
+          ],
+          "cluster_size": 4,
+          "workflow_confidence": 0.9,
+          "workflow_similarity": 0.85,
+          "validation_reasoning": "All four events center around the same underlying workflow: customers responding to unfair or opaque pricing in insurance by shopping around, typically at renewal, to secure better rates. The core activity\u2014comparing quotes across insurers to counteract high premiums\u2014is repeated and driven by similar root causes: lack of price transparency, penalization of loyalty, and sudden unexplained rate hikes. The workaround of switching providers is common across events. The only variation is in the trigger (loyalty penalty, spam risk, time cost, or sudden increase), but the workflow of proactive churn to optimize cost is consistent. This makes the workflows strongly similar with only minor contextual differences, warranting a 0.85 rating.",
+          "saved_cluster_id": 33
+        },
+        {
+          "cluster_name": "reddit: Sustained Calorie Deficit Management Through Behavioral Discipline",
+          "cluster_description": "A repeated daily effort to maintain a calorie deficit for weight loss and health improvement, involving dietary control, physical activity, and psychological resilience in the face of physiological discomfort, tracking burden, and external skepticism.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_05",
+          "centroid_summary": "Sustaining long-term weight loss through calorie restriction and behavioral change without medical intervention",
+          "common_pain": "Maintaining consistent caloric deficit through manual tracking and dietary restraint under conditions of physiological and psychological discomfort",
+          "common_context": "Individuals attempting to lose significant weight via diet and exercise alone, relying on self-monitoring (calorie tracking, step counting) while resisting processed foods and managing cravings",
+          "example_events": [
+            "Event 3: Calorie tracking is extremely hard to do consistently; daily weighing and logging every food item is burdensome, and one indulgence (e.g., cake) can exhaust daily allowance, forcing strict discipline.",
+            "Event 1: Avoiding processed foods and sugar requires finding realistic, low-carb alternatives for treats to maintain dietary consistency over time without reverting to old habits."
+          ],
+          "pain_event_ids": [
+            645,
+            644,
+            643,
+            642
+          ],
+          "cluster_size": 4,
+          "workflow_confidence": 0.85,
+          "workflow_similarity": 0.7,
+          "validation_reasoning": "All four events are part of the same overarching workflow: maintaining a calorie deficit over time through non-surgical, non-pharmaceutical means. Each event reflects a different failure point or challenge within this workflow\u2014Event 1 (cravings and treat substitution), Event 2 (hunger from under-eating), Event 3 (cognitive load of tracking), and Event 4 (doubt due to medical or social pressure). The core activity\u2014consistent energy deficit via diet and exercise\u2014is identical. The root causes of failure include biological urges, mental fatigue, and social discouragement. The workarounds all involve self-regulation, habit formation, and information-seeking. The minor variations are in the specific pain points (physiological, logistical, emotional), but the underlying structure of the workflow is strongly aligned, warranting a 0.7 rating.",
+          "saved_cluster_id": 34
+        },
+        {
+          "cluster_name": "reddit: Cash-to-Investment Allocation Under Uncertainty",
+          "cluster_description": "Individuals with accumulated cash reserves face recurring uncertainty about optimal allocation between safe holding (e.g., HYSA) and deployment into investments, balancing risk tolerance, financial goals, job stability, and fear of loss. The core activity involves evaluating personal risk, timing, and opportunity cost before transitioning cash into growth vehicles.",
+          "source_type": "reddit",
+          "cluster_id": "reddit_06",
+          "centroid_summary": "Uncertainty over optimal cash allocation between liquidity safety and investment growth",
+          "common_pain": "Determining the appropriate balance between holding liquid cash reserves and deploying capital into investment vehicles to avoid opportunity cost",
+          "common_context": "Personal financial management during periods of unemployment, career transition, or financial planning, where individuals hold significant cash and weigh risks of market exposure against need for liquidity",
+          "example_events": [
+            "Event 1: Unemployed individual with $21k in savings unsure whether to use it for day trading, retirement, or relocation, opting to keep it in HYSA and paper trade instead.",
+            "Event 4: Individual holding more cash than invested capital feels it is inefficient and delays deploying funds into Roth IRA until account opens."
+          ],
+          "pain_event_ids": [
+            632,
+            568,
+            567,
+            566
+          ],
+          "cluster_size": 4,
+          "workflow_confidence": 0.9,
+          "workflow_similarity": 0.85,
+          "validation_reasoning": "All four events center on the same underlying workflow: deciding how much cash to retain versus invest, driven by emotional and strategic tension between safety, opportunity cost, and personal financial transitions. The context varies slightly\u2014unemployment (Event 1), portfolio initiation (Event 2), excess emergency savings (Event 3), and under-invested capital (Event 4)\u2014but the core decision-making process is identical: assessing risk, defining goals, and cautiously deploying cash. Workarounds consistently involve using high-yield savings accounts, incremental investing, and seeking guidance. Minor variations include employment status and specific goals, but these don\u2019t change the fundamental workflow, warranting a high similarity score of 0.85.",
+          "saved_cluster_id": 35
+        }
+      ],
+      "clustering_stats": {
+        "total_events_processed": 200,
+        "clusters_created": 6,
+        "llm_validations": 7,
+        "processing_time": 141.8610076904297,
+        "avg_cluster_size": 8.666666666666666,
+        "clustering_rate": 0.03,
+        "processing_rate": 1.4098306733901236,
+        "embedding_stats": {
+          "embeddings_created": 200,
+          "cache_hits": 198,
+          "total_tokens": 12398
+        }
+      }
+    },
+    "alignment": {
+      "aligned_problems_count": 1,
+      "aligned_problems": [
+        {
+          "id": "aligned_AP_01_1766583551",
+          "aligned_problem_id": "AP_01",
+          "sources": [
+            "REDDIT",
+            "HACKERNEWS"
+          ],
+          "core_problem": "Information overload and poor signal-to-noise ratio in digital systems, leading to inefficiency and missed critical information.",
+          "why_they_look_different": "The Reddit cluster describes the problem in the context of interacting with AI systems and managing workflows, where 'overcautious AI behavior' creates noise and manual processes hit scalability limits. The HackerNews cluster frames it specifically as an alert/notification system failure, where users cannot filter critical alerts from noise. Both are fundamentally about systems failing to prioritize or surface the most important information for the user, drowning them in irrelevant data or interactions.",
+          "evidence": [
+            {
+              "source": "REDDIT",
+              "cluster_summary": "Users face inefficiencies in interacting with AI systems or managing digital workflows due to overcautious AI behavior or manual scalability limits",
+              "evidence_quote": "overcautious AI behavior or manual scalability limits"
+            },
+            {
+              "source": "HACKERNEWS",
+              "cluster_summary": "Inability to filter critical alerts from noise in existing notification systems",
+              "evidence_quote": "Inability to filter critical alerts from noise"
+            }
+          ],
+          "cluster_ids": [
+            "REDDIT_Cluster_1",
+            "HACKERNEWS_Cluster_1"
+          ],
+          "created_at": "2025-12-24 13:39:11"
+        }
+      ]
+    },
+    "map_opportunities": {
+      "opportunities_created": 36,
+      "viable_opportunities": 36,
+      "clusters_processed": 36,
+      "opportunity_details": [
+        {
+          "opportunity_id": 166,
+          "cluster_id": 1,
+          "cluster_name": "reddit: Notification Management for Critical Alerts",
+          "opportunity_name": "AlertSiren",
+          "opportunity_description": "A micro-tool that acts as a final, high-priority notification layer. It receives critical alerts via webhook from existing monitoring tools and delivers them via an unavoidable method\u2014like a direct phone call with a synthesized voice message or a repeated SMS until acknowledged.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 167,
+          "cluster_id": 2,
+          "cluster_name": "reddit: Inefficient Note-Taking and Knowledge Retrieval for Technical Learning",
+          "opportunity_name": "QuickRecall",
+          "opportunity_description": "A minimal, terminal-inspired note-taking tool that captures thoughts in a single input field and automatically organizes them using semantic search and AI-generated tags, enabling instant retrieval without manual categorization.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 168,
+          "cluster_id": 3,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "AckPing",
+          "opportunity_description": "A dead-simple web app that sends a single, high-priority notification (via SMS or a dedicated mobile app) for a critical alert and doesn't stop until the recipient explicitly acknowledges it. No integrations, no rules\u2014just a URL to ping with a message.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 169,
+          "cluster_id": 4,
+          "cluster_name": "reddit: Inefficient Note-Taking and Retrieval for Technical Learning",
+          "opportunity_name": "QuickRecall",
+          "opportunity_description": "A minimalist, terminal-inspired note-taking tool with a single input field for instant capture and automatic semantic search for retrieval. It eliminates all UI clutter and organization steps, allowing users to type naturally and find old notes through simple keyword or phrase queries without manual tagging.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 170,
+          "cluster_id": 5,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "Critical Ping",
+          "opportunity_description": "A micro-tool that provides a single, high-priority notification channel. Users get a unique URL; any HTTP POST to that URL triggers an immediate, persistent, and highly noticeable alert (e.g., loud sound, full-screen browser notification, phone buzz) that repeats until explicitly acknowledged.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 171,
+          "cluster_id": 6,
+          "cluster_name": "reddit: Collaborative Decision-Making and Communication",
+          "opportunity_name": "Friction Log",
+          "opportunity_description": "A private, templated journal for employees to quickly log instances of collaborative friction (e.g., 'dismissed idea', 'blocked on simple question', 'talked over in meeting') with timestamps, context tags, and optional one-sentence impact notes. It generates a simple timeline summary to reveal patterns.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 172,
+          "cluster_id": 7,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "Acknowledge-Only Alert",
+          "opportunity_description": "A micro-tool that provides a single, high-priority notification channel. It sends alerts that bypass system 'Do Not Disturb' and make a distinctive sound/vibration until the user taps a dedicated 'Acknowledge' button, ensuring critical alerts are never missed during focus sessions.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 173,
+          "cluster_id": 8,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "Critical Pager",
+          "opportunity_description": "A minimal web app that sends urgent alerts via a dedicated, high-priority notification channel (e.g., browser push, SMS fallback) that persists and repeats until manually acknowledged by the recipient.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 174,
+          "cluster_id": 9,
+          "cluster_name": "reddit: Premature Optimization and Validation Avoidance in Early-Stage SaaS Development",
+          "opportunity_name": "Assumption Validator",
+          "opportunity_description": "A micro-tool that forces solo founders to list their top 3 riskiest assumptions before coding, then provides a simple checklist (e.g., 'Talk to 5 potential users', 'Create a fake pricing page and track clicks') with concrete next steps. It blocks adding new features until validation tasks are marked complete.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 175,
+          "cluster_id": 10,
+          "cluster_name": "reddit: Collaborative Decision-Making and Communication",
+          "opportunity_name": "Interaction Log",
+          "opportunity_description": "A private, timestamped log where a user can quickly record instances of being dismissed, delayed, or interrupted in collaborative settings, with optional context tags (e.g., 'blocked on approval', 'idea dismissed', 'talked over'), generating a simple, factual timeline for personal reference or prepared escalation.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 176,
+          "cluster_id": 11,
+          "cluster_name": "reddit: Survival-Driven Job Acceptance Under Economic and Structural Instability",
+          "opportunity_name": "Job Stability Scout",
+          "opportunity_description": "A micro-tool that lets users input a job offer or current role details (industry, company size, location) to generate a quick stability score and risk report based on public layoff data, industry volatility trends, and recent policy changes, with a comparison to their personal financial runway.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 177,
+          "cluster_id": 12,
+          "cluster_name": "reddit: Notification Management Failure in Monitoring Workflows",
+          "opportunity_name": "AlertPing",
+          "opportunity_description": "A micro-tool that receives critical alerts via webhook and delivers them through a high-priority, verified channel (like an SMS or a dedicated mobile app push) that bypasses email and typical app noise. It includes a simple acknowledgment button to confirm receipt.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 178,
+          "cluster_id": 13,
+          "cluster_name": "reddit: Sustaining and Growing a SaaS Product Through Early-Stage Challenges",
+          "opportunity_name": "ContextAnchor",
+          "opportunity_description": "A micro-tool that lets developers attach persistent, structured 'context notes' (like warnings, quirks, or historical reasons) directly to files, functions, or lines in their Git repository. These notes are versioned with the code, visible in the IDE and PR diffs, and generate a simple, searchable 'context report' for handovers.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 179,
+          "cluster_id": 14,
+          "cluster_name": "reddit: Optimizing Video Retention Through Micro-Level Editing Adjustments",
+          "opportunity_name": "RetentionRule Checker",
+          "opportunity_description": "A micro-tool that uploads a video draft and automatically flags violations of key short-form retention rules (e.g., silence >1.2s, static visuals >3s, vague hooks) with timestamped suggestions for fixes.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 180,
+          "cluster_id": 15,
+          "cluster_name": "reddit: Ineffective Learning Reinforcement Through Note-Taking and Self-Explanation",
+          "opportunity_name": "ExplainCheck",
+          "opportunity_description": "A micro-tool that lets learners record short verbal explanations of a concept and uses AI to instantly highlight potential inaccuracies, missing key points, or unclear phrasing, providing focused feedback to improve understanding.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 181,
+          "cluster_id": 16,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "PriorityPing",
+          "opportunity_description": "A minimal, web-based tool that lets users create a private, high-priority alert inbox. Senders can push urgent notifications via a simple API or web form, which triggers a distinct, persistent alert (e.g., browser notification, sound) until the recipient explicitly acknowledges it. All non-priority communication is excluded.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 182,
+          "cluster_id": 17,
+          "cluster_name": "reddit: AI Interaction Fatigue Due to Output Degradation and Behavioral Annoyances",
+          "opportunity_name": "ToneGuard",
+          "opportunity_description": "A browser extension or lightweight desktop app that monitors your AI chat interactions, detects unhelpful patterns (excessive safety disclaimers, repetition, patronizing tone), and automatically injects corrective prompts to steer the conversation back to productive, direct answers.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 183,
+          "cluster_id": 18,
+          "cluster_name": "reddit: Scaling GTM Experiments Under Resource and Organizational Constraints",
+          "opportunity_name": "Experiment Lens",
+          "opportunity_description": "A micro-tool that guides solo marketers or small teams to define, run, and review one GTM experiment at a time with a strict, templated workflow\u2014forcing focus on a single hypothesis, budget, and success metric before moving to the next.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 184,
+          "cluster_id": 19,
+          "cluster_name": "reddit: Navigating Ambiguous Communication Expectations in Client-Facing Roles",
+          "opportunity_name": "Tone Calibrator",
+          "opportunity_description": "A micro-tool that analyzes draft emails or meeting scripts for perceived tone (e.g., directness, formality, warmth) and suggests minor, concrete edits to align with a user-selected 'professional neutral' baseline, using examples from the user's own past feedback.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 185,
+          "cluster_id": 20,
+          "cluster_name": "reddit: Ineffective Learning Reinforcement Through Note-Taking and Self-Explanation",
+          "opportunity_name": "ExplainBack",
+          "opportunity_description": "A micro-tool that prompts users to explain a concept in their own words, then uses AI to analyze the explanation for clarity, gaps, and inaccuracies, providing concise, constructive feedback to reinforce learning.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 186,
+          "cluster_id": 21,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "CriticalBell",
+          "opportunity_description": "A micro-tool that sends a single, high-priority, persistent notification (with sound/vibration) to a user's device for a critical alert, which only stops when explicitly acknowledged. It has a simple API or web interface for sending alerts.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 187,
+          "cluster_id": 22,
+          "cluster_name": "reddit: AI Interaction Frustration Due to Overly Restrictive or Unreliable Model Behavior",
+          "opportunity_name": "AI Sentry",
+          "opportunity_description": "A lightweight browser extension or desktop app that monitors AI chat interactions in real-time, detects unhelpful behaviors (excessive safety warnings, hallucinations, patronizing tone, repetition), and suggests instant fixes like switching to a more suitable model, rewriting the prompt, or pre-processing messy inputs.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 188,
+          "cluster_id": 23,
+          "cluster_name": "reddit: Navigating Contradictory Communication Expectations in Professional Settings",
+          "opportunity_name": "ToneTune for Email",
+          "opportunity_description": "A lightweight browser extension or web app that analyzes draft emails for perceived tone (e.g., direct, friendly, neutral) and suggests minor, specific edits (like rephrasing sentences or adjusting formatting) to align with a user-selected or supervisor-prescribed 'tone profile'.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 189,
+          "cluster_id": 24,
+          "cluster_name": "reddit: Ineffective Knowledge Retention Loop",
+          "opportunity_name": "ExplainBack",
+          "opportunity_description": "A lightweight web app that lets users record or type a short explanation of a concept, then uses AI to generate a concise 'gap report' highlighting misunderstandings, missing key points, and suggesting simpler analogies\u2014simulating a helpful tutor's feedback.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 190,
+          "cluster_id": 25,
+          "cluster_name": "hackernews: Managing Critical Alerts Amid Notification Noise",
+          "opportunity_name": "Critical Ping",
+          "opportunity_description": "A dead-simple, app-based pager that provides one guaranteed, high-priority notification channel. It bypasses 'Do Not Disturb' and makes a distinctive sound/vibration until explicitly acknowledged, with no other features or noise.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 191,
+          "cluster_id": 26,
+          "cluster_name": "reddit: Seeking Trustworthy Product Information Amid Unreliable Sources",
+          "opportunity_name": "Reddit Review Verifier",
+          "opportunity_description": "A browser extension that, when on a product review or summary page, finds and surfaces the most relevant Reddit discussion threads about that product, allowing users to instantly verify claims and read authentic owner opinions.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 192,
+          "cluster_id": 27,
+          "cluster_name": "reddit: Managing Difficult Interpersonal Boundaries in Professional Settings",
+          "opportunity_name": "Boundary Decider",
+          "opportunity_description": "A guided form that helps founders objectively evaluate a difficult interpersonal business decision (like firing a friend-employee or dropping a toxic client) by prompting for key facts, potential outcomes, and emotional costs, then generates a clear recommendation and draft communication script.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 193,
+          "cluster_id": 28,
+          "cluster_name": "reddit: Applying Design Thinking in Practical Problem-Solving Contexts",
+          "opportunity_name": "Assumption Validator",
+          "opportunity_description": "A micro-tool that guides solo founders through a 3-day process to identify and pressure-test their top 3 riskiest assumptions about a problem or idea using lightweight, real-world validation methods (e.g., targeted interviews, quick data checks, competitor analysis), outputting a simple 'go/no-go' recommendation with evidence.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 194,
+          "cluster_id": 29,
+          "cluster_name": "reddit: Navigating Ambiguous Communication Expectations in Client-Facing Roles",
+          "opportunity_name": "ToneCheck for Client Comms",
+          "opportunity_description": "A lightweight browser extension or email add-on that analyzes draft messages (emails, chat replies) for perceived tone (e.g., directness, formality, emphasis) and suggests subtle, actionable tweaks to align with a user-defined or role-based 'tone profile', helping avoid over-correction from vague feedback.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 195,
+          "cluster_id": 30,
+          "cluster_name": "reddit: Language Learning Partner and Practice Environment Selection",
+          "opportunity_name": "GapMatch",
+          "opportunity_description": "A micro-tool that analyzes two users' language profiles (native, target, and self-assessed proficiency in other known languages) to calculate a 'Complementary Immersion Score' and instantly suggests if they are an optimal practice pair\u2014where each has low proficiency in the other's native language, forcing target language use.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 196,
+          "cluster_id": 31,
+          "cluster_name": "reddit: Goal-Action Misalignment and Sustainability Loop",
+          "opportunity_name": "Purpose Pulse",
+          "opportunity_description": "A micro-tool that guides users through a 5-minute, structured reflection to uncover the personal value or emotional driver behind a single goal or habit, then generates one ultra-simple, aligned action step with a built-in 'why' reminder for their calendar or home screen.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 197,
+          "cluster_id": 32,
+          "cluster_name": "reddit: Overcoming Affective Barriers to Sustained Physical Activity",
+          "opportunity_name": "Activity Match Finder",
+          "opportunity_description": "A micro-tool that asks users a few questions about their affective barriers (e.g., 'Do you dislike sweating?', 'Do you get bored easily?', 'Do you prefer solo or social?') and recommends 3-5 specific, accessible physical activities with curated starting resources (e.g., 'Try this beginner-friendly YouTube dance workout' or 'Visit a local bouldering gym with intro classes').",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 198,
+          "cluster_id": 33,
+          "cluster_name": "reddit: Insurance Rate Optimization Through Churn",
+          "opportunity_name": "QuoteMask",
+          "opportunity_description": "A micro-tool that generates a one-time, anonymized insurance quote snapshot using minimal, non-identifiable inputs (e.g., zip code, vehicle type, coverage level) to show approximate rate ranges from major providers, without submitting user data to insurers.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 199,
+          "cluster_id": 34,
+          "cluster_name": "reddit: Sustained Calorie Deficit Management Through Behavioral Discipline",
+          "opportunity_name": "Deficit Companion",
+          "opportunity_description": "A lightweight mobile app that sends proactive, context-aware nudges and simple alternative suggestions when users face common triggers (e.g., cravings, social eating, doubt) during a calorie deficit, based on time of day, user-reported mood, and simple preferences.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 200,
+          "cluster_id": 35,
+          "cluster_name": "reddit: Cash-to-Investment Allocation Under Uncertainty",
+          "opportunity_name": "Cashflow Compass",
+          "opportunity_description": "A micro-tool that asks 5-7 key questions (e.g., job stability, emergency fund months, risk tolerance, near-term goals) and outputs a simple, visual recommendation for what percentage of excess cash to keep in safe holding vs. deploy to investments, with a clear rationale tied to the user's inputs.",
+          "validation_reason": "Valid opportunity structure"
+        },
+        {
+          "opportunity_id": 201,
+          "cluster_id": 0,
+          "cluster_name": "AP_01",
+          "opportunity_name": "Multi-Source: Information overload and poor signal-to-noise rati...",
+          "opportunity_description": "This opportunity is validated by multiple communities across different platforms. Core problem: Information overload and poor signal-to-noise ratio in digital systems, leading to inefficiency and missed critical information.",
+          "validation_reason": "Aligned cluster auto-pass"
+        }
+      ],
+      "mapping_stats": {
+        "total_clusters_processed": 36,
+        "opportunities_identified": 36,
+        "viable_opportunities": 36,
+        "processing_time": 1003.2335677146912,
+        "avg_opportunity_score": 0.0,
+        "opportunity_rate": 1.0,
+        "viable_rate": 1.0,
+        "processing_rate": 0.03588396676359818
+      }
+    },
+    "score": {
+      "opportunities_scored": 30,
+      "viable_opportunities": 0,
+      "good_opportunities": 0,
+      "excellent_opportunities": 0,
+      "scored_opportunities": [
+        {
+          "opportunity_id": 194,
+          "opportunity_name": "ToneCheck for Client Comms",
+          "total_score": 3.7515,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.60) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 193,
+          "opportunity_name": "Assumption Validator",
+          "total_score": 2.6950000000000003,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 192,
+          "opportunity_name": "Boundary Decider",
+          "total_score": 2.835,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 191,
+          "opportunity_name": "Reddit Review Verifier",
+          "total_score": 4.92975,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Problem may not be frequent enough to drive adoption",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 190,
+          "opportunity_name": "Critical Ping",
+          "total_score": 2.8325,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 189,
+          "opportunity_name": "ExplainBack",
+          "total_score": 3.09,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 188,
+          "opportunity_name": "ToneTune for Email",
+          "total_score": 3.6315,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.60) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 187,
+          "opportunity_name": "AI Sentry",
+          "total_score": 3.9431451612903228,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 186,
+          "opportunity_name": "CriticalBell",
+          "total_score": 2.9325,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 185,
+          "opportunity_name": "ExplainBack",
+          "total_score": 3.09,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 184,
+          "opportunity_name": "Tone Calibrator",
+          "total_score": 3.5715000000000003,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.60) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 183,
+          "opportunity_name": "Experiment Lens",
+          "total_score": 2.9725,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 182,
+          "opportunity_name": "ToneGuard",
+          "total_score": 3.785065082644628,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Low trust data sources (trust_level: 0.48) - signals may not be reliable",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 181,
+          "opportunity_name": "PriorityPing",
+          "total_score": 2.8325,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 180,
+          "opportunity_name": "ExplainCheck",
+          "total_score": 2.865,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 179,
+          "opportunity_name": "RetentionRule Checker",
+          "total_score": 3.0225,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 178,
+          "opportunity_name": "ContextAnchor",
+          "total_score": 3.981818181818182,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 177,
+          "opportunity_name": "AlertPing",
+          "total_score": 3.2525,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 176,
+          "opportunity_name": "Job Stability Scout",
+          "total_score": 2.8275,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 175,
+          "opportunity_name": "Interaction Log",
+          "total_score": 3.115,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 174,
+          "opportunity_name": "Assumption Validator",
+          "total_score": 4.156367924528302,
+          "recommendation": "research - Needs more validation before pursuing",
+          "killer_risks": [
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 173,
+          "opportunity_name": "Critical Pager",
+          "total_score": 2.8075,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 172,
+          "opportunity_name": "Acknowledge-Only Alert",
+          "total_score": 2.9575,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 171,
+          "opportunity_name": "Friction Log",
+          "total_score": 3.115,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 170,
+          "opportunity_name": "Critical Ping",
+          "total_score": 2.9325,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 169,
+          "opportunity_name": "QuickRecall",
+          "total_score": 3.09,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 168,
+          "opportunity_name": "AckPing",
+          "total_score": 3.0075,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 167,
+          "opportunity_name": "QuickRecall",
+          "total_score": 2.99,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 166,
+          "opportunity_name": "AlertSiren",
+          "total_score": 3.2525,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Moderate trust data sources (trust_level: 0.50) - validate with additional research",
+            "Very niche market may limit growth potential"
+          ]
+        },
+        {
+          "opportunity_id": 201,
+          "opportunity_name": "Multi-Source: Information overload and poor signal-to-noise rati...",
+          "total_score": 1.625,
+          "recommendation": "abandon - Too many risks or unclear value proposition",
+          "killer_risks": [
+            "Small market size may not sustain business",
+            "Highly competitive market with established players",
+            "Problem may not be frequent enough to drive adoption"
+          ]
+        }
+      ],
+      "scoring_stats": {
+        "total_opportunities_scored": 30,
+        "viable_opportunities": 0,
+        "good_opportunities": 0,
+        "excellent_opportunities": 0,
+        "processing_time": 284.1528947353363,
+        "avg_total_score": 3.196354878342715,
+        "skipped_clusters": 35,
+        "viable_rate": 0.0,
+        "good_rate": 0.0,
+        "excellent_rate": 0.0,
+        "processing_rate": 0.10557696421830363
+      }
+    }
+  },
+  "total_runtime_seconds": 6944.880795,
+  "final_summary": {
+    "pipeline_completed": true,
+    "stages_completed": 8,
+    "stages_failed": 0,
+    "total_runtime_minutes": 115.75,
+    "database_statistics": {
+      "raw_posts_count": 1627,
+      "filtered_posts_count": 355,
+      "avg_pain_score": 0.5065889540532229,
+      "pain_events_count": 759,
+      "clusters_count": 35,
+      "opportunities_count": 201,
+      "aligned_problems_count": 1,
+      "clusters_by_alignment_status": {
+        "processed": 35
+      },
+      "posts_by_source": {
+        "hackernews": 436,
+        "reddit": 1191
+      }
+    },
+    "top_opportunities": [
+      {
+        "opportunity_name": "Reddit Source Verifier",
+        "total_score": 5.15475,
+        "recommendation": "abandon - \u805a\u7c7b\u89c4\u6a21\u8fc7\u5c0f (4 < 8)",
+        "cluster_name": "reddit: Seeking Trustworthy Product Information Amid Unreliable Sources"
+      },
+      {
+        "opportunity_name": "Reddit Review Verifier",
+        "total_score": 4.92975,
+        "recommendation": "research - Needs more validation before pursuing",
+        "cluster_name": "reddit: Seeking Trustworthy Product Information Amid Unreliable Sources"
+      },
+      {
+        "opportunity_name": "Project Epitaph",
+        "total_score": 4.306818181818182,
+        "recommendation": "abandon - \u75db\u70b9\u9891\u7387\u4e0d\u591f\u9ad8 (5.1 < 6)",
+        "cluster_name": "reddit: Sustaining and Growing a SaaS Product Through Early-Stage Challenges"
+      },
+      {
+        "opportunity_name": "Preflight Validator",
+        "total_score": 4.256367924528302,
+        "recommendation": "abandon - \u75db\u70b9\u9891\u7387\u4e0d\u591f\u9ad8 (5.1 < 6)",
+        "cluster_name": "reddit: Premature Optimization and Validation Avoidance in Early-Stage SaaS Development"
+      },
+      {
+        "opportunity_name": "Solo Sprint Tracker",
+        "total_score": 4.156818181818181,
+        "recommendation": "abandon - \u75db\u70b9\u9891\u7387\u4e0d\u591f\u9ad8 (5.1 < 6)",
+        "cluster_name": "reddit: Sustaining and Growing a SaaS Product Through Early-Stage Challenges"
+      },
+      {
+        "opportunity_name": "Assumption Validator",
+        "total_score": 4.156367924528302,
+        "recommendation": "research - Needs more validation before pursuing",
+        "cluster_name": "reddit: Premature Optimization and Validation Avoidance in Early-Stage SaaS Development"
+      },
+      {
+        "opportunity_name": "Assumption Forcer",
+        "total_score": 4.131367924528302,
+        "recommendation": "abandon - \u75db\u70b9\u9891\u7387\u4e0d\u591f\u9ad8 (5.1 < 6)",
+        "cluster_name": "reddit: Premature Optimization and Validation Avoidance in Early-Stage SaaS Development"
+      },
+      {
+        "opportunity_name": "Assumption Interrogator",
+        "total_score": 4.106367924528302,
+        "recommendation": "abandon - \u75db\u70b9\u9891\u7387\u4e0d\u591f\u9ad8 (5.1 < 6)",
+        "cluster_name": "reddit: Premature Optimization and Validation Avoidance in Early-Stage SaaS Development"
+      },
+      {
+        "opportunity_name": "Failover Prompt",
+        "total_score": 4.093145161290322,
+        "recommendation": "abandon - \u75db\u70b9\u9891\u7387\u4e0d\u591f\u9ad8 (4.7 < 6)",
+        "cluster_name": "reddit: AI Interaction Frustration Due to Overly Restrictive or Unreliable Model Behavior"
+      },
+      {
+        "opportunity_name": "PromptGuard",
+        "total_score": 4.093145161290322,
+        "recommendation": "abandon - \u75db\u70b9\u9891\u7387\u4e0d\u591f\u9ad8 (4.7 < 6)",
+        "cluster_name": "reddit: AI Interaction Frustration Due to Overly Restrictive or Unreliable Model Behavior"
+      }
+    ],
+    "pipeline_efficiency": {
+      "posts_per_minute": 0.017278914288405722,
+      "pain_events_per_hour": 127.51838744843424,
+      "opportunities_per_hour": 18.66122743147818
+    },
+    "performance": {
+      "total_duration_seconds": 6944.863888,
+      "total_duration_minutes": 115.75,
+      "total_llm_calls": 178,
+      "total_tokens": 407477,
+      "estimated_cost_usd": 0.47304100000000004,
+      "stages_summary": {
+        "fetch": {
+          "duration_seconds": 350.403957,
+          "items_processed": 2,
+          "llm_calls": 0,
+          "tokens_used": 0
+        },
+        "filter": {
+          "duration_seconds": 0.8966,
+          "items_processed": 103,
+          "llm_calls": 0,
+          "tokens_used": 0
+        },
+        "extract": {
+          "duration_seconds": 5138.608132,
+          "items_processed": 246,
+          "llm_calls": 0,
+          "tokens_used": 0
+        },
+        "embed": {
+          "duration_seconds": 25.561747,
+          "items_processed": 200,
+          "llm_calls": 0,
+          "tokens_used": 0
+        },
+        "cluster": {
+          "duration_seconds": 141.864218,
+          "items_processed": 6,
+          "llm_calls": 0,
+          "tokens_used": 0
+        },
+        "alignment": {
+          "duration_seconds": 0.128137,
+          "items_processed": 1,
+          "llm_calls": 0,
+          "tokens_used": 0
+        },
+        "map_opportunities": {
+          "duration_seconds": 1003.234143,
+          "items_processed": 36,
+          "llm_calls": 0,
+          "tokens_used": 0
+        },
+        "score": {
+          "duration_seconds": 284.166954,
+          "items_processed": 30,
+          "llm_calls": 0,
+          "tokens_used": 0
+        }
+      }
+    }
+  }
+}

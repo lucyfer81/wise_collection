@@ -228,15 +228,386 @@ class DecisionShortlistGenerator:
             logger.error(f"Failed to count subreddits: {e}")
             return 1  # 默认为 1，避免 0
 
+    def _calculate_final_score(self, opportunity: Dict, cross_source_info: Dict) -> float:
+        """计算最终评分（使用对数尺度）
+
+        Args:
+            opportunity: 机会字典，包含 viability_score, cluster_size, trust_level
+            cross_source_info: 跨源验证信息
+
+        Returns:
+            最终评分 (0-10)
+        """
+        weights = self.config['final_score_weights']
+
+        viability_score = opportunity['viability_score']
+        trust_level = opportunity['trust_level']
+        cluster_size = opportunity['cluster_size']
+
+        # 使用对数尺度，避免大cluster主导评分
+        cluster_size_log = math.log10(max(cluster_size, 1))
+
+        # 计算基础分数
+        final_score = (
+            viability_score * weights['viability_score'] +
+            cluster_size_log * weights['cluster_size_log_factor'] +
+            trust_level * weights['trust_level']
+        )
+
+        # 如果有跨源验证，加分
+        if cross_source_info['has_cross_source']:
+            boost = cross_source_info['boost_score']
+            final_score += weights['cross_source_bonus'] * boost * 0.1
+
+        # 限制在 0-10 范围内
+        return min(max(final_score, 0), 10.0)
+
+    def _get_default_prompt(self) -> str:
+        """获取默认的 LLM prompt"""
+        return """你是一个产品经理专家。请基于以下痛点聚类和机会信息，生成简洁明了的产品描述：
+
+**机会名称**: {opportunity_name}
+
+**问题描述**:
+{cluster_summary}
+
+**目标用户**: {target_users}
+
+**缺失能力**: {missing_capability}
+
+**现有方案不足**: {why_existing_fail}
+
+请以 JSON 格式返回以下字段（不要包含 markdown 标记）：
+{{
+  "problem": "用1-2句话清晰描述核心痛点问题",
+  "mvp": "描述最小可行产品的核心功能和解决方案",
+  "why_now": "解释为什么现在是切入这个市场的最佳时机（技术成熟度、市场变化、用户需求等）"
+}}
+
+要求：
+1. 问题描述要具体且击中用户痛点
+2. MVP 要简洁可行，适合 solo developer
+3. Why Now 要有说服力，体现市场机会
+4. 每个字段控制在50字以内
+5. 只返回 JSON，不要有其他内容
+"""
+
+    def _generate_readable_content(self, opportunity: Dict, cluster: Dict, cross_source_info: Dict) -> Dict[str, str]:
+        """生成可读性内容（Problem, MVP, Why Now）
+
+        Args:
+            opportunity: 机会信息
+            cluster: 聚类信息
+            cross_source_info: 跨源验证信息
+
+        Returns:
+            包含 problem, mvp, why_now 的字典
+        """
+        try:
+            prompt = self._get_default_prompt().format(
+                opportunity_name=opportunity.get('opportunity_name', ''),
+                cluster_summary=cluster.get('cluster_summary', opportunity.get('description', '')),
+                target_users=opportunity.get('target_users', 'Unknown'),
+                missing_capability=opportunity.get('missing_capability', 'Unknown'),
+                why_existing_fail=opportunity.get('why_existing_fail', 'Unknown')
+            )
+
+            # 调用 LLM
+            response = llm_client.generate(
+                prompt=prompt,
+                model="gpt-4o-mini",  # 使用更经济的模型
+                temperature=0.7,
+                max_tokens=500
+            )
+
+            # 解析 JSON 响应
+            import json
+            import re
+
+            # 尝试提取 JSON（去除可能的 markdown 代码块标记）
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
+                content = json.loads(json_str)
+
+                # 验证必需字段
+                required_fields = ['problem', 'mvp', 'why_now']
+                if all(field in content for field in required_fields):
+                    logger.info(f"✅ LLM content generated for {opportunity['opportunity_name']}")
+                    return {
+                        'problem': content['problem'],
+                        'mvp': content['mvp'],
+                        'why_now': content['why_now']
+                    }
+
+            # 如果解析失败，使用 fallback
+            logger.warning(f"Failed to parse LLM response, using fallback")
+            return self._fallback_readable_content(opportunity, cluster)
+
+        except Exception as e:
+            logger.error(f"Error generating readable content: {e}")
+            return self._fallback_readable_content(opportunity, cluster)
+
+    def _fallback_readable_content(self, opportunity: Dict, cluster: Dict) -> Dict[str, str]:
+        """生成可读性内容的 fallback 方案
+
+        Args:
+            opportunity: 机会信息
+            cluster: 聚类信息
+
+        Returns:
+            包含 problem, mvp, why_now 的字典
+        """
+        cluster_name = cluster.get('cluster_name', 'Unknown')
+        description = opportunity.get('description', '')
+        target_users = opportunity.get('target_users', 'users')
+        missing_capability = opportunity.get('missing_capability', 'capability')
+
+        return {
+            'problem': f"Users in {cluster_name} are struggling with {description[:100]}",
+            'mvp': f"Build a tool that provides {missing_capability} for {target_users}",
+            'why_now': f"High demand from {cluster.get('cluster_size', 0)} users indicates immediate market need"
+        }
+
     def generate_shortlist(self) -> Dict[str, Any]:
-        """生成决策清单（主方法）"""
+        """生成决策清单（主方法）
+
+        流程：
+        1. 应用硬性过滤
+        2. 对每个机会进行跨源验证和评分
+        3. 按最终评分排序
+        4. 选择 Top 3-5 候选
+        5. 生成可读性内容
+        6. 导出 markdown 和 JSON 报告
+
+        Returns:
+            包含 shortlist 的结果字典
+        """
         logger.info("=== Decision Shortlist Generation Started ===")
 
-        # TODO: 实现各个步骤
+        # 步骤 1: 应用硬性过滤
+        logger.info("Step 1: Applying hard filters...")
+        opportunities = self._apply_hard_filters()
+
+        if not opportunities:
+            logger.warning("No opportunities passed hard filters")
+            return self._handle_empty_shortlist()
+
+        logger.info(f"✅ {len(opportunities)} opportunities passed hard filters")
+
+        # 步骤 2-3: 对每个机会进行跨源验证和评分
+        logger.info("Step 2-3: Calculating final scores with cross-source validation...")
+        scored_opportunities = []
+
+        for opp in opportunities:
+            # 跨源验证
+            cross_source_info = self._check_cross_source_validation(opp)
+
+            # 计算最终评分
+            final_score = self._calculate_final_score(opp, cross_source_info)
+
+            # 添加评分信息
+            opp_with_score = {
+                **opp,
+                'final_score': final_score,
+                'cross_source_validation': cross_source_info
+            }
+
+            scored_opportunities.append(opp_with_score)
+
+        logger.info(f"✅ Scored {len(scored_opportunities)} opportunities")
+
+        # 步骤 4: 按评分排序并选择 Top 候选
+        logger.info("Step 4: Selecting top candidates...")
+        scored_opportunities.sort(key=lambda x: x['final_score'], reverse=True)
+
+        top_candidates = self._select_top_candidates_with_diversity(scored_opportunities)
+        logger.info(f"✅ Selected {len(top_candidates)} top candidates")
+
+        if not top_candidates:
+            logger.warning("No candidates selected")
+            return self._handle_empty_shortlist()
+
+        # 步骤 5: 生成可读性内容
+        logger.info("Step 5: Generating readable content...")
+        for candidate in top_candidates:
+            readable_content = self._generate_readable_content(
+                candidate,
+                candidate,
+                candidate['cross_source_validation']
+            )
+            candidate['readable_content'] = readable_content
+            logger.info(f"  - {candidate['opportunity_name']}: {readable_content['problem'][:50]}...")
+
+        # 步骤 6: 导出报告
+        logger.info("Step 6: Exporting reports...")
+        markdown_path = self._export_markdown_report(top_candidates)
+        json_path = self._export_json_report(top_candidates)
+
+        result = {
+            'shortlist_count': len(top_candidates),
+            'shortlist': top_candidates,
+            'markdown_report': markdown_path,
+            'json_report': json_path,
+            'generated_at': datetime.now().isoformat()
+        }
+
+        logger.info("=== Decision Shortlist Generation Complete ===")
+        logger.info(f"📝 Markdown report: {markdown_path}")
+        logger.info(f"📊 JSON report: {json_path}")
+
+        return result
+
+    def _select_top_candidates_with_diversity(self, scored_opportunities: List[Dict]) -> List[Dict]:
+        """选择 Top 候选，考虑多样性
+
+        Args:
+            scored_opportunities: 已评分的机会列表
+
+        Returns:
+            选中的候选列表
+        """
+        config = self.config['output']
+        min_candidates = config['min_candidates']
+        max_candidates = config['max_candidates']
+
+        # 简单策略：取前 N 个
+        # TODO: 未来可以加入多样性考虑（不同的 cluster, 不同的问题类型等）
+        selected_count = min(max_candidates, len(scored_opportunities))
+
+        # 确保至少有 min_candidates 个
+        if len(scored_opportunities) < min_candidates:
+            logger.warning(f"Only {len(scored_opportunities)} candidates available, less than min {min_candidates}")
+            selected_count = len(scored_opportunities)
+
+        return scored_opportunities[:selected_count]
+
+    def _export_markdown_report(self, shortlist: List[Dict]) -> str:
+        """导出 Markdown 格式的报告
+
+        Args:
+            shortlist: 决策清单列表
+
+        Returns:
+            报告文件路径
+        """
+        config = self.config['output']
+        output_dir = config['markdown_dir']
+
+        os.makedirs(output_dir, exist_ok=True)
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'decision_shortlist_{timestamp}.md'
+        filepath = os.path.join(output_dir, filename)
+
+        # 生成报告内容
+        report_lines = [
+            "# Decision Shortlist Report",
+            f"\n**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            f"**Total Candidates**: {len(shortlist)}",
+            "\n---\n"
+        ]
+
+        for idx, candidate in enumerate(shortlist, 1):
+            content = candidate.get('readable_content', {})
+            cross_source = candidate.get('cross_source_validation', {})
+
+            report_lines.extend([
+                f"## {idx}. {candidate['opportunity_name']}",
+                f"\n**Final Score**: {candidate['final_score']:.2f}/10.0  ",
+                f"**Viability Score**: {candidate['viability_score']:.1f}  ",
+                f"**Cluster Size**: {candidate['cluster_size']}  ",
+                f"**Trust Level**: {candidate['trust_level']:.2f}  ",
+                f"**Cross-Source Validation**: {'✅ Yes' if cross_source.get('has_cross_source') else '❌ No'}"
+            ])
+
+            if cross_source.get('has_cross_source'):
+                report_lines.append(
+                    f"**Validation Level**: {cross_source.get('validation_level', 0)}  "
+                    f"({cross_source.get('evidence', 'N/A')})"
+                )
+
+            report_lines.extend([
+                "\n### Problem",
+                f"\n{content.get('problem', 'N/A')}",
+                "\n### MVP Solution",
+                f"\n{content.get('mvp', 'N/A')}",
+                "\n### Why Now",
+                f"\n{content.get('why_now', 'N/A')}",
+                "\n### Additional Details",
+                f"\n- **Target Users**: {candidate.get('target_users', 'N/A')}",
+                f"- **Missing Capability**: {candidate.get('missing_capability', 'N/A')}",
+                f"- **Why Existing Solutions Fail**: {candidate.get('why_existing_fail', 'N/A')}",
+                "\n---\n"
+            ])
+
+        # 写入文件
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(report_lines))
+
+        logger.info(f"✅ Markdown report exported: {filepath}")
+        return filepath
+
+    def _export_json_report(self, shortlist: List[Dict]) -> str:
+        """导出 JSON 格式的报告
+
+        Args:
+            shortlist: 决策清单列表
+
+        Returns:
+            报告文件路径
+        """
+        config = self.config['output']
+        output_dir = config['json_dir']
+
+        os.makedirs(output_dir, exist_ok=True)
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'decision_shortlist_{timestamp}.json'
+        filepath = os.path.join(output_dir, filename)
+
+        # 准备导出数据
+        export_data = {
+            'generated_at': datetime.now().isoformat(),
+            'total_candidates': len(shortlist),
+            'candidates': []
+        }
+
+        for candidate in shortlist:
+            export_candidate = {
+                'opportunity_name': candidate.get('opportunity_name'),
+                'final_score': candidate.get('final_score'),
+                'viability_score': candidate.get('viability_score'),
+                'cluster_size': candidate.get('cluster_size'),
+                'trust_level': candidate.get('trust_level'),
+                'target_users': candidate.get('target_users'),
+                'missing_capability': candidate.get('missing_capability'),
+                'why_existing_fail': candidate.get('why_existing_fail'),
+                'readable_content': candidate.get('readable_content', {}),
+                'cross_source_validation': candidate.get('cross_source_validation', {})
+            }
+            export_data['candidates'].append(export_candidate)
+
+        # 写入文件
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(export_data, f, indent=2, ensure_ascii=False)
+
+        logger.info(f"✅ JSON report exported: {filepath}")
+        return filepath
+
+    def _handle_empty_shortlist(self) -> Dict[str, Any]:
+        """处理空清单的情况
+
+        Returns:
+            空结果字典
+        """
+        logger.warning("=== Empty Shortlist ===")
+
         result = {
             'shortlist_count': 0,
             'shortlist': [],
-            'generated_at': datetime.now().isoformat()
+            'generated_at': datetime.now().isoformat(),
+            'warning': 'No opportunities met the criteria'
         }
 
         return result

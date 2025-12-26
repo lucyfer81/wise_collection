@@ -25,6 +25,7 @@ from pipeline.cluster import PainEventClusterer
 from pipeline.score_viability import ViabilityScorer
 from pipeline.map_opportunity import OpportunityMapper
 from pipeline.align_cross_sources import CrossSourceAligner
+from pipeline.decision_shortlist import DecisionShortlistGenerator
 
 # 导入工具模块
 from utils.db import db
@@ -380,6 +381,39 @@ class WiseCollectionPipeline:
                 performance_monitor.end_stage("score", 0)
             raise
 
+    def run_stage_decision_shortlist(self) -> Dict[str, Any]:
+        """阶段8: 决策清单生成"""
+        logger.info("=" * 50)
+        logger.info("STAGE 8: Decision Shortlist Generation")
+        logger.info("=" * 50)
+
+        if self.enable_monitoring:
+            performance_monitor.start_stage("decision_shortlist")
+
+        try:
+            generator = DecisionShortlistGenerator()
+            result = generator.generate_shortlist()
+
+            self.stats["stages_completed"].append("decision_shortlist")
+            self.stats["stage_results"]["decision_shortlist"] = result
+
+            if self.enable_monitoring:
+                performance_monitor.end_stage("decision_shortlist", result.get('shortlist_count', 0))
+
+            logger.info(f"✅ Stage 8 completed: Generated {result['shortlist_count']} candidates")
+            if result.get('markdown_report'):
+                logger.info(f"📝 Markdown report: {result['markdown_report']}")
+            if result.get('json_report'):
+                logger.info(f"📊 JSON report: {result['json_report']}")
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ Stage 8 failed: {e}")
+            self.stats["stages_failed"].append("decision_shortlist")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("decision_shortlist", 0)
+            raise
+
     def generate_final_report(
         self,
         save_metrics: bool = False,
@@ -514,7 +548,8 @@ class WiseCollectionPipeline:
             ("cluster", lambda: self.run_stage_cluster(limit_events)),
             ("alignment", lambda: self.run_stage_cross_source_alignment()),
             ("map_opportunities", lambda: self.run_stage_map_opportunities(limit_clusters)),
-            ("score", lambda: self.run_stage_score(limit_opportunities))
+            ("score", lambda: self.run_stage_score(limit_opportunities)),
+            ("decision_shortlist", lambda: self.run_stage_decision_shortlist())
         ]
 
         for stage_name, stage_func in stages:
@@ -548,7 +583,8 @@ class WiseCollectionPipeline:
             "cluster": lambda: self.run_stage_cluster(kwargs.get("limit_events")),
             "alignment": lambda: self.run_stage_cross_source_alignment(),
             "map": lambda: self.run_stage_map_opportunities(kwargs.get("limit_clusters")),
-            "score": lambda: self.run_stage_score(kwargs.get("limit_opportunities"))
+            "score": lambda: self.run_stage_score(kwargs.get("limit_opportunities")),
+            "decision_shortlist": lambda: self.run_stage_decision_shortlist()
         }
 
         if stage_name not in stage_map:
@@ -795,7 +831,7 @@ def main():
     parser = argparse.ArgumentParser(description="Wise Collection Multi-Source Pipeline")
 
     # 运行模式
-    parser.add_argument("--stage", choices=["fetch", "filter", "extract", "embed", "cluster", "alignment", "map", "score", "all"],
+    parser.add_argument("--stage", choices=["fetch", "filter", "extract", "embed", "cluster", "alignment", "map", "score", "decision_shortlist", "all"],
                        default="all", help="Which stage to run (default: all)")
 
     # 数据源选择

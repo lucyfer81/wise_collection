@@ -607,6 +607,7 @@ Return JSON only with this format:
     "步骤2: 遇到[具体障碍]",
     "步骤3: 寻找[替代方案]但[为什么失败]"
   ],
+  "desired_outcomes": ["期望结果1", "期望结果2", "期望结果3"],
   "job_context": "detailed description of when/where/why this task is performed",
   "customer_profile": "specific user type (role, expertise level, tools they use)",
   "semantic_category": "category name (e.g., 'ai_integration', 'data_processing', 'automation')",

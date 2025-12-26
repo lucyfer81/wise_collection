@@ -58,7 +58,7 @@ class PainEventClusterer:
         pain_events: List[Dict[str, Any]],
         cluster_name: str = None
     ) -> Dict[str, Any]:
-        """Use LLM to validate cluster with continuous scoring"""
+        """Use LLM to validate cluster with JTBD extraction"""
         try:
             # Call LLM for cluster validation
             response = llm_client.cluster_pain_events(pain_events)
@@ -76,7 +76,11 @@ class PainEventClusterer:
                 "cluster_name": validation_result.get("workflow_name", "Unnamed Cluster"),
                 "cluster_description": validation_result.get("workflow_description", ""),
                 "confidence": validation_result.get("confidence", 0.0),
-                "reasoning": validation_result.get("reasoning", "")
+                "reasoning": validation_result.get("reasoning", ""),
+                # JTBD fields from validation
+                "job_statement": validation_result.get("job_statement", ""),
+                "customer_profile": validation_result.get("customer_profile", ""),
+                "desired_outcomes": validation_result.get("desired_outcomes", [])
             }
 
         except Exception as e:
@@ -159,9 +163,9 @@ class PainEventClusterer:
             return {}
 
     def _save_cluster_to_database(self, cluster_data: Dict[str, Any]) -> Optional[int]:
-        """保存聚类到数据库"""
+        """保存聚类到数据库（包含JTBD字段）"""
         try:
-            # 准备聚类数据 - 支持新的source-aware字段
+            # 准备聚类数据 - 支持JTBD字段
             cluster_record = {
                 "cluster_name": cluster_data["cluster_name"],
                 "cluster_description": cluster_data["cluster_description"],
@@ -174,7 +178,15 @@ class PainEventClusterer:
                 "cluster_size": cluster_data["cluster_size"],
                 "avg_pain_score": cluster_data.get("avg_pain_score", 0.0),
                 "workflow_confidence": cluster_data.get("workflow_confidence", 0.0),
-                "workflow_similarity": cluster_data.get("workflow_similarity", 0.0)
+                "workflow_similarity": cluster_data.get("workflow_similarity", 0.0),
+                # JTBD fields
+                "job_statement": cluster_data.get("job_statement", ""),
+                "job_steps": cluster_data.get("job_steps", []),
+                "desired_outcomes": cluster_data.get("desired_outcomes", []),
+                "job_context": cluster_data.get("job_context", ""),
+                "customer_profile": cluster_data.get("customer_profile", ""),
+                "semantic_category": cluster_data.get("semantic_category", ""),
+                "product_impact": cluster_data.get("product_impact", 0.0)
             }
 
             cluster_id = db.insert_cluster(cluster_record)
@@ -354,7 +366,7 @@ Processing time: {processing_time:.2f}s
                 cluster_id = f"{source_type.replace('-', '_')}_{cluster_counter:02d}"
                 cluster_counter += 1
 
-                # 准备最终聚类数据
+                # 准备最终聚类数据（包含JTBD字段）
                 final_cluster = {
                     "cluster_name": f"{source_type}: {validation_result['cluster_name']}",
                     "cluster_description": validation_result["cluster_description"],
@@ -368,7 +380,15 @@ Processing time: {processing_time:.2f}s
                     "cluster_size": len(cluster_events),
                     "workflow_confidence": validation_result["confidence"],
                     "workflow_similarity": workflow_similarity,
-                    "validation_reasoning": validation_result["reasoning"]
+                    "validation_reasoning": validation_result["reasoning"],
+                    # JTBD fields
+                    "job_statement": summary_result.get("job_statement", validation_result.get("job_statement", "")),
+                    "job_steps": summary_result.get("job_steps", []),
+                    "desired_outcomes": summary_result.get("desired_outcomes", validation_result.get("desired_outcomes", [])),
+                    "job_context": summary_result.get("job_context", ""),
+                    "customer_profile": summary_result.get("customer_profile", validation_result.get("customer_profile", "")),
+                    "semantic_category": summary_result.get("semantic_category", ""),
+                    "product_impact": summary_result.get("product_impact", 0.0)
                 }
 
                 # 保存到数据库
@@ -387,10 +407,26 @@ Processing time: {processing_time:.2f}s
         return final_clusters
 
     def _summarize_source_cluster(self, pain_events: List[Dict[str, Any]], source_type: str) -> Dict[str, Any]:
-        """使用Cluster Summarizer生成source内聚类摘要"""
+        """使用Cluster Summarizer生成source内聚类摘要（包含JTBD）"""
         try:
             response = llm_client.summarize_source_cluster(pain_events, source_type)
-            return response.get("content", {})
+            summary_result = response.get("content", {})
+
+            # 提取JTBD字段（如果存在）
+            jtbd_fields = {
+                "job_statement": summary_result.get("job_statement", ""),
+                "job_steps": summary_result.get("job_steps", []),
+                "desired_outcomes": summary_result.get("desired_outcomes", []),
+                "job_context": summary_result.get("job_context", ""),
+                "customer_profile": summary_result.get("customer_profile", ""),
+                "semantic_category": summary_result.get("semantic_category", ""),
+                "product_impact": summary_result.get("product_impact", 0.0)
+            }
+
+            # 合并到原有结果
+            summary_result.update(jtbd_fields)
+            return summary_result
+
         except Exception as e:
             logger.error(f"Failed to summarize source cluster: {e}")
             return {
@@ -399,7 +435,15 @@ Processing time: {processing_time:.2f}s
                 "common_context": "",
                 "example_events": [],
                 "coherence_score": 0.0,
-                "reasoning": f"Summary failed: {e}"
+                "reasoning": f"Summary failed: {e}",
+                # JTBD默认值
+                "job_statement": "",
+                "job_steps": [],
+                "desired_outcomes": [],
+                "job_context": "",
+                "customer_profile": "",
+                "semantic_category": "",
+                "product_impact": 0.0
             }
 
     def get_cluster_analysis(self, cluster_id: int) -> Optional[Dict[str, Any]]:

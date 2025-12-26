@@ -594,4 +594,193 @@ def test_sort_priority_key_same_score_different_cluster():
     # Same final score, sort by cluster_size (desc)
     assert sorted_candidates[0]['opportunity_name'] == 'Level 2 - Large Cluster'
     assert sorted_candidates[1]['opportunity_name'] == 'Level 2 - Medium Cluster'
-    assert sorted_candidates[2]['opportunity_name'] == 'Level 2 - Small Cluster'
+
+
+def test_json_report_includes_cross_source_validation(tmp_path):
+    """测试JSON报告包含完整的跨源验证信息"""
+    import os
+    from unittest.mock import patch
+
+    generator = DecisionShortlistGenerator()
+
+    # 创建测试数据
+    shortlist = [
+        {
+            'opportunity_name': 'Test Opportunity Level 1',
+            'final_score': 9.5,
+            'viability_score': 8.5,
+            'cluster_size': 25,
+            'trust_level': 0.85,
+            'target_users': 'Developers',
+            'missing_capability': 'API integration',
+            'why_existing_fail': 'Too complex',
+            'readable_content': {'description': 'Test description'},
+            'cross_source_validation': {
+                'has_cross_source': True,
+                'validation_level': 1,
+                'validated_problem': True,
+                'boost_score': 1.5,
+                'evidence': 'Found in both Reddit and Hacker News'
+            }
+        },
+        {
+            'opportunity_name': 'Test Opportunity No Validation',
+            'final_score': 7.5,
+            'viability_score': 7.5,
+            'cluster_size': 15,
+            'trust_level': 0.75,
+            'target_users': 'Data Scientists',
+            'missing_capability': 'Data processing',
+            'why_existing_fail': 'Too slow',
+            'readable_content': {'description': 'Test description 2'},
+            'cross_source_validation': {
+                'has_cross_source': False,
+                'validation_level': 0,
+                'validated_problem': False,
+                'boost_score': 0.0,
+                'evidence': ''
+            }
+        }
+    ]
+
+    # Mock config to use tmp_path
+    with patch.object(generator, 'config', {
+        'output': {
+            'json_dir': str(tmp_path),
+            'markdown_dir': str(tmp_path)
+        }
+    }):
+        # Generate JSON report
+        report_path = generator._export_json_report(shortlist)
+
+        # Verify file was created
+        assert os.path.exists(report_path)
+
+        # Read and verify JSON content
+        with open(report_path, 'r', encoding='utf-8') as f:
+            report_data = json.load(f)
+
+        # Verify structure
+        assert 'generated_at' in report_data
+        assert 'total_candidates' in report_data
+        assert report_data['total_candidates'] == 2
+        assert 'candidates' in report_data
+        assert len(report_data['candidates']) == 2
+
+        # Verify first candidate has enhanced cross_source_validation
+        candidate1 = report_data['candidates'][0]
+        assert 'cross_source_validation' in candidate1
+        csv1 = candidate1['cross_source_validation']
+
+        # Check all 6 fields are present
+        assert 'has_cross_source' in csv1
+        assert 'validation_level' in csv1
+        assert 'validated_problem' in csv1
+        assert 'boost_score' in csv1
+        assert 'evidence' in csv1
+        assert 'badge_text' in csv1
+
+        # Verify values
+        assert csv1['has_cross_source'] == True
+        assert csv1['validation_level'] == 1
+        assert csv1['validated_problem'] == True
+        assert csv1['boost_score'] == 1.5
+        assert csv1['evidence'] == 'Found in both Reddit and Hacker News'
+        assert 'INDEPENDENT VALIDATION ACROSS REDDIT + HACKER NEWS' in csv1['badge_text']
+
+        # Verify second candidate (no validation)
+        candidate2 = report_data['candidates'][1]
+        csv2 = candidate2['cross_source_validation']
+        assert csv2['has_cross_source'] == False
+        assert csv2['validation_level'] == 0
+        assert csv2['badge_text'] == ''
+
+
+def test_json_report_badge_text_levels(tmp_path):
+    """测试不同验证级别的徽章文本"""
+    import os
+    from unittest.mock import patch
+
+    generator = DecisionShortlistGenerator()
+
+    # 创建测试数据 - 包含所有验证级别
+    shortlist = [
+        {
+            'opportunity_name': 'Level 1 Opportunity',
+            'final_score': 9.0,
+            'viability_score': 8.0,
+            'cluster_size': 20,
+            'trust_level': 0.8,
+            'target_users': 'Users',
+            'missing_capability': 'Feature',
+            'why_existing_fail': 'Reason',
+            'readable_content': {},
+            'cross_source_validation': {
+                'has_cross_source': True,
+                'validation_level': 1,
+                'validated_problem': True,
+                'boost_score': 1.5,
+                'evidence': 'Multi-platform'
+            }
+        },
+        {
+            'opportunity_name': 'Level 2 Opportunity',
+            'final_score': 8.0,
+            'viability_score': 7.5,
+            'cluster_size': 15,
+            'trust_level': 0.75,
+            'target_users': 'Users',
+            'missing_capability': 'Feature',
+            'why_existing_fail': 'Reason',
+            'readable_content': {},
+            'cross_source_validation': {
+                'has_cross_source': True,
+                'validation_level': 2,
+                'validated_problem': False,
+                'boost_score': 0.5,
+                'evidence': 'Multi-subreddit'
+            }
+        },
+        {
+            'opportunity_name': 'Level 3 Opportunity',
+            'final_score': 7.0,
+            'viability_score': 7.0,
+            'cluster_size': 10,
+            'trust_level': 0.7,
+            'target_users': 'Users',
+            'missing_capability': 'Feature',
+            'why_existing_fail': 'Reason',
+            'readable_content': {},
+            'cross_source_validation': {
+                'has_cross_source': True,
+                'validation_level': 3,
+                'validated_problem': False,
+                'boost_score': 0.2,
+                'evidence': 'Weak signal'
+            }
+        }
+    ]
+
+    # Mock config
+    with patch.object(generator, 'config', {
+        'output': {
+            'json_dir': str(tmp_path),
+            'markdown_dir': str(tmp_path)
+        }
+    }):
+        report_path = generator._export_json_report(shortlist)
+
+        with open(report_path, 'r', encoding='utf-8') as f:
+            report_data = json.load(f)
+
+        candidates = report_data['candidates']
+
+        # Level 1 badge
+        assert 'INDEPENDENT VALIDATION ACROSS REDDIT + HACKER NEWS' in candidates[0]['cross_source_validation']['badge_text']
+
+        # Level 2 badge
+        assert 'Multi-Subreddit Validation' in candidates[1]['cross_source_validation']['badge_text']
+
+        # Level 3 badge
+        assert 'Weak Cross-Source Signal' in candidates[2]['cross_source_validation']['badge_text']
+

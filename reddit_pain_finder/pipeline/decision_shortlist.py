@@ -562,6 +562,28 @@ class DecisionShortlistGenerator:
         else:
             return ""
 
+    def _get_cross_source_badge_text(self, cross_source: Dict) -> str:
+        """获取跨源验证徽章的纯文本版本
+
+        Args:
+            cross_source: 跨源验证信息字典
+
+        Returns:
+            徽章文本
+        """
+        if not cross_source.get('has_cross_source'):
+            return ""
+
+        validation_level = cross_source.get('validation_level', 0)
+
+        badge_texts = {
+            1: "🎯 INDEPENDENT VALIDATION ACROSS REDDIT + HACKER NEWS",
+            2: "✓ Multi-Subreddit Validation",
+            3: "◐ Weak Cross-Source Signal"
+        }
+
+        return badge_texts.get(validation_level, "")
+
     def _export_markdown_report(self, shortlist: List[Dict]) -> str:
         """导出 Markdown 格式的报告
 
@@ -661,6 +683,8 @@ class DecisionShortlistGenerator:
         }
 
         for candidate in shortlist:
+            cross_source = candidate.get('cross_source_validation', {})
+
             export_candidate = {
                 'opportunity_name': candidate.get('opportunity_name'),
                 'final_score': candidate.get('final_score'),
@@ -671,7 +695,14 @@ class DecisionShortlistGenerator:
                 'missing_capability': candidate.get('missing_capability'),
                 'why_existing_fail': candidate.get('why_existing_fail'),
                 'readable_content': candidate.get('readable_content', {}),
-                'cross_source_validation': candidate.get('cross_source_validation', {})
+                'cross_source_validation': {
+                    'has_cross_source': cross_source.get('has_cross_source', False),
+                    'validation_level': cross_source.get('validation_level', 0),
+                    'validated_problem': cross_source.get('validated_problem', False),
+                    'boost_score': cross_source.get('boost_score', 0.0),
+                    'evidence': cross_source.get('evidence', ''),
+                    'badge_text': self._get_cross_source_badge_text(cross_source)
+                }
             }
             export_data['candidates'].append(export_candidate)
 

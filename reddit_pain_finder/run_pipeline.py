@@ -153,23 +153,63 @@ class WiseCollectionPipeline:
 
             if not unfiltered_posts:
                 logger.info("No posts to filter")
-                result = {"processed": 0, "filtered": 0}
+                result = {"processed": 0, "filtered": 0, "failed": 0}
                 if self.enable_monitoring:
                     performance_monitor.end_stage("filter", 0)
             else:
                 logger.info(f"Filtering {len(unfiltered_posts)} posts")
-                filtered_posts = filter.filter_posts_batch(unfiltered_posts)
+                logger.info("Using incremental save mode - each post is saved immediately after processing")
 
-                # 保存过滤结果
+                # 改进：逐个处理并立即保存，避免批量失败导致数据丢失
                 saved_count = 0
-                for post in filtered_posts:
-                    if db.insert_filtered_post(post):
-                        saved_count += 1
+                failed_count = 0
+                failed_posts = []
+
+                for i, post in enumerate(unfiltered_posts):
+                    if i % 100 == 0:
+                        logger.info(f"Processed {i}/{len(unfiltered_posts)} posts, saved: {saved_count}, failed: {failed_count}")
+
+                    try:
+                        # 过滤单个帖子
+                        passed, result = filter.filter_post(post)
+
+                        if passed:
+                            # 为帖子添加过滤结果
+                            filtered_post = post.copy()
+                            filtered_post.update({
+                                "pain_score": result["pain_score"],
+                                "pain_keywords": result.get("matched_keywords", []),
+                                "pain_patterns": result.get("matched_patterns", []),
+                                "emotional_intensity": result.get("emotional_intensity", 0.0),
+                                "filter_reason": "pain_signal_passed",
+                                "aspiration_keywords": result.get("matched_aspirations", []),
+                                "aspiration_score": result.get("aspiration_score", 0.0),
+                                "pass_type": result.get("pass_type", "pain"),
+                                "engagement_score": result.get("engagement_score", 0.0),
+                                "trust_level": result.get("trust_level", 0.5)
+                            })
+
+                            # 立即保存到数据库
+                            if db.insert_filtered_post(filtered_post):
+                                saved_count += 1
+                            else:
+                                logger.warning(f"Failed to save post {post.get('id')}")
+                                failed_count += 1
+                                failed_posts.append(post.get('id'))
+                        # 如果未通过过滤，不保存（这是正常的）
+
+                    except Exception as e:
+                        logger.error(f"Error processing post {post.get('id')}: {e}")
+                        failed_count += 1
+                        failed_posts.append(post.get('id'))
+                        # 继续处理下一个帖子，不中断整个流程
+                        continue
 
                 result = {
                     "processed": len(unfiltered_posts),
-                    "filtered": len(filtered_posts),
-                    "saved": saved_count,
+                    "filtered": saved_count,
+                    "failed": failed_count,
+                    "failed_posts": failed_posts[:10],  # 只记录前10个失败的
                     "filter_stats": filter.get_statistics()
                 }
 
@@ -179,7 +219,10 @@ class WiseCollectionPipeline:
             self.stats["stages_completed"].append("filter")
             self.stats["stage_results"]["filter"] = result
 
-            logger.info(f"✅ Stage 2 completed: Filtered {result['saved']} posts")
+            logger.info(f"✅ Stage 2 completed: Processed {result['processed']} posts, filtered {result['filtered']}, failed {result.get('failed', 0)}")
+            if failed_count > 0:
+                logger.warning(f"⚠️  {failed_count} posts failed to process and will be retried next run")
+
             return result
 
         except Exception as e:

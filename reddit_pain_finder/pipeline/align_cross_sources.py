@@ -9,9 +9,6 @@ from utils.db import WiseCollectionDB
 from utils.llm_client import LLMClient
 import logging
 
-# Hardcoded threshold for alignment confidence
-ALIGNMENT_SCORE_THRESHOLD = 0.7
-
 logger = logging.getLogger(__name__)
 
 class CrossSourceAligner:
@@ -20,6 +17,19 @@ class CrossSourceAligner:
     def __init__(self, db: WiseCollectionDB, llm_client: LLMClient):
         self.db = db
         self.llm_client = llm_client
+        self.thresholds = self._load_thresholds()
+
+    def _load_thresholds(self) -> Dict[str, Any]:
+        """加载阈值配置"""
+        try:
+            import yaml
+            with open("config/thresholds.yaml", 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+                return config.get("cross_source_alignment", {})
+        except Exception as e:
+            logger.error(f"Failed to load alignment thresholds: {e}")
+            # 返回默认值
+            return {"alignment_score_threshold": 0.7, "enabled": True}
 
     def get_unprocessed_clusters(self) -> List[Dict]:
         """获取未处理的聚类数据"""
@@ -235,8 +245,9 @@ Return only valid JSON arrays of alignment objects. If no alignments exist, retu
                     continue
 
                 # 过滤低于阈值的对齐
-                if alignment_score < ALIGNMENT_SCORE_THRESHOLD:
-                    logger.info(f"Skipping alignment with score {alignment_score} below threshold {ALIGNMENT_SCORE_THRESHOLD}")
+                threshold = self.thresholds.get("alignment_score_threshold", 0.7)
+                if alignment_score < threshold:
+                    logger.info(f"Skipping alignment with score {alignment_score} below threshold {threshold}")
                     continue
 
                 # 存储验证后的分数

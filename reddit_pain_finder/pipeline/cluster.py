@@ -15,14 +15,12 @@ from utils.db import db
 
 logger = logging.getLogger(__name__)
 
-# Hardcoded threshold for cluster validation
-WORKFLOW_SIMILARITY_THRESHOLD = 0.7
-
 class PainEventClusterer:
     """痛点事件聚类器"""
 
     def __init__(self):
         """初始化聚类器"""
+        self.thresholds = self._load_thresholds()
         self.stats = {
             "total_events_processed": 0,
             "clusters_created": 0,
@@ -30,6 +28,18 @@ class PainEventClusterer:
             "processing_time": 0.0,
             "avg_cluster_size": 0.0
         }
+
+    def _load_thresholds(self) -> Dict[str, Any]:
+        """加载阈值配置"""
+        try:
+            import yaml
+            with open("config/thresholds.yaml", 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+                return config.get("clustering", {}).get("llm_validation", {})
+        except Exception as e:
+            logger.error(f"Failed to load clustering thresholds: {e}")
+            # 返回默认值
+            return {"workflow_similarity_threshold": 0.7}
 
     def _find_similar_events(
         self,
@@ -67,8 +77,9 @@ class PainEventClusterer:
             # Extract workflow_similarity score
             workflow_similarity = validation_result.get("workflow_similarity", 0.0)
 
-            # Use hardcoded threshold for decision
-            is_valid_cluster = workflow_similarity >= WORKFLOW_SIMILARITY_THRESHOLD
+            # Use threshold from config for decision
+            threshold = self.thresholds.get("workflow_similarity_threshold", 0.7)
+            is_valid_cluster = workflow_similarity >= threshold
 
             return {
                 "is_valid_cluster": is_valid_cluster,
@@ -356,7 +367,8 @@ Processing time: {processing_time:.2f}s
 
             # Log workflow_similarity score
             workflow_similarity = validation_result.get("workflow_similarity", 0.0)
-            logger.info(f"Workflow similarity score: {workflow_similarity:.2f} (threshold: {WORKFLOW_SIMILARITY_THRESHOLD})")
+            threshold = self.thresholds.get("workflow_similarity_threshold", 0.7)
+            logger.info(f"Workflow similarity score: {workflow_similarity:.2f} (threshold: {threshold})")
 
             if validation_result["is_valid_cluster"]:
                 # 使用Cluster Summarizer生成source内摘要

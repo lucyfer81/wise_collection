@@ -81,7 +81,7 @@ class DecisionShortlistGenerator:
                         o.id as opportunity_id,
                         o.opportunity_name,
                         o.description,
-                        o.total_score as viability_score,
+                        o.raw_total_score as viability_score,
                         o.trust_level as trust_level,
                         o.target_users,
                         o.missing_capability,
@@ -94,14 +94,14 @@ class DecisionShortlistGenerator:
                         c.centroid_summary as cluster_summary
                     FROM opportunities o
                     JOIN clusters c ON o.cluster_id = c.id
-                    WHERE o.total_score >= ?
+                    WHERE o.raw_total_score >= ?
                       AND c.cluster_size >= ?
                       AND o.trust_level >= ?
                       AND c.cluster_name NOT IN (
                         SELECT value FROM json_each(?)
                         WHERE json_valid(?) AND json_each.value IS NOT NULL
                       )
-                    ORDER BY o.total_score DESC
+                    ORDER BY o.raw_total_score DESC
                 """, (min_viability, min_cluster_size, min_trust,
                       json.dumps(list(ignored_clusters)),
                       json.dumps(list(ignored_clusters))))

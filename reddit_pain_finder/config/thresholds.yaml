@@ -109,9 +109,15 @@ clustering:
 
   # LLM聚类验证
   llm_validation:
-    workflow_similarity_threshold: 0.8  # 工作流相似度阈值
+    workflow_similarity_threshold: 0.7  # 工作流相似度阈值（从配置加载，替代硬编码）
     min_confidence: 0.7                 # 最小置信度
     max_cluster_review_size: 10         # 每次LLM审查的最大数量
+
+# 跨源对齐阈值（Cross-Source Alignment）
+cross_source_alignment:
+  alignment_score_threshold: 0.7  # 对齐分数阈值（从配置加载，替代硬编码）
+  min_sources_required: 2         # 最少需要的源数量
+  enabled: true                   # 是否启用跨源对齐
 
 # 机会映射阈值
 opportunity_mapping:
@@ -254,10 +260,10 @@ monitoring:
 
 # 决策清单阈值
 decision_shortlist:
-  # 硬性过滤阈值
-  min_viability_score: 7.0      # 最低可行性评分
-  min_cluster_size: 6           # 最小聚类规模
-  min_trust_level: 0.7          # 最低信任度
+  # 【可调】硬性过滤阈值 - 策略A（激进策略）：增加通过率，适合数据质量较低或需要更多候选的场景
+  min_viability_score: 6.0      # 最低可行性评分（策略A：从7.0降至6.0，建议范围: 6.0-7.5）
+  min_cluster_size: 4           # 最小聚类规模（策略A：从6降至4，建议范围: 4-8）
+  min_trust_level: 0.5          # 最低信任度（策略A：从0.7降至0.5，建议范围: 0.5-0.8）
   ignored_clusters: []          # 可选：要忽略的 cluster 名称列表
 
   # 最终评分权重

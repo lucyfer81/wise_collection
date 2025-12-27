@@ -130,7 +130,7 @@ class WiseCollectionPipeline:
                 performance_monitor.end_stage("fetch", 0)
             raise
 
-    def run_stage_filter(self, limit_posts: Optional[int] = None) -> Dict[str, Any]:
+    def run_stage_filter(self, limit_posts: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
         """阶段2: 信号过滤"""
         logger.info("=" * 50)
         logger.info("STAGE 2: Filtering pain signals")
@@ -143,7 +143,13 @@ class WiseCollectionPipeline:
             filter = PainSignalFilter()
 
             # 获取未过滤的帖子
-            unfiltered_posts = db.get_unprocessed_posts(limit=limit_posts or 1000)
+            # 如果 process_all=True 且未指定 limit，则处理所有数据
+            if process_all and limit_posts is None:
+                limit_posts = None
+            elif limit_posts is None:
+                limit_posts = 1000
+
+            unfiltered_posts = db.get_unprocessed_posts(limit=limit_posts)
 
             if not unfiltered_posts:
                 logger.info("No posts to filter")
@@ -183,7 +189,7 @@ class WiseCollectionPipeline:
                 performance_monitor.end_stage("filter", 0)
             raise
 
-    def run_stage_extract(self, limit_posts: Optional[int] = None) -> Dict[str, Any]:
+    def run_stage_extract(self, limit_posts: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
         """阶段3: 痛点抽取"""
         logger.info("=" * 50)
         logger.info("STAGE 3: Extracting pain points")
@@ -194,7 +200,14 @@ class WiseCollectionPipeline:
 
         try:
             extractor = PainPointExtractor()
-            result = extractor.process_unextracted_posts(limit=limit_posts or 100)
+
+            # 如果 process_all=True 且未指定 limit，则处理所有数据
+            if process_all and limit_posts is None:
+                limit_posts = None
+            elif limit_posts is None:
+                limit_posts = 100
+
+            result = extractor.process_unextracted_posts(limit=limit_posts)
 
             self.stats["stages_completed"].append("extract")
             self.stats["stage_results"]["extract"] = result
@@ -212,7 +225,7 @@ class WiseCollectionPipeline:
                 performance_monitor.end_stage("extract", 0)
             raise
 
-    def run_stage_embed(self, limit_events: Optional[int] = None) -> Dict[str, Any]:
+    def run_stage_embed(self, limit_events: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
         """阶段4: 向量化"""
         logger.info("=" * 50)
         logger.info("STAGE 4: Creating embeddings")
@@ -223,7 +236,14 @@ class WiseCollectionPipeline:
 
         try:
             embedder = PainEventEmbedder()
-            result = embedder.process_missing_embeddings(limit=limit_events or 200)
+
+            # 如果 process_all=True 且未指定 limit，则处理所有数据
+            if process_all and limit_events is None:
+                limit_events = None
+            elif limit_events is None:
+                limit_events = 200
+
+            result = embedder.process_missing_embeddings(limit=limit_events)
 
             self.stats["stages_completed"].append("embed")
             self.stats["stage_results"]["embed"] = result
@@ -241,7 +261,7 @@ class WiseCollectionPipeline:
                 performance_monitor.end_stage("embed", 0)
             raise
 
-    def run_stage_cluster(self, limit_events: Optional[int] = None) -> Dict[str, Any]:
+    def run_stage_cluster(self, limit_events: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
         """阶段5: 聚类"""
         logger.info("=" * 50)
         logger.info("STAGE 5: Clustering pain events")
@@ -252,7 +272,14 @@ class WiseCollectionPipeline:
 
         try:
             clusterer = PainEventClusterer()
-            result = clusterer.cluster_pain_events(limit=limit_events or 200)
+
+            # 如果 process_all=True 且未指定 limit，则处理所有数据
+            if process_all and limit_events is None:
+                limit_events = None
+            elif limit_events is None:
+                limit_events = 200
+
+            result = clusterer.cluster_pain_events(limit=limit_events)
 
             self.stats["stages_completed"].append("cluster")
             self.stats["stage_results"]["cluster"] = result
@@ -323,7 +350,7 @@ class WiseCollectionPipeline:
                 performance_monitor.end_stage("alignment", 0)
             raise
 
-    def run_stage_map_opportunities(self, limit_clusters: Optional[int] = None) -> Dict[str, Any]:
+    def run_stage_map_opportunities(self, limit_clusters: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
         """阶段6: 机会映射"""
         logger.info("=" * 50)
         logger.info("STAGE 6: Mapping opportunities")
@@ -334,7 +361,14 @@ class WiseCollectionPipeline:
 
         try:
             mapper = OpportunityMapper()
-            result = mapper.map_opportunities_for_clusters(limit=limit_clusters or 50)
+
+            # 如果 process_all=True 且未指定 limit，则处理所有数据
+            if process_all and limit_clusters is None:
+                limit_clusters = None
+            elif limit_clusters is None:
+                limit_clusters = 50
+
+            result = mapper.map_opportunities_for_clusters(limit=limit_clusters)
 
             self.stats["stages_completed"].append("map_opportunities")
             self.stats["stage_results"]["map_opportunities"] = result
@@ -352,7 +386,7 @@ class WiseCollectionPipeline:
                 performance_monitor.end_stage("map_opportunities", 0)
             raise
 
-    def run_stage_score(self, limit_opportunities: Optional[int] = None) -> Dict[str, Any]:
+    def run_stage_score(self, limit_opportunities: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
         """阶段7: 可行性评分"""
         logger.info("=" * 50)
         logger.info("STAGE 7: Scoring viability")
@@ -363,7 +397,14 @@ class WiseCollectionPipeline:
 
         try:
             scorer = ViabilityScorer()
-            result = scorer.score_opportunities(limit=limit_opportunities or 100)
+
+            # 如果 process_all=True 且未指定 limit，则处理所有数据
+            if process_all and limit_opportunities is None:
+                limit_opportunities = None
+            elif limit_opportunities is None:
+                limit_opportunities = 100
+
+            result = scorer.score_opportunities(limit=limit_opportunities)
 
             self.stats["stages_completed"].append("score")
             self.stats["stage_results"]["score"] = result
@@ -521,6 +562,7 @@ class WiseCollectionPipeline:
         limit_clusters: Optional[int] = None,
         limit_opportunities: Optional[int] = None,
         sources: Optional[List[str]] = None,
+        process_all: bool = False,
         stop_on_error: bool = False,
         save_metrics: bool = False,
         metrics_file: Optional[str] = None,
@@ -540,15 +582,21 @@ class WiseCollectionPipeline:
         fetch_sources = sources or ['reddit', 'hackernews']
         logger.info(f"📡 Data sources: {', '.join(fetch_sources)}")
 
+        # 显示处理模式
+        if process_all:
+            logger.info("🔄 Processing mode: PROCESS ALL (no limits)")
+        else:
+            logger.info("📊 Processing mode: Default limits")
+
         stages = [
             ("fetch", lambda: self.run_stage_fetch(limit_sources, fetch_sources)),
-            ("filter", lambda: self.run_stage_filter(limit_posts)),
-            ("extract", lambda: self.run_stage_extract(limit_posts)),
-            ("embed", lambda: self.run_stage_embed(limit_events)),
-            ("cluster", lambda: self.run_stage_cluster(limit_events)),
+            ("filter", lambda: self.run_stage_filter(limit_posts, process_all)),
+            ("extract", lambda: self.run_stage_extract(limit_posts, process_all)),
+            ("embed", lambda: self.run_stage_embed(limit_events, process_all)),
+            ("cluster", lambda: self.run_stage_cluster(limit_events, process_all)),
             ("alignment", lambda: self.run_stage_cross_source_alignment()),
-            ("map_opportunities", lambda: self.run_stage_map_opportunities(limit_clusters)),
-            ("score", lambda: self.run_stage_score(limit_opportunities)),
+            ("map_opportunities", lambda: self.run_stage_map_opportunities(limit_clusters, process_all)),
+            ("score", lambda: self.run_stage_score(limit_opportunities, process_all)),
             ("decision_shortlist", lambda: self.run_stage_decision_shortlist())
         ]
 
@@ -573,17 +621,17 @@ class WiseCollectionPipeline:
 
         return final_report
 
-    def run_single_stage(self, stage_name: str, **kwargs) -> Dict[str, Any]:
+    def run_single_stage(self, stage_name: str, process_all: bool = False, **kwargs) -> Dict[str, Any]:
         """运行单个阶段"""
         stage_map = {
             "fetch": lambda: self.run_stage_fetch(kwargs.get("limit_sources"), kwargs.get("sources")),
-            "filter": lambda: self.run_stage_filter(kwargs.get("limit_posts")),
-            "extract": lambda: self.run_stage_extract(kwargs.get("limit_posts")),
-            "embed": lambda: self.run_stage_embed(kwargs.get("limit_events")),
-            "cluster": lambda: self.run_stage_cluster(kwargs.get("limit_events")),
+            "filter": lambda: self.run_stage_filter(kwargs.get("limit_posts"), process_all),
+            "extract": lambda: self.run_stage_extract(kwargs.get("limit_posts"), process_all),
+            "embed": lambda: self.run_stage_embed(kwargs.get("limit_events"), process_all),
+            "cluster": lambda: self.run_stage_cluster(kwargs.get("limit_events"), process_all),
             "alignment": lambda: self.run_stage_cross_source_alignment(),
-            "map": lambda: self.run_stage_map_opportunities(kwargs.get("limit_clusters")),
-            "score": lambda: self.run_stage_score(kwargs.get("limit_opportunities")),
+            "map": lambda: self.run_stage_map_opportunities(kwargs.get("limit_clusters"), process_all),
+            "score": lambda: self.run_stage_score(kwargs.get("limit_opportunities"), process_all),
             "decision_shortlist": lambda: self.run_stage_decision_shortlist()
         }
 
@@ -845,6 +893,10 @@ def main():
     parser.add_argument("--limit-clusters", type=int, help="Limit number of clusters to process")
     parser.add_argument("--limit-opportunities", type=int, help="Limit number of opportunities to score")
 
+    # 全量处理选项
+    parser.add_argument("--process-all", action="store_true",
+                       help="Process ALL unprocessed data (ignore default limits)")
+
     # 性能监控选项
     parser.add_argument("--no-monitoring", action="store_true", help="Disable performance monitoring")
     parser.add_argument("--save-metrics", action="store_true", help="Save performance metrics to file")
@@ -872,6 +924,7 @@ def main():
                 limit_clusters=args.limit_clusters,
                 limit_opportunities=args.limit_opportunities,
                 sources=args.sources,
+                process_all=args.process_all,
                 stop_on_error=args.stop_on_error,
                 save_metrics=args.save_metrics,
                 metrics_file=args.metrics_file,
@@ -886,7 +939,8 @@ def main():
                 "limit_events": args.limit_events,
                 "limit_clusters": args.limit_clusters,
                 "limit_opportunities": args.limit_opportunities,
-                "sources": args.sources
+                "sources": args.sources,
+                "process_all": args.process_all
             }
 
             # 只传递相关的参数

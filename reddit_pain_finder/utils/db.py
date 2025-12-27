@@ -1350,24 +1350,6 @@ class WiseCollectionDB:
                 cursor = conn.execute(query, params)
                 results = [dict(row) for row in cursor.fetchall()]
 
-                # Batch query all subreddit counts to avoid N+1 problem
-                cluster_names = [r['cluster_name'] for r in results]
-                subreddit_counts = {}
-                if cluster_names:
-                    try:
-                        with self.get_connection("clusters") as count_conn:
-                            placeholders = ','.join(['?' for _ in cluster_names])
-                            cursor = count_conn.execute(f"""
-                                SELECT cluster_name, COUNT(DISTINCT subreddit) as subreddit_count
-                                FROM pain_events
-                                WHERE cluster_name IN ({placeholders})
-                                GROUP BY cluster_name
-                            """, cluster_names)
-                            subreddit_counts = {row['cluster_name']: row['subreddit_count'] for row in cursor.fetchall()}
-                    except Exception as e:
-                        logger.error(f"Failed to batch query subreddit counts: {e}")
-                        subreddit_counts = {}
-
                 # 在 Python 中进行跨源验证过滤
                 filtered_results = []
                 for result in results:
@@ -1375,8 +1357,7 @@ class WiseCollectionDB:
                         result['cluster_name'],
                         result.get('source_type'),
                         result.get('aligned_problem_id'),
-                        result.get('cluster_size', 0),
-                        subreddit_count=subreddit_counts.get(result['cluster_name'], 0)
+                        result.get('cluster_size', 0)
                     )
 
                     validation_level = validation_info.get('validation_level', 0)
@@ -1402,17 +1383,18 @@ class WiseCollectionDB:
         cluster_name: str,
         source_type: Optional[str],
         aligned_problem_id: Optional[str],
-        cluster_size: int,
-        subreddit_count: Optional[int] = None
+        cluster_size: int
     ) -> Dict[str, Any]:
         """同步版本的跨源验证检查（用于数据库查询）
+
+        注意：由于 pain_events 表没有 subreddit 和 cluster_name 列，
+        目前只能检测 Level 1（跨平台对齐）的验证。
 
         Args:
             cluster_name: 聚类名称
             source_type: 来源类型
             aligned_problem_id: 对齐问题ID
             cluster_size: 聚类规模
-            subreddit_count: 预查询的 subreddit 数量（避免 N+1 问题）
 
         Returns:
             验证信息字典
@@ -1448,41 +1430,9 @@ class WiseCollectionDB:
         except Exception as e:
             logger.warning(f"Failed to check aligned_problems for {cluster_name}: {e}")
 
-        # Level 2 & 3: 需要 subreddit 计数（使用传入的 subreddit_count，如果没有则查询）
-        if subreddit_count is None:
-            try:
-                with self.get_connection("clusters") as conn:
-                    cursor = conn.execute("""
-                        SELECT DISTINCT subreddit
-                        FROM pain_events
-                        WHERE cluster_name = ?
-                    """, (cluster_name,))
-
-                    subreddits = set(row[0] for row in cursor.fetchall())
-                    subreddit_count = len(subreddits)
-            except Exception as e:
-                logger.warning(f"Failed to query subreddit count for {cluster_name}: {e}")
-                subreddit_count = 0
-
-        # Level 2
-        if cluster_size >= 10 and subreddit_count >= 3:
-            return {
-                "has_cross_source": True,
-                "validation_level": 2,
-                "boost_score": 1.0,
-                "validated_problem": True,
-                "evidence": f"Validated across {subreddit_count}+ subreddits"
-            }
-
-        # Level 3
-        if cluster_size >= 8 and subreddit_count >= 2:
-            return {
-                "has_cross_source": True,
-                "validation_level": 3,
-                "boost_score": 0.5,
-                "validated_problem": False,
-                "evidence": f"Detected across {subreddit_count}+ subreddits"
-            }
+        # 注意：Level 2 和 Level 3 需要 subreddit 跨度统计，
+        # 但 pain_events 表没有 cluster_name 和 subreddit 列，无法查询
+        # 因此暂时只支持 Level 1 验证
 
         # 无跨源验证
         return {
@@ -1490,7 +1440,7 @@ class WiseCollectionDB:
             "validation_level": 0,
             "boost_score": 0.0,
             "validated_problem": False,
-            "evidence": "No cross-source validation"
+            "evidence": "No cross-source validation (only Level 1 detection supported)"
         }
 
     def get_clusters_for_aligned_problem(self, aligned_problem_id: str) -> List[Dict]:

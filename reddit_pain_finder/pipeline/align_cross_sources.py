@@ -45,6 +45,7 @@ class CrossSourceAligner:
             typical_workaround = self._extract_workarounds(cluster["common_pain"])
 
             return {
+                "cluster_name": cluster["cluster_name"],  # CRITICAL: Must include for proper identification
                 "source_type": cluster["source_type"],
                 "cluster_summary": cluster["centroid_summary"],
                 "typical_workaround": typical_workaround,
@@ -138,6 +139,7 @@ You will receive multiple problem clusters grouped by community type:
             prompt += f"\n## {source_type.upper()} Communities:\n\n"
             for i, cluster in enumerate(clusters, 1):
                 prompt += f"Cluster {i}:\n"
+                prompt += f"- Cluster Name (ID): {cluster['cluster_name']}\n"
                 prompt += f"- Summary: {cluster['cluster_summary']}\n"
                 prompt += f"- Typical workaround: {cluster['typical_workaround']}\n"
                 prompt += f"- Context: {cluster['context']}\n\n"
@@ -188,6 +190,9 @@ For each alignment discovered, output a JSON object with this structure:
   ],
   "original_cluster_ids": ["cluster_id_1", "cluster_id_2"]
 }
+
+CRITICAL: For "original_cluster_ids", you MUST use the EXACT "Cluster Name (ID)" values provided above.
+Do NOT invent or modify these IDs - copy them exactly as shown in the cluster descriptions.
 
 Return only valid JSON arrays of alignment objects. If no alignments exist, return an empty array.
 """

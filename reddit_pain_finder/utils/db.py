@@ -1233,12 +1233,24 @@ class WiseCollectionDB:
         """更新聚类对齐状态"""
         try:
             with self.get_connection("clusters") as conn:
-                conn.execute("""
+                cursor = conn.execute("""
                     UPDATE clusters
                     SET alignment_status = ?, aligned_problem_id = ?
                     WHERE cluster_name = ?
                 """, (status, aligned_problem_id, cluster_name))
+
+                # Verify that the update actually affected a row
+                if cursor.rowcount == 0:
+                    logger.error(
+                        f"Failed to update cluster '{cluster_name}' - cluster not found! "
+                        f"This means the cluster_name returned by LLM doesn't match any cluster in the database."
+                    )
+                    raise ValueError(f"Cluster '{cluster_name}' not found for alignment update")
+
                 conn.commit()
+                logger.info(f"Successfully updated cluster '{cluster_name}' to status='{status}'" + (
+                    f", aligned_problem_id='{aligned_problem_id}'" if aligned_problem_id else ""
+                ))
         except Exception as e:
             logger.error(f"Failed to update cluster alignment status: {e}")
             raise

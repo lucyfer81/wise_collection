@@ -145,11 +145,16 @@ class WiseCollectionPipeline:
             # 获取未过滤的帖子
             # 如果 process_all=True 且未指定 limit，则处理所有数据
             if process_all and limit_posts is None:
-                limit_posts = None
+                limit_posts = 1000000  # 处理所有数据
             elif limit_posts is None:
                 limit_posts = 1000
 
             unfiltered_posts = db.get_unprocessed_posts(limit=limit_posts)
+
+            # 初始化计数器
+            saved_count = 0
+            failed_count = 0
+            failed_posts = []
 
             if not unfiltered_posts:
                 logger.info("No posts to filter")
@@ -161,32 +166,28 @@ class WiseCollectionPipeline:
                 logger.info("Using incremental save mode - each post is saved immediately after processing")
 
                 # 改进：逐个处理并立即保存，避免批量失败导致数据丢失
-                saved_count = 0
-                failed_count = 0
-                failed_posts = []
-
                 for i, post in enumerate(unfiltered_posts):
                     if i % 100 == 0:
                         logger.info(f"Processed {i}/{len(unfiltered_posts)} posts, saved: {saved_count}, failed: {failed_count}")
 
                     try:
                         # 过滤单个帖子
-                        passed, result = filter.filter_post(post)
+                        passed, filter_result = filter.filter_post(post)
 
                         if passed:
                             # 为帖子添加过滤结果
                             filtered_post = post.copy()
                             filtered_post.update({
-                                "pain_score": result["pain_score"],
-                                "pain_keywords": result.get("matched_keywords", []),
-                                "pain_patterns": result.get("matched_patterns", []),
-                                "emotional_intensity": result.get("emotional_intensity", 0.0),
+                                "pain_score": filter_result["pain_score"],
+                                "pain_keywords": filter_result.get("matched_keywords", []),
+                                "pain_patterns": filter_result.get("matched_patterns", []),
+                                "emotional_intensity": filter_result.get("emotional_intensity", 0.0),
                                 "filter_reason": "pain_signal_passed",
-                                "aspiration_keywords": result.get("matched_aspirations", []),
-                                "aspiration_score": result.get("aspiration_score", 0.0),
-                                "pass_type": result.get("pass_type", "pain"),
-                                "engagement_score": result.get("engagement_score", 0.0),
-                                "trust_level": result.get("trust_level", 0.5)
+                                "aspiration_keywords": filter_result.get("matched_aspirations", []),
+                                "aspiration_score": filter_result.get("aspiration_score", 0.0),
+                                "pass_type": filter_result.get("pass_type", "pain"),
+                                "engagement_score": filter_result.get("engagement_score", 0.0),
+                                "trust_level": filter_result.get("trust_level", 0.5)
                             })
 
                             # 立即保存到数据库
@@ -246,7 +247,7 @@ class WiseCollectionPipeline:
 
             # 如果 process_all=True 且未指定 limit，则处理所有数据
             if process_all and limit_posts is None:
-                limit_posts = None
+                limit_posts = 1000000  # 处理所有数据
             elif limit_posts is None:
                 limit_posts = 100
 
@@ -258,7 +259,7 @@ class WiseCollectionPipeline:
             if self.enable_monitoring:
                 performance_monitor.end_stage("extract", result.get('pain_events_saved', 0))
 
-            logger.info(f"✅ Stage 3 completed: Extracted {result['pain_events_saved']} pain events")
+            logger.info(f"✅ Stage 3 completed: Extracted {result.get('pain_events_saved', 0)} pain events")
             return result
 
         except Exception as e:
@@ -282,7 +283,7 @@ class WiseCollectionPipeline:
 
             # 如果 process_all=True 且未指定 limit，则处理所有数据
             if process_all and limit_events is None:
-                limit_events = None
+                limit_events = 1000000  # 处理所有数据
             elif limit_events is None:
                 limit_events = 200
 
@@ -316,9 +317,9 @@ class WiseCollectionPipeline:
         try:
             clusterer = PainEventClusterer()
 
-            # 如果 process_all=True 且未指定 limit，则处理所有数据
+            # 如果 process_all=True 且未指定 limit，则处理所有数据（设置为大数值）
             if process_all and limit_events is None:
-                limit_events = None
+                limit_events = 1000000  # 处理所有数据
             elif limit_events is None:
                 limit_events = 200
 
@@ -330,7 +331,7 @@ class WiseCollectionPipeline:
             if self.enable_monitoring:
                 performance_monitor.end_stage("cluster", result.get('clusters_created', 0))
 
-            logger.info(f"✅ Stage 5 completed: Created {result['clusters_created']} clusters")
+            logger.info(f"✅ Stage 5 completed: Created {result.get('clusters_created', 0)} clusters")
             return result
 
         except Exception as e:
@@ -407,7 +408,7 @@ class WiseCollectionPipeline:
 
             # 如果 process_all=True 且未指定 limit，则处理所有数据
             if process_all and limit_clusters is None:
-                limit_clusters = None
+                limit_clusters = 1000000  # 处理所有数据
             elif limit_clusters is None:
                 limit_clusters = 50
 
@@ -443,7 +444,7 @@ class WiseCollectionPipeline:
 
             # 如果 process_all=True 且未指定 limit，则处理所有数据
             if process_all and limit_opportunities is None:
-                limit_opportunities = None
+                limit_opportunities = 1000000  # 处理所有数据
             elif limit_opportunities is None:
                 limit_opportunities = 100
 

@@ -140,6 +140,7 @@ class WiseCollectionDB:
                 CREATE TABLE IF NOT EXISTS pain_events (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     post_id TEXT NOT NULL,
+                    cluster_id INTEGER,
                     actor TEXT,
                     context TEXT,
                     problem TEXT NOT NULL,
@@ -149,7 +150,8 @@ class WiseCollectionDB:
                     mentioned_tools TEXT,
                     extraction_confidence REAL,
                     extracted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (post_id) REFERENCES filtered_posts(id)
+                    FOREIGN KEY (post_id) REFERENCES filtered_posts(id),
+                    FOREIGN KEY (cluster_id) REFERENCES clusters(id)
                 )
             """)
 
@@ -295,6 +297,9 @@ class WiseCollectionDB:
 
             # 添加trust_level列到posts表（如果不存在）
             self._add_trust_level_column(conn)
+
+            # 添加cluster_id列到pain_events表（如果不存在）
+            self._add_cluster_id_column(conn)
 
             # 添加workflow_similarity列到clusters表（如果不存在）
             self._add_workflow_similarity_column(conn)
@@ -604,6 +609,33 @@ class WiseCollectionDB:
 
         except Exception as e:
             logger.error(f"Failed to add workflow_similarity column: {e}")
+
+    def _add_cluster_id_column(self, conn):
+        """Add cluster_id column to pain_events table if not exists"""
+        try:
+            cursor = conn.execute("PRAGMA table_info(pain_events)")
+            existing_columns = {row['name'] for row in cursor.fetchall()}
+
+            if 'cluster_id' not in existing_columns:
+                conn.execute("""
+                    ALTER TABLE pain_events
+                    ADD COLUMN cluster_id INTEGER
+                """)
+                logger.info("Added cluster_id column to pain_events table")
+
+                # Create index for faster queries
+                conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_pain_events_cluster_id
+                    ON pain_events(cluster_id)
+                """)
+                logger.info("Created index on pain_events.cluster_id")
+
+                # Note: Existing pain_events will have NULL cluster_id
+                # They will be processed in next clustering run
+                logger.info("Existing pain_events marked for re-clustering (cluster_id=NULL)")
+
+        except Exception as e:
+            logger.error(f"Failed to add cluster_id column: {e}")
 
     def _add_alignment_score_column(self, conn):
         """Add alignment_score column to aligned_problems table if not exists"""
@@ -1058,6 +1090,37 @@ class WiseCollectionDB:
         except Exception as e:
             logger.error(f"Failed to insert cluster: {e}")
             return None
+
+    def update_pain_event_cluster_ids(self, event_ids: List[int], cluster_id: int) -> bool:
+        """批量更新 pain events 的 cluster_id
+
+        Args:
+            event_ids: pain event ID列表
+            cluster_id: 要设置的cluster ID
+
+        Returns:
+            bool: 是否成功更新
+        """
+        try:
+            if not event_ids:
+                logger.warning("No event IDs provided for cluster assignment")
+                return False
+
+            with self.get_connection("pain") as conn:
+                placeholders = ','.join('?' for _ in event_ids)
+                conn.execute(f"""
+                    UPDATE pain_events
+                    SET cluster_id = ?
+                    WHERE id IN ({placeholders})
+                """, [cluster_id] + event_ids)
+                conn.commit()
+
+                logger.info(f"Assigned {len(event_ids)} pain events to cluster {cluster_id}")
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to update cluster IDs for pain events: {e}")
+            return False
 
     def insert_opportunity(self, opportunity_data: Dict[str, Any]) -> Optional[int]:
         """插入机会"""

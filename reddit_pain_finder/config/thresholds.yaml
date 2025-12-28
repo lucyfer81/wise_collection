@@ -113,6 +113,10 @@ clustering:
     min_confidence: 0.7                 # 最小置信度
     max_cluster_review_size: 10         # 每次LLM审查的最大数量
 
+  # 增量聚类配置（防止重复和智能合并）
+  cluster_similarity_threshold: 0.75    # 向量相似度阈值，用于检测相似clusters以进行增量合并（建议范围: 0.70-0.85）
+  incremental_merge_enabled: true       # 是否启用增量合并（相似clusters自动合并而不是创建新的）
+
 # 跨源对齐阈值（Cross-Source Alignment）
 cross_source_alignment:
   alignment_score_threshold: 0.7  # 对齐分数阈值（从配置加载，替代硬编码）

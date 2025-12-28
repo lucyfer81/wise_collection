@@ -5,6 +5,14 @@ Filter Comments Script - Phase 1: Include Comments
 
 This script filters Reddit/HN comments through the pain signal detector,
 treating comments as independent pain sources (not post dependencies).
+
+**NOTE**: This is a STANDALONE script for one-time migration or manual use.
+For automated comment filtering, use the main pipeline:
+
+    python3 run_pipeline.py --stage filter --include-comments
+
+Usage:
+    python3 scripts/filter_comments.py [options]
 """
 import os
 import sys

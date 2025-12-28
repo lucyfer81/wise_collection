@@ -1564,3 +1564,440 @@
 2025-12-25 14:29:55,838 - INFO - 程序执行完成
 2025-12-25 14:46:38,914 - INFO - 开始加载环境变量...
 2025-12-25 14:46:38,914 - INFO - 环境变量加载完成
+2025-12-28 09:12:03,383 - INFO - 开始加载环境变量...
+2025-12-28 09:12:03,383 - INFO - 环境变量加载完成
+2025-12-28 09:12:03,386 - INFO - ==================================================
+2025-12-28 09:12:03,386 - INFO - 痛点分析器开始运行
+2025-12-28 09:12:03,386 - INFO - 数据库模式: 统一数据库
+2025-12-28 09:12:03,387 - INFO - 最低评分: 0.8, 最大数量: 15
+2025-12-28 09:12:03,387 - INFO - ==================================================
+2025-12-28 09:12:03,387 - INFO - 初始化 PainPointAnalyzer...
+2025-12-28 09:12:03,387 - INFO - 初始化 PainPointAnalyzer...
+2025-12-28 09:12:03,387 - INFO - 初始化数据库管理器...
+2025-12-28 09:12:03,388 - INFO - Unified database initialized successfully
+2025-12-28 09:12:03,388 - INFO - 使用统一数据库模式: data/wise_collection.db
+2025-12-28 09:12:03,388 - INFO - 配置信息: base_url=https://api.siliconflow.cn/v1, model=deepseek-ai/DeepSeek-V3.2
+2025-12-28 09:12:03,388 - INFO - API key 已设置
+2025-12-28 09:12:03,388 - INFO - 输出目录已创建: pain_analysis_reports
+2025-12-28 09:12:03,388 - INFO - 开始运行分析...
+2025-12-28 09:12:03,388 - INFO - 开始运行完整分析: min_score=0.8, limit=15
+2025-12-28 09:12:03,389 - INFO - 开始获取聚类数据...
+2025-12-28 09:12:03,389 - INFO - 获取高分聚类: min_score=0.8, limit=15
+2025-12-28 09:12:03,389 - DEBUG - 获取数据库连接，类型: clusters
+2025-12-28 09:12:03,389 - DEBUG - 执行聚类查询SQL...
+2025-12-28 09:12:03,389 - DEBUG - 查询执行完成，开始处理结果...
+2025-12-28 09:12:03,390 - INFO - 查询到 15 个聚类
+2025-12-28 09:12:03,390 - DEBUG - 处理第 1/15 个聚类: reddit: Dating App Lifecycle Management...
+2025-12-28 09:12:03,390 - DEBUG - 获取聚类 166 的机会数据...
+2025-12-28 09:12:03,390 - DEBUG - 聚类 166 有 1 个机会
+2025-12-28 09:12:03,390 - DEBUG - 聚类 166 痛点事件IDs: 4 个
+2025-12-28 09:12:03,390 - DEBUG - 获取 4 个痛点事件样本: [816, 815, 669, 668]
+2025-12-28 09:12:03,390 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,390 - DEBUG - 执行痛点事件查询，IDs: [816, 815, 669, 668]
+2025-12-28 09:12:03,391 - DEBUG - 查询到 4 个痛点事件
+2025-12-28 09:12:03,391 - DEBUG - 成功获取 4 个痛点事件
+2025-12-28 09:12:03,391 - DEBUG - 处理第 2/15 个聚类: reddit: Side Project Execution & Time Management...
+2025-12-28 09:12:03,391 - DEBUG - 获取聚类 174 的机会数据...
+2025-12-28 09:12:03,391 - DEBUG - 聚类 174 有 1 个机会
+2025-12-28 09:12:03,391 - DEBUG - 聚类 174 痛点事件IDs: 9 个
+2025-12-28 09:12:03,391 - DEBUG - 获取 5 个痛点事件样本: [917, 916, 915, 914, 913]
+2025-12-28 09:12:03,391 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,391 - DEBUG - 执行痛点事件查询，IDs: [917, 916, 915, 914, 913]
+2025-12-28 09:12:03,392 - DEBUG - 查询到 5 个痛点事件
+2025-12-28 09:12:03,392 - DEBUG - 成功获取 5 个痛点事件
+2025-12-28 09:12:03,392 - DEBUG - 处理第 3/15 个聚类: reddit: Dating App Re-engagement and Trust Managem...
+2025-12-28 09:12:03,392 - DEBUG - 获取聚类 178 的机会数据...
+2025-12-28 09:12:03,392 - DEBUG - 聚类 178 有 1 个机会
+2025-12-28 09:12:03,392 - DEBUG - 聚类 178 痛点事件IDs: 4 个
+2025-12-28 09:12:03,392 - DEBUG - 获取 4 个痛点事件样本: [816, 815, 669, 668]
+2025-12-28 09:12:03,392 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,393 - DEBUG - 执行痛点事件查询，IDs: [816, 815, 669, 668]
+2025-12-28 09:12:03,393 - DEBUG - 查询到 4 个痛点事件
+2025-12-28 09:12:03,393 - DEBUG - 成功获取 4 个痛点事件
+2025-12-28 09:12:03,393 - DEBUG - 处理第 4/15 个聚类: reddit: Language Learning Practice and Proficiency...
+2025-12-28 09:12:03,393 - DEBUG - 获取聚类 173 的机会数据...
+2025-12-28 09:12:03,393 - DEBUG - 聚类 173 有 1 个机会
+2025-12-28 09:12:03,393 - DEBUG - 聚类 173 痛点事件IDs: 20 个
+2025-12-28 09:12:03,394 - DEBUG - 获取 5 个痛点事件样本: [855, 854, 850, 849, 848]
+2025-12-28 09:12:03,394 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,394 - DEBUG - 执行痛点事件查询，IDs: [855, 854, 850, 849, 848]
+2025-12-28 09:12:03,394 - DEBUG - 查询到 5 个痛点事件
+2025-12-28 09:12:03,394 - DEBUG - 成功获取 5 个痛点事件
+2025-12-28 09:12:03,394 - DEBUG - 处理第 5/15 个聚类: reddit: Sustained Dietary Restriction for Weight M...
+2025-12-28 09:12:03,394 - DEBUG - 获取聚类 180 的机会数据...
+2025-12-28 09:12:03,394 - DEBUG - 聚类 180 有 1 个机会
+2025-12-28 09:12:03,395 - DEBUG - 聚类 180 痛点事件IDs: 4 个
+2025-12-28 09:12:03,395 - DEBUG - 获取 4 个痛点事件样本: [645, 644, 643, 642]
+2025-12-28 09:12:03,395 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,395 - DEBUG - 执行痛点事件查询，IDs: [645, 644, 643, 642]
+2025-12-28 09:12:03,395 - DEBUG - 查询到 4 个痛点事件
+2025-12-28 09:12:03,395 - DEBUG - 成功获取 4 个痛点事件
+2025-12-28 09:12:03,395 - DEBUG - 处理第 6/15 个聚类: reddit: Sustained Dietary Restriction for Weight L...
+2025-12-28 09:12:03,396 - DEBUG - 获取聚类 168 的机会数据...
+2025-12-28 09:12:03,396 - DEBUG - 聚类 168 有 1 个机会
+2025-12-28 09:12:03,396 - DEBUG - 聚类 168 痛点事件IDs: 4 个
+2025-12-28 09:12:03,396 - DEBUG - 获取 4 个痛点事件样本: [645, 644, 643, 642]
+2025-12-28 09:12:03,396 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,396 - DEBUG - 执行痛点事件查询，IDs: [645, 644, 643, 642]
+2025-12-28 09:12:03,396 - DEBUG - 查询到 4 个痛点事件
+2025-12-28 09:12:03,396 - DEBUG - 成功获取 4 个痛点事件
+2025-12-28 09:12:03,397 - DEBUG - 处理第 7/15 个聚类: reddit: Managing Short Hair Regrowth and Maintenan...
+2025-12-28 09:12:03,397 - DEBUG - 获取聚类 170 的机会数据...
+2025-12-28 09:12:03,397 - DEBUG - 聚类 170 有 1 个机会
+2025-12-28 09:12:03,397 - DEBUG - 聚类 170 痛点事件IDs: 5 个
+2025-12-28 09:12:03,397 - DEBUG - 获取 5 个痛点事件样本: [724, 723, 722, 721, 720]
+2025-12-28 09:12:03,397 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,397 - DEBUG - 执行痛点事件查询，IDs: [724, 723, 722, 721, 720]
+2025-12-28 09:12:03,397 - DEBUG - 查询到 5 个痛点事件
+2025-12-28 09:12:03,398 - DEBUG - 成功获取 5 个痛点事件
+2025-12-28 09:12:03,398 - DEBUG - 处理第 8/15 个聚类: reddit: Pegboard Installation and Use for Aestheti...
+2025-12-28 09:12:03,398 - DEBUG - 获取聚类 177 的机会数据...
+2025-12-28 09:12:03,398 - DEBUG - 聚类 177 有 1 个机会
+2025-12-28 09:12:03,398 - DEBUG - 聚类 177 痛点事件IDs: 4 个
+2025-12-28 09:12:03,398 - DEBUG - 获取 4 个痛点事件样本: [839, 838, 837, 836]
+2025-12-28 09:12:03,398 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,398 - DEBUG - 执行痛点事件查询，IDs: [839, 838, 837, 836]
+2025-12-28 09:12:03,399 - DEBUG - 查询到 4 个痛点事件
+2025-12-28 09:12:03,399 - DEBUG - 成功获取 4 个痛点事件
+2025-12-28 09:12:03,399 - DEBUG - 处理第 9/15 个聚类: reddit: Pegboard Installation and Use for Home Org...
+2025-12-28 09:12:03,399 - DEBUG - 获取聚类 165 的机会数据...
+2025-12-28 09:12:03,399 - DEBUG - 聚类 165 有 1 个机会
+2025-12-28 09:12:03,399 - DEBUG - 聚类 165 痛点事件IDs: 4 个
+2025-12-28 09:12:03,399 - DEBUG - 获取 4 个痛点事件样本: [839, 838, 837, 836]
+2025-12-28 09:12:03,399 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,399 - DEBUG - 执行痛点事件查询，IDs: [839, 838, 837, 836]
+2025-12-28 09:12:03,400 - DEBUG - 查询到 4 个痛点事件
+2025-12-28 09:12:03,400 - DEBUG - 成功获取 4 个痛点事件
+2025-12-28 09:12:03,400 - DEBUG - 处理第 10/15 个聚类: reddit: Managing Short Hair Transitions and Mainte...
+2025-12-28 09:12:03,400 - DEBUG - 获取聚类 163 的机会数据...
+2025-12-28 09:12:03,400 - DEBUG - 聚类 163 有 1 个机会
+2025-12-28 09:12:03,400 - DEBUG - 聚类 163 痛点事件IDs: 5 个
+2025-12-28 09:12:03,400 - DEBUG - 获取 5 个痛点事件样本: [724, 723, 722, 721, 720]
+2025-12-28 09:12:03,400 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,400 - DEBUG - 执行痛点事件查询，IDs: [724, 723, 722, 721, 720]
+2025-12-28 09:12:03,401 - DEBUG - 查询到 5 个痛点事件
+2025-12-28 09:12:03,401 - DEBUG - 成功获取 5 个痛点事件
+2025-12-28 09:12:03,401 - DEBUG - 处理第 11/15 个聚类: reddit: Managing Short Hair Regrowth and Maintenan...
+2025-12-28 09:12:03,401 - DEBUG - 获取聚类 175 的机会数据...
+2025-12-28 09:12:03,401 - DEBUG - 聚类 175 有 1 个机会
+2025-12-28 09:12:03,401 - DEBUG - 聚类 175 痛点事件IDs: 5 个
+2025-12-28 09:12:03,401 - DEBUG - 获取 5 个痛点事件样本: [724, 723, 722, 721, 720]
+2025-12-28 09:12:03,401 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,402 - DEBUG - 执行痛点事件查询，IDs: [724, 723, 722, 721, 720]
+2025-12-28 09:12:03,402 - DEBUG - 查询到 5 个痛点事件
+2025-12-28 09:12:03,402 - DEBUG - 成功获取 5 个痛点事件
+2025-12-28 09:12:03,402 - DEBUG - 处理第 12/15 个聚类: reddit: Navigating Aversion to Romantic Engagement...
+2025-12-28 09:12:03,402 - DEBUG - 获取聚类 176 的机会数据...
+2025-12-28 09:12:03,402 - DEBUG - 聚类 176 有 1 个机会
+2025-12-28 09:12:03,402 - DEBUG - 聚类 176 痛点事件IDs: 4 个
+2025-12-28 09:12:03,402 - DEBUG - 获取 4 个痛点事件样本: [843, 842, 841, 840]
+2025-12-28 09:12:03,402 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,403 - DEBUG - 执行痛点事件查询，IDs: [843, 842, 841, 840]
+2025-12-28 09:12:03,403 - DEBUG - 查询到 4 个痛点事件
+2025-12-28 09:12:03,403 - DEBUG - 成功获取 4 个痛点事件
+2025-12-28 09:12:03,403 - DEBUG - 处理第 13/15 个聚类: reddit: Navigating Aversion to Romantic Engagement...
+2025-12-28 09:12:03,403 - DEBUG - 获取聚类 164 的机会数据...
+2025-12-28 09:12:03,403 - DEBUG - 聚类 164 有 1 个机会
+2025-12-28 09:12:03,403 - DEBUG - 聚类 164 痛点事件IDs: 4 个
+2025-12-28 09:12:03,403 - DEBUG - 获取 4 个痛点事件样本: [843, 842, 841, 840]
+2025-12-28 09:12:03,404 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,404 - DEBUG - 执行痛点事件查询，IDs: [843, 842, 841, 840]
+2025-12-28 09:12:03,404 - DEBUG - 查询到 4 个痛点事件
+2025-12-28 09:12:03,404 - DEBUG - 成功获取 4 个痛点事件
+2025-12-28 09:12:03,404 - DEBUG - 处理第 14/15 个聚类: reddit: Insurance Policy Renewal and Rate Shopping...
+2025-12-28 09:12:03,404 - DEBUG - 获取聚类 167 的机会数据...
+2025-12-28 09:12:03,404 - DEBUG - 聚类 167 有 1 个机会
+2025-12-28 09:12:03,405 - DEBUG - 聚类 167 痛点事件IDs: 4 个
+2025-12-28 09:12:03,405 - DEBUG - 获取 4 个痛点事件样本: [655, 654, 653, 652]
+2025-12-28 09:12:03,405 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,405 - DEBUG - 执行痛点事件查询，IDs: [655, 654, 653, 652]
+2025-12-28 09:12:03,405 - DEBUG - 查询到 4 个痛点事件
+2025-12-28 09:12:03,405 - DEBUG - 成功获取 4 个痛点事件
+2025-12-28 09:12:03,405 - DEBUG - 处理第 15/15 个聚类: reddit: Navigating Aversion to Romantic Engagement...
+2025-12-28 09:12:03,405 - DEBUG - 获取聚类 171 的机会数据...
+2025-12-28 09:12:03,406 - DEBUG - 聚类 171 有 1 个机会
+2025-12-28 09:12:03,406 - DEBUG - 聚类 171 痛点事件IDs: 4 个
+2025-12-28 09:12:03,406 - DEBUG - 获取 4 个痛点事件样本: [843, 842, 841, 840]
+2025-12-28 09:12:03,406 - DEBUG - 获取数据库连接，类型: pain
+2025-12-28 09:12:03,406 - DEBUG - 执行痛点事件查询，IDs: [843, 842, 841, 840]
+2025-12-28 09:12:03,406 - DEBUG - 查询到 4 个痛点事件
+2025-12-28 09:12:03,406 - DEBUG - 成功获取 4 个痛点事件
+2025-12-28 09:12:03,407 - INFO - 成功获取 15 个聚类数据
+2025-12-28 09:12:03,407 - INFO - 成功获取 15 个聚类
+2025-12-28 09:12:03,407 - INFO - 开始分析第 1/15 个聚类: reddit: Dating App Lifecycle Management...
+2025-12-28 09:12:03,407 - DEBUG - 执行聚类分析...
+2025-12-28 09:12:03,407 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:12:03,407 - DEBUG - prompt长度: 2109 字符
+2025-12-28 09:12:03,407 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:12:03,407 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:12:03,408 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:14:28,465 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 13916
+2025-12-28 09:14:28,466 - DEBUG - 响应状态码: 200
+2025-12-28 09:14:28,467 - DEBUG - LLM响应长度: 5539 字符
+2025-12-28 09:14:28,467 - INFO - LLM调用成功
+2025-12-28 09:14:28,469 - DEBUG - 生成聚类报告...
+2025-12-28 09:14:28,470 - INFO - 生成聚类报告: reddit: Dating App Lifecycle Management...
+2025-12-28 09:14:28,470 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Dating_App_Lifecycle_Management_opportunity_analysis.md
+2025-12-28 09:14:28,470 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Dating_App_Lifecycle_Management_opportunity_analysis.md
+2025-12-28 09:14:28,470 - INFO - 报告生成成功: pain_analysis_reports/reddit_Dating_App_Lifecycle_Management_opportunity_analysis.md
+2025-12-28 09:14:28,471 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Dating_App_Lifecycle_Management_opportunity_analysis.md
+2025-12-28 09:14:28,471 - INFO - 聚类 1 分析完成
+2025-12-28 09:14:28,471 - INFO - 开始分析第 2/15 个聚类: reddit: Side Project Execution & Time Management...
+2025-12-28 09:14:28,471 - DEBUG - 执行聚类分析...
+2025-12-28 09:14:28,471 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:14:28,471 - DEBUG - prompt长度: 1835 字符
+2025-12-28 09:14:28,471 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:14:28,471 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:14:28,472 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:16:53,396 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 13810
+2025-12-28 09:16:53,398 - DEBUG - 响应状态码: 200
+2025-12-28 09:16:53,399 - DEBUG - LLM响应长度: 5609 字符
+2025-12-28 09:16:53,399 - INFO - LLM调用成功
+2025-12-28 09:16:53,402 - DEBUG - 生成聚类报告...
+2025-12-28 09:16:53,403 - INFO - 生成聚类报告: reddit: Side Project Execution & Time Management...
+2025-12-28 09:16:53,403 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Side_Project_Execution_Time_Management_opportunity_analysis.md
+2025-12-28 09:16:53,403 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Side_Project_Execution_Time_Management_opportunity_analysis.md
+2025-12-28 09:16:53,403 - INFO - 报告生成成功: pain_analysis_reports/reddit_Side_Project_Execution_Time_Management_opportunity_analysis.md
+2025-12-28 09:16:53,403 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Side_Project_Execution_Time_Management_opportunity_analysis.md
+2025-12-28 09:16:53,403 - INFO - 聚类 2 分析完成
+2025-12-28 09:16:53,403 - INFO - 开始分析第 3/15 个聚类: reddit: Dating App Re-engagement and Trust Managem...
+2025-12-28 09:16:53,404 - DEBUG - 执行聚类分析...
+2025-12-28 09:16:53,404 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:16:53,404 - DEBUG - prompt长度: 2175 字符
+2025-12-28 09:16:53,404 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:16:53,404 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:16:53,404 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:19:39,576 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 15913
+2025-12-28 09:19:39,578 - DEBUG - 响应状态码: 200
+2025-12-28 09:19:39,579 - DEBUG - LLM响应长度: 6373 字符
+2025-12-28 09:19:39,579 - INFO - LLM调用成功
+2025-12-28 09:19:39,582 - DEBUG - 生成聚类报告...
+2025-12-28 09:19:39,583 - INFO - 生成聚类报告: reddit: Dating App Re-engagement and Trust Managem...
+2025-12-28 09:19:39,583 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Dating_App_Re_engagement_and_Trust_Management_opportunity_analysis.md
+2025-12-28 09:19:39,584 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Dating_App_Re_engagement_and_Trust_Management_opportunity_analysis.md
+2025-12-28 09:19:39,584 - INFO - 报告生成成功: pain_analysis_reports/reddit_Dating_App_Re_engagement_and_Trust_Management_opportunity_analysis.md
+2025-12-28 09:19:39,584 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Dating_App_Re_engagement_and_Trust_Management_opportunity_analysis.md
+2025-12-28 09:19:39,584 - INFO - 聚类 3 分析完成
+2025-12-28 09:19:39,584 - INFO - 开始分析第 4/15 个聚类: reddit: Language Learning Practice and Proficiency...
+2025-12-28 09:19:39,584 - DEBUG - 执行聚类分析...
+2025-12-28 09:19:39,584 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:19:39,585 - DEBUG - prompt长度: 2728 字符
+2025-12-28 09:19:39,585 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:19:39,585 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:19:39,586 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:22:37,893 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 15182
+2025-12-28 09:22:37,895 - DEBUG - 响应状态码: 200
+2025-12-28 09:22:37,896 - DEBUG - LLM响应长度: 6214 字符
+2025-12-28 09:22:37,896 - INFO - LLM调用成功
+2025-12-28 09:22:37,898 - DEBUG - 生成聚类报告...
+2025-12-28 09:22:37,899 - INFO - 生成聚类报告: reddit: Language Learning Practice and Proficiency...
+2025-12-28 09:22:37,900 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Language_Learning_Practice_and_Proficiency_Development_opportunity_analysis.md
+2025-12-28 09:22:37,900 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Language_Learning_Practice_and_Proficiency_Development_opportunity_analysis.md
+2025-12-28 09:22:37,901 - INFO - 报告生成成功: pain_analysis_reports/reddit_Language_Learning_Practice_and_Proficiency_Development_opportunity_analysis.md
+2025-12-28 09:22:37,901 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Language_Learning_Practice_and_Proficiency_Development_opportunity_analysis.md
+2025-12-28 09:22:37,902 - INFO - 聚类 4 分析完成
+2025-12-28 09:22:37,902 - INFO - 开始分析第 5/15 个聚类: reddit: Sustained Dietary Restriction for Weight M...
+2025-12-28 09:22:37,902 - DEBUG - 执行聚类分析...
+2025-12-28 09:22:37,902 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:22:37,903 - DEBUG - prompt长度: 2594 字符
+2025-12-28 09:22:37,903 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:22:37,903 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:22:37,907 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:25:11,936 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 14264
+2025-12-28 09:25:11,939 - DEBUG - 响应状态码: 200
+2025-12-28 09:25:11,939 - DEBUG - LLM响应长度: 5790 字符
+2025-12-28 09:25:11,940 - INFO - LLM调用成功
+2025-12-28 09:25:11,942 - DEBUG - 生成聚类报告...
+2025-12-28 09:25:11,944 - INFO - 生成聚类报告: reddit: Sustained Dietary Restriction for Weight M...
+2025-12-28 09:25:11,944 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Sustained_Dietary_Restriction_for_Weight_Management_opportunity_analysis.md
+2025-12-28 09:25:11,944 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Sustained_Dietary_Restriction_for_Weight_Management_opportunity_analysis.md
+2025-12-28 09:25:11,945 - INFO - 报告生成成功: pain_analysis_reports/reddit_Sustained_Dietary_Restriction_for_Weight_Management_opportunity_analysis.md
+2025-12-28 09:25:11,945 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Sustained_Dietary_Restriction_for_Weight_Management_opportunity_analysis.md
+2025-12-28 09:25:11,946 - INFO - 聚类 5 分析完成
+2025-12-28 09:25:11,946 - INFO - 开始分析第 6/15 个聚类: reddit: Sustained Dietary Restriction for Weight L...
+2025-12-28 09:25:11,946 - DEBUG - 执行聚类分析...
+2025-12-28 09:25:11,947 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:25:11,947 - DEBUG - prompt长度: 2351 字符
+2025-12-28 09:25:11,947 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:25:11,947 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:25:11,949 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:27:41,127 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 14176
+2025-12-28 09:27:41,128 - DEBUG - 响应状态码: 200
+2025-12-28 09:27:41,129 - DEBUG - LLM响应长度: 5732 字符
+2025-12-28 09:27:41,129 - INFO - LLM调用成功
+2025-12-28 09:27:41,131 - DEBUG - 生成聚类报告...
+2025-12-28 09:27:41,132 - INFO - 生成聚类报告: reddit: Sustained Dietary Restriction for Weight L...
+2025-12-28 09:27:41,133 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Sustained_Dietary_Restriction_for_Weight_Loss_opportunity_analysis.md
+2025-12-28 09:27:41,133 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Sustained_Dietary_Restriction_for_Weight_Loss_opportunity_analysis.md
+2025-12-28 09:27:41,133 - INFO - 报告生成成功: pain_analysis_reports/reddit_Sustained_Dietary_Restriction_for_Weight_Loss_opportunity_analysis.md
+2025-12-28 09:27:41,133 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Sustained_Dietary_Restriction_for_Weight_Loss_opportunity_analysis.md
+2025-12-28 09:27:41,133 - INFO - 聚类 6 分析完成
+2025-12-28 09:27:41,133 - INFO - 开始分析第 7/15 个聚类: reddit: Managing Short Hair Regrowth and Maintenan...
+2025-12-28 09:27:41,133 - DEBUG - 执行聚类分析...
+2025-12-28 09:27:41,133 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:27:41,133 - DEBUG - prompt长度: 2170 字符
+2025-12-28 09:27:41,133 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:27:41,133 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:27:41,134 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:29:58,345 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 13045
+2025-12-28 09:29:58,347 - DEBUG - 响应状态码: 200
+2025-12-28 09:29:58,347 - DEBUG - LLM响应长度: 5087 字符
+2025-12-28 09:29:58,348 - INFO - LLM调用成功
+2025-12-28 09:29:58,350 - DEBUG - 生成聚类报告...
+2025-12-28 09:29:58,351 - INFO - 生成聚类报告: reddit: Managing Short Hair Regrowth and Maintenan...
+2025-12-28 09:29:58,351 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Managing_Short_Hair_Regrowth_and_Maintenance_opportunity_analysis.md
+2025-12-28 09:29:58,351 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Managing_Short_Hair_Regrowth_and_Maintenance_opportunity_analysis.md
+2025-12-28 09:29:58,352 - INFO - 报告生成成功: pain_analysis_reports/reddit_Managing_Short_Hair_Regrowth_and_Maintenance_opportunity_analysis.md
+2025-12-28 09:29:58,352 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Managing_Short_Hair_Regrowth_and_Maintenance_opportunity_analysis.md
+2025-12-28 09:29:58,352 - INFO - 聚类 7 分析完成
+2025-12-28 09:29:58,353 - INFO - 开始分析第 8/15 个聚类: reddit: Pegboard Installation and Use for Aestheti...
+2025-12-28 09:29:58,353 - DEBUG - 执行聚类分析...
+2025-12-28 09:29:58,353 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:29:58,353 - DEBUG - prompt长度: 2014 字符
+2025-12-28 09:29:58,353 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:29:58,353 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:29:58,356 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:32:55,615 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 15190
+2025-12-28 09:32:55,618 - DEBUG - 响应状态码: 200
+2025-12-28 09:32:55,618 - DEBUG - LLM响应长度: 6064 字符
+2025-12-28 09:32:55,618 - INFO - LLM调用成功
+2025-12-28 09:32:55,619 - DEBUG - 生成聚类报告...
+2025-12-28 09:32:55,619 - INFO - 生成聚类报告: reddit: Pegboard Installation and Use for Aestheti...
+2025-12-28 09:32:55,619 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Pegboard_Installation_and_Use_for_Aesthetic_and_Functional_Organization_opportunity_analysis.md
+2025-12-28 09:32:55,619 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Pegboard_Installation_and_Use_for_Aesthetic_and_Functional_Organization_opportunity_analysis.md
+2025-12-28 09:32:55,619 - INFO - 报告生成成功: pain_analysis_reports/reddit_Pegboard_Installation_and_Use_for_Aesthetic_and_Functional_Organization_opportunity_analysis.md
+2025-12-28 09:32:55,619 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Pegboard_Installation_and_Use_for_Aesthetic_and_Functional_Organization_opportunity_analysis.md
+2025-12-28 09:32:55,619 - INFO - 聚类 8 分析完成
+2025-12-28 09:32:55,619 - INFO - 开始分析第 9/15 个聚类: reddit: Pegboard Installation and Use for Home Org...
+2025-12-28 09:32:55,619 - DEBUG - 执行聚类分析...
+2025-12-28 09:32:55,619 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:32:55,619 - DEBUG - prompt长度: 1963 字符
+2025-12-28 09:32:55,620 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:32:55,620 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:32:55,620 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:35:05,436 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 11985
+2025-12-28 09:35:05,437 - DEBUG - 响应状态码: 200
+2025-12-28 09:35:05,437 - DEBUG - LLM响应长度: 4751 字符
+2025-12-28 09:35:05,437 - INFO - LLM调用成功
+2025-12-28 09:35:05,440 - DEBUG - 生成聚类报告...
+2025-12-28 09:35:05,441 - INFO - 生成聚类报告: reddit: Pegboard Installation and Use for Home Org...
+2025-12-28 09:35:05,441 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Pegboard_Installation_and_Use_for_Home_Organization_opportunity_analysis.md
+2025-12-28 09:35:05,441 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Pegboard_Installation_and_Use_for_Home_Organization_opportunity_analysis.md
+2025-12-28 09:35:05,441 - INFO - 报告生成成功: pain_analysis_reports/reddit_Pegboard_Installation_and_Use_for_Home_Organization_opportunity_analysis.md
+2025-12-28 09:35:05,441 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Pegboard_Installation_and_Use_for_Home_Organization_opportunity_analysis.md
+2025-12-28 09:35:05,441 - INFO - 聚类 9 分析完成
+2025-12-28 09:35:05,441 - INFO - 开始分析第 10/15 个聚类: reddit: Managing Short Hair Transitions and Mainte...
+2025-12-28 09:35:05,441 - DEBUG - 执行聚类分析...
+2025-12-28 09:35:05,441 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:35:05,441 - DEBUG - prompt长度: 2166 字符
+2025-12-28 09:35:05,441 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:35:05,441 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:35:05,442 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:37:42,532 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 14697
+2025-12-28 09:37:42,533 - DEBUG - 响应状态码: 200
+2025-12-28 09:37:42,534 - DEBUG - LLM响应长度: 5775 字符
+2025-12-28 09:37:42,534 - INFO - LLM调用成功
+2025-12-28 09:37:42,537 - DEBUG - 生成聚类报告...
+2025-12-28 09:37:42,538 - INFO - 生成聚类报告: reddit: Managing Short Hair Transitions and Mainte...
+2025-12-28 09:37:42,538 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Managing_Short_Hair_Transitions_and_Maintenance_opportunity_analysis.md
+2025-12-28 09:37:42,539 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Managing_Short_Hair_Transitions_and_Maintenance_opportunity_analysis.md
+2025-12-28 09:37:42,539 - INFO - 报告生成成功: pain_analysis_reports/reddit_Managing_Short_Hair_Transitions_and_Maintenance_opportunity_analysis.md
+2025-12-28 09:37:42,540 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Managing_Short_Hair_Transitions_and_Maintenance_opportunity_analysis.md
+2025-12-28 09:37:42,540 - INFO - 聚类 10 分析完成
+2025-12-28 09:37:42,540 - INFO - 开始分析第 11/15 个聚类: reddit: Managing Short Hair Regrowth and Maintenan...
+2025-12-28 09:37:42,540 - DEBUG - 执行聚类分析...
+2025-12-28 09:37:42,540 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:37:42,541 - DEBUG - prompt长度: 2179 字符
+2025-12-28 09:37:42,541 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:37:42,541 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:37:42,543 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:40:20,176 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 13523
+2025-12-28 09:40:20,178 - DEBUG - 响应状态码: 200
+2025-12-28 09:40:20,178 - DEBUG - LLM响应长度: 5481 字符
+2025-12-28 09:40:20,178 - INFO - LLM调用成功
+2025-12-28 09:40:20,181 - DEBUG - 生成聚类报告...
+2025-12-28 09:40:20,181 - INFO - 生成聚类报告: reddit: Managing Short Hair Regrowth and Maintenan...
+2025-12-28 09:40:20,181 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Managing_Short_Hair_Regrowth_and_Maintenance_opportunity_analysis.md
+2025-12-28 09:40:20,181 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Managing_Short_Hair_Regrowth_and_Maintenance_opportunity_analysis.md
+2025-12-28 09:40:20,181 - INFO - 报告生成成功: pain_analysis_reports/reddit_Managing_Short_Hair_Regrowth_and_Maintenance_opportunity_analysis.md
+2025-12-28 09:40:20,181 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Managing_Short_Hair_Regrowth_and_Maintenance_opportunity_analysis.md
+2025-12-28 09:40:20,181 - INFO - 聚类 11 分析完成
+2025-12-28 09:40:20,182 - INFO - 开始分析第 12/15 个聚类: reddit: Navigating Aversion to Romantic Engagement...
+2025-12-28 09:40:20,182 - DEBUG - 执行聚类分析...
+2025-12-28 09:40:20,182 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:40:20,182 - DEBUG - prompt长度: 2104 字符
+2025-12-28 09:40:20,182 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:40:20,182 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:40:20,183 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:42:58,214 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 14977
+2025-12-28 09:42:58,215 - DEBUG - 响应状态码: 200
+2025-12-28 09:42:58,216 - DEBUG - LLM响应长度: 5997 字符
+2025-12-28 09:42:58,216 - INFO - LLM调用成功
+2025-12-28 09:42:58,218 - DEBUG - 生成聚类报告...
+2025-12-28 09:42:58,218 - INFO - 生成聚类报告: reddit: Navigating Aversion to Romantic Engagement...
+2025-12-28 09:42:58,219 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Navigating_Aversion_to_Romantic_Engagement_opportunity_analysis.md
+2025-12-28 09:42:58,219 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Navigating_Aversion_to_Romantic_Engagement_opportunity_analysis.md
+2025-12-28 09:42:58,220 - INFO - 报告生成成功: pain_analysis_reports/reddit_Navigating_Aversion_to_Romantic_Engagement_opportunity_analysis.md
+2025-12-28 09:42:58,220 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Navigating_Aversion_to_Romantic_Engagement_opportunity_analysis.md
+2025-12-28 09:42:58,220 - INFO - 聚类 12 分析完成
+2025-12-28 09:42:58,220 - INFO - 开始分析第 13/15 个聚类: reddit: Navigating Aversion to Romantic Engagement...
+2025-12-28 09:42:58,220 - DEBUG - 执行聚类分析...
+2025-12-28 09:42:58,221 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:42:58,221 - DEBUG - prompt长度: 2088 字符
+2025-12-28 09:42:58,221 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:42:58,221 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:42:58,223 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:45:50,218 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 15831
+2025-12-28 09:45:50,220 - DEBUG - 响应状态码: 200
+2025-12-28 09:45:50,220 - DEBUG - LLM响应长度: 6271 字符
+2025-12-28 09:45:50,221 - INFO - LLM调用成功
+2025-12-28 09:45:50,222 - DEBUG - 生成聚类报告...
+2025-12-28 09:45:50,223 - INFO - 生成聚类报告: reddit: Navigating Aversion to Romantic Engagement...
+2025-12-28 09:45:50,223 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Navigating_Aversion_to_Romantic_Engagement_opportunity_analysis.md
+2025-12-28 09:45:50,223 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Navigating_Aversion_to_Romantic_Engagement_opportunity_analysis.md
+2025-12-28 09:45:50,224 - INFO - 报告生成成功: pain_analysis_reports/reddit_Navigating_Aversion_to_Romantic_Engagement_opportunity_analysis.md
+2025-12-28 09:45:50,224 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Navigating_Aversion_to_Romantic_Engagement_opportunity_analysis.md
+2025-12-28 09:45:50,224 - INFO - 聚类 13 分析完成
+2025-12-28 09:45:50,224 - INFO - 开始分析第 14/15 个聚类: reddit: Insurance Policy Renewal and Rate Shopping...
+2025-12-28 09:45:50,224 - DEBUG - 执行聚类分析...
+2025-12-28 09:45:50,224 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:45:50,224 - DEBUG - prompt长度: 1831 字符
+2025-12-28 09:45:50,224 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:45:50,224 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:45:50,226 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:48:28,249 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 13981
+2025-12-28 09:48:28,251 - DEBUG - 响应状态码: 200
+2025-12-28 09:48:28,251 - DEBUG - LLM响应长度: 5674 字符
+2025-12-28 09:48:28,252 - INFO - LLM调用成功
+2025-12-28 09:48:28,254 - DEBUG - 生成聚类报告...
+2025-12-28 09:48:28,255 - INFO - 生成聚类报告: reddit: Insurance Policy Renewal and Rate Shopping...
+2025-12-28 09:48:28,256 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Insurance_Policy_Renewal_and_Rate_Shopping_opportunity_analysis.md
+2025-12-28 09:48:28,256 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Insurance_Policy_Renewal_and_Rate_Shopping_opportunity_analysis.md
+2025-12-28 09:48:28,257 - INFO - 报告生成成功: pain_analysis_reports/reddit_Insurance_Policy_Renewal_and_Rate_Shopping_opportunity_analysis.md
+2025-12-28 09:48:28,257 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Insurance_Policy_Renewal_and_Rate_Shopping_opportunity_analysis.md
+2025-12-28 09:48:28,257 - INFO - 聚类 14 分析完成
+2025-12-28 09:48:28,258 - INFO - 开始分析第 15/15 个聚类: reddit: Navigating Aversion to Romantic Engagement...
+2025-12-28 09:48:28,258 - DEBUG - 执行聚类分析...
+2025-12-28 09:48:28,258 - INFO - 开始调用LLM: model=deepseek-ai/DeepSeek-V3.2, temperature=0.4, max_retries=3
+2025-12-28 09:48:28,259 - DEBUG - prompt长度: 2311 字符
+2025-12-28 09:48:28,259 - INFO - 尝试第 1/3 次LLM调用
+2025-12-28 09:48:28,259 - DEBUG - 请求URL: https://api.siliconflow.cn/v1/chat/completions
+2025-12-28 09:48:28,262 - DEBUG - Starting new HTTPS connection (1): api.siliconflow.cn:443
+2025-12-28 09:51:11,855 - DEBUG - https://api.siliconflow.cn:443 "POST /v1/chat/completions HTTP/1.1" 200 15281
+2025-12-28 09:51:11,855 - DEBUG - 响应状态码: 200
+2025-12-28 09:51:11,855 - DEBUG - LLM响应长度: 6127 字符
+2025-12-28 09:51:11,855 - INFO - LLM调用成功
+2025-12-28 09:51:11,856 - DEBUG - 生成聚类报告...
+2025-12-28 09:51:11,857 - INFO - 生成聚类报告: reddit: Navigating Aversion to Romantic Engagement...
+2025-12-28 09:51:11,857 - DEBUG - 报告文件路径: pain_analysis_reports/reddit_Navigating_Aversion_to_Romantic_Engagement_opportunity_analysis.md
+2025-12-28 09:51:11,857 - DEBUG - 开始写入报告文件: pain_analysis_reports/reddit_Navigating_Aversion_to_Romantic_Engagement_opportunity_analysis.md
+2025-12-28 09:51:11,857 - INFO - 报告生成成功: pain_analysis_reports/reddit_Navigating_Aversion_to_Romantic_Engagement_opportunity_analysis.md
+2025-12-28 09:51:11,857 - INFO - 报告已添加到列表: pain_analysis_reports/reddit_Navigating_Aversion_to_Romantic_Engagement_opportunity_analysis.md
+2025-12-28 09:51:11,857 - INFO - 聚类 15 分析完成
+2025-12-28 09:51:11,857 - INFO - 开始生成总结索引...
+2025-12-28 09:51:11,857 - INFO - 生成总结索引，包含 15 个报告
+2025-12-28 09:51:11,858 - DEBUG - 开始写入索引文件: pain_analysis_reports/README.md
+2025-12-28 09:51:11,858 - INFO - 索引文件生成成功: pain_analysis_reports/README.md
+2025-12-28 09:51:11,858 - INFO - 分析完成，生成了 15 个报告
+2025-12-28 09:51:11,858 - INFO - 分析报告生成完成
+2025-12-28 09:51:11,858 - INFO - 程序执行完成

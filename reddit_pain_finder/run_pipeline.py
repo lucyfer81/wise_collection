@@ -130,10 +130,19 @@ class WiseCollectionPipeline:
                 performance_monitor.end_stage("fetch", 0)
             raise
 
-    def run_stage_filter(self, limit_posts: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
-        """阶段2: 信号过滤"""
+    def run_stage_filter(self, limit_posts: Optional[int] = None, process_all: bool = False,
+                        include_comments: bool = False) -> Dict[str, Any]:
+        """阶段2: 信号过滤（Posts + Comments）
+
+        Args:
+            limit_posts: 限制处理帖子数量
+            process_all: 处理所有未过滤数据
+            include_comments: 是否过滤comments（Phase 1: Include Comments）
+        """
         logger.info("=" * 50)
         logger.info("STAGE 2: Filtering pain signals")
+        if include_comments:
+            logger.info("Including comments in filtering (experimental)")
         logger.info("=" * 50)
 
         if self.enable_monitoring:
@@ -156,9 +165,10 @@ class WiseCollectionPipeline:
             failed_count = 0
             failed_posts = []
 
+            # ============ 处理Posts ============
             if not unfiltered_posts:
                 logger.info("No posts to filter")
-                result = {"processed": 0, "filtered": 0, "failed": 0}
+                post_result = {"processed": 0, "filtered": 0, "failed": 0}
                 if self.enable_monitoring:
                     performance_monitor.end_stage("filter", 0)
             else:
@@ -206,7 +216,7 @@ class WiseCollectionPipeline:
                         # 继续处理下一个帖子，不中断整个流程
                         continue
 
-                result = {
+                post_result = {
                     "processed": len(unfiltered_posts),
                     "filtered": saved_count,
                     "failed": failed_count,
@@ -214,13 +224,65 @@ class WiseCollectionPipeline:
                     "filter_stats": filter.get_statistics()
                 }
 
-                if self.enable_monitoring:
-                    performance_monitor.end_stage("filter", saved_count)
+            # ============ 处理Comments（Phase 1: Include Comments）============
+            comment_result = {"processed": 0, "filtered": 0}
+            if include_comments:
+                logger.info("")
+                logger.info("Processing comments...")
+
+                # 重置filter统计
+                filter.stats = {
+                    "total_processed": 0,
+                    "passed_filter": 0,
+                    "filtered_out": 0,
+                    "filter_reasons": {}
+                }
+
+                unfiltered_comments = db.get_all_comments_for_filtering()
+
+                if not unfiltered_comments:
+                    logger.info("No comments to filter")
+                else:
+                    logger.info(f"Filtering {len(unfiltered_comments)} comments")
+
+                    # 批量处理comments（效率更高）
+                    filtered_comments = filter.filter_comments_batch(unfiltered_comments)
+
+                    # 保存结果
+                    saved_comments = db.save_filtered_comments(filtered_comments)
+
+                    comment_result = {
+                        "processed": len(unfiltered_comments),
+                        "filtered": saved_comments,
+                        "pass_rate": saved_comments / len(unfiltered_comments) if unfiltered_comments else 0,
+                        "filter_stats": filter.get_statistics()
+                    }
+
+                    logger.info(f"✅ Filtered {saved_comments}/{len(unfiltered_comments)} comments ({comment_result['pass_rate']:.1%} pass rate)")
+
+            # ============ 合并结果 ============
+            result = {
+                "posts": post_result,
+                "comments": comment_result if include_comments else None,
+                "include_comments": include_comments
+            }
+
+            if self.enable_monitoring:
+                performance_monitor.end_stage("filter", saved_count)
 
             self.stats["stages_completed"].append("filter")
             self.stats["stage_results"]["filter"] = result
 
-            logger.info(f"✅ Stage 2 completed: Processed {result['processed']} posts, filtered {result['filtered']}, failed {result.get('failed', 0)}")
+            # 输出总结
+            logger.info("")
+            logger.info("=" * 50)
+            logger.info("Filter Stage Summary")
+            logger.info("=" * 50)
+            logger.info(f"Posts:   {post_result['filtered']}/{post_result['processed']} passed")
+            if include_comments:
+                logger.info(f"Comments: {comment_result['filtered']}/{comment_result['processed']} passed ({comment_result['pass_rate']:.1%})")
+            logger.info("=" * 50)
+
             if failed_count > 0:
                 logger.warning(f"⚠️  {failed_count} posts failed to process and will be retried next run")
 
@@ -607,13 +669,18 @@ class WiseCollectionPipeline:
         limit_opportunities: Optional[int] = None,
         sources: Optional[List[str]] = None,
         process_all: bool = False,
+        include_comments: bool = False,  # Phase 1: Include Comments
         stop_on_error: bool = False,
         save_metrics: bool = False,
         metrics_file: Optional[str] = None,
         generate_report: bool = False,
         report_file: Optional[str] = None
     ) -> Dict[str, Any]:
-        """运行完整pipeline"""
+        """运行完整pipeline
+
+        Args:
+            include_comments: 是否在filter阶段处理comments（Phase 1）
+        """
         logger.info("🚀 Starting Wise Collection Multi-Source Pipeline")
         logger.info(f"⏰ Started at: {self.pipeline_start_time}")
 
@@ -632,9 +699,13 @@ class WiseCollectionPipeline:
         else:
             logger.info("📊 Processing mode: Default limits")
 
+        # 显示comments处理设置
+        if include_comments:
+            logger.info("💬 Comments processing: ENABLED (experimental)")
+
         stages = [
             ("fetch", lambda: self.run_stage_fetch(limit_sources, fetch_sources)),
-            ("filter", lambda: self.run_stage_filter(limit_posts, process_all)),
+            ("filter", lambda: self.run_stage_filter(limit_posts, process_all, include_comments)),
             ("extract", lambda: self.run_stage_extract(limit_posts, process_all)),
             ("embed", lambda: self.run_stage_embed(limit_events, process_all)),
             ("cluster", lambda: self.run_stage_cluster(limit_events, process_all)),
@@ -669,7 +740,11 @@ class WiseCollectionPipeline:
         """运行单个阶段"""
         stage_map = {
             "fetch": lambda: self.run_stage_fetch(kwargs.get("limit_sources"), kwargs.get("sources")),
-            "filter": lambda: self.run_stage_filter(kwargs.get("limit_posts"), process_all),
+            "filter": lambda: self.run_stage_filter(
+                kwargs.get("limit_posts"),
+                process_all,
+                kwargs.get("include_comments", False)  # Phase 1: Include Comments
+            ),
             "extract": lambda: self.run_stage_extract(kwargs.get("limit_posts"), process_all),
             "embed": lambda: self.run_stage_embed(kwargs.get("limit_events"), process_all),
             "cluster": lambda: self.run_stage_cluster(kwargs.get("limit_events"), process_all),
@@ -941,6 +1016,12 @@ def main():
     parser.add_argument("--process-all", action="store_true",
                        help="Process ALL unprocessed data (ignore default limits)")
 
+    # Comments处理选项（Phase 1: Include Comments）
+    parser.add_argument("--include-comments", action="store_true",
+                       help="Include comments in filter stage (experimental)")
+    parser.add_argument("--comment-min-score", type=int, default=5,
+                       help="Minimum upvotes for comment filtering (default: 5)")
+
     # 性能监控选项
     parser.add_argument("--no-monitoring", action="store_true", help="Disable performance monitoring")
     parser.add_argument("--save-metrics", action="store_true", help="Save performance metrics to file")
@@ -969,6 +1050,7 @@ def main():
                 limit_opportunities=args.limit_opportunities,
                 sources=args.sources,
                 process_all=args.process_all,
+                include_comments=args.include_comments,  # Phase 1: Include Comments
                 stop_on_error=args.stop_on_error,
                 save_metrics=args.save_metrics,
                 metrics_file=args.metrics_file,
@@ -984,7 +1066,8 @@ def main():
                 "limit_clusters": args.limit_clusters,
                 "limit_opportunities": args.limit_opportunities,
                 "sources": args.sources,
-                "process_all": args.process_all
+                "process_all": args.process_all,
+                "include_comments": args.include_comments  # Phase 1: Include Comments
             }
 
             # 只传递相关的参数

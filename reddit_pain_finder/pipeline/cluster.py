@@ -102,6 +102,229 @@ class PainEventClusterer:
                 "reasoning": f"Validation error: {e}"
             }
 
+    def _check_exact_duplicate(self, pain_event_ids: List[int]) -> Optional[Dict[str, Any]]:
+        """检测完全重复的cluster（相同pain_event_ids）
+
+        Args:
+            pain_event_ids: 要检查的pain event ID列表
+
+        Returns:
+            如果存在重复，返回cluster信息；否则返回None
+        """
+        try:
+            # 标准化排序以便比较
+            pain_events_json = json.dumps(sorted(pain_event_ids))
+
+            with db.get_connection("clusters") as conn:
+                cursor = conn.execute("""
+                    SELECT id, cluster_name, pain_event_ids, created_at, cluster_size
+                    FROM clusters
+                    WHERE pain_event_ids = ?
+                    LIMIT 1
+                """, (pain_events_json,))
+
+                result = cursor.fetchone()
+                if result:
+                    return dict(result)
+
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to check exact duplicate: {e}")
+            return None
+
+    def _find_similar_existing_cluster(
+        self,
+        new_pain_events: List[Dict[str, Any]],
+        threshold: float = None
+    ) -> Optional[Dict[str, Any]]:
+        """使用向量相似度查找相似的现有cluster（用于增量合并）
+
+        Args:
+            new_pain_events: 新的pain events列表
+            threshold: 相似度阈值（默认从配置读取）
+
+        Returns:
+            如果找到相似cluster，返回cluster信息；否则返回None
+        """
+        try:
+            import pickle
+
+            # 从配置读取阈值
+            if threshold is None:
+                threshold = self.thresholds.get("cluster_similarity_threshold", 0.75)
+
+            if not new_pain_events:
+                return None
+
+            # 1. 计算新pain events的平均向量（centroid）
+            new_vectors = []
+            for event in new_pain_events:
+                vector = event.get('embedding_vector')
+                if vector is not None and len(vector) > 0:
+                    new_vectors.append(vector)
+
+            if len(new_vectors) == 0:
+                logger.warning("No valid embedding vectors in new pain events")
+                return None
+
+            new_centroid = np.mean(new_vectors, axis=0)
+
+            # 2. 获取最近7天内创建的clusters进行比对（性能优化）
+            with db.get_connection("clusters") as conn:
+                cursor = conn.execute("""
+                    SELECT id, cluster_name, pain_event_ids, cluster_size, source_type
+                    FROM clusters
+                    WHERE created_at > datetime('now', '-7 days')
+                    ORDER BY created_at DESC
+                """)
+
+                for cluster_row in cursor.fetchall():
+                    cluster = dict(cluster_row)
+                    event_ids = json.loads(cluster['pain_event_ids'])
+
+                    # 跳过过小的clusters
+                    if cluster['cluster_size'] < 3:
+                        continue
+
+                    # 3. 获取该cluster的pain events及其向量
+                    with db.get_connection("pain") as pain_conn:
+                        placeholders = ','.join('?' for _ in event_ids)
+                        pain_cursor = pain_conn.execute(f"""
+                            SELECT em.embedding_vector
+                            FROM pain_events pe
+                            JOIN pain_embeddings em ON pe.id = em.pain_event_id
+                            WHERE pe.id IN ({placeholders})
+                        """, event_ids)
+
+                        existing_vectors = []
+                        for row in pain_cursor.fetchall():
+                            if row['embedding_vector']:
+                                try:
+                                    vector = pickle.loads(row['embedding_vector'])
+                                    existing_vectors.append(vector)
+                                except Exception as e:
+                                    logger.debug(f"Failed to unpickle vector: {e}")
+                                    continue
+
+                    if not existing_vectors:
+                        continue
+
+                    # 4. 计算现有cluster的centroid
+                    existing_centroid = np.mean(existing_vectors, axis=0)
+
+                    # 5. 计算余弦相似度
+                    similarity = np.dot(new_centroid, existing_centroid) / (
+                        np.linalg.norm(new_centroid) * np.linalg.norm(existing_centroid)
+                    )
+
+                    if similarity >= threshold:
+                        logger.info(f"Found similar cluster {cluster['id']}: "
+                                   f"similarity={similarity:.3f} >= threshold={threshold}")
+                        return {**cluster, 'similarity': similarity}
+
+            logger.debug(f"No similar clusters found (threshold={threshold})")
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to find similar existing cluster: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return None
+
+    def _incremental_update_cluster(
+        self,
+        existing_cluster: Dict[str, Any],
+        new_events: List[Dict[str, Any]]
+    ) -> bool:
+        """增量更新现有cluster（添加新的pain events）
+
+        Args:
+            existing_cluster: 现有cluster信息
+            new_events: 要添加的新pain events
+
+        Returns:
+            bool: 是否成功更新
+        """
+        try:
+            existing_id = existing_cluster['id']
+            existing_event_ids = json.loads(existing_cluster['pain_event_ids'])
+            new_event_ids = [e['id'] for e in new_events]
+
+            # 合并pain event IDs（去重）
+            merged_event_ids = sorted(list(set(existing_event_ids + new_event_ids)))
+
+            logger.info(f"Incremental update: Cluster {existing_id}")
+            logger.info(f"  Existing: {len(existing_event_ids)} events")
+            logger.info(f"  New: {len(new_event_ids)} events")
+            logger.info(f"  Merged: {len(merged_event_ids)} events")
+
+            # 获取所有pain events（现有+新）用于重新摘要
+            with db.get_connection("pain") as conn:
+                placeholders = ','.join('?' for _ in merged_event_ids)
+                cursor = conn.execute(f"""
+                    SELECT * FROM pain_events
+                    WHERE id IN ({placeholders})
+                """, merged_event_ids)
+                all_events = [dict(row) for row in cursor.fetchall()]
+
+            # 重新生成摘要（使用前20个events避免token过多）
+            events_for_summary = all_events[:20] if len(all_events) > 20 else all_events
+            summary_result = self._summarize_source_cluster(
+                events_for_summary,
+                existing_cluster.get('source_type', 'reddit')
+            )
+
+            # 更新数据库
+            with db.get_connection("clusters") as conn:
+                conn.execute("""
+                    UPDATE clusters SET
+                        pain_event_ids = ?,
+                        cluster_size = ?,
+                        centroid_summary = ?,
+                        common_pain = ?,
+                        common_context = ?,
+                        example_events = ?,
+                        job_statement = ?,
+                        job_steps = ?,
+                        desired_outcomes = ?,
+                        job_context = ?,
+                        customer_profile = ?,
+                        semantic_category = ?,
+                        product_impact = ?
+                    WHERE id = ?
+                """, (
+                    json.dumps(merged_event_ids),
+                    len(merged_event_ids),
+                    summary_result.get('centroid_summary', ''),
+                    summary_result.get('common_pain', ''),
+                    summary_result.get('common_context', ''),
+                    json.dumps(summary_result.get('example_events', [])),
+                    summary_result.get('job_statement', ''),
+                    json.dumps(summary_result.get('job_steps', [])),
+                    json.dumps(summary_result.get('desired_outcomes', [])),
+                    summary_result.get('job_context', ''),
+                    summary_result.get('customer_profile', ''),
+                    summary_result.get('semantic_category', ''),
+                    summary_result.get('product_impact', 0.0),
+                    existing_id
+                ))
+                conn.commit()
+
+            # 更新pain_events的cluster_id
+            db.update_pain_event_cluster_ids(new_event_ids, existing_id)
+
+            logger.info(f"✅ Incrementally updated cluster {existing_id}: "
+                       f"{existing_cluster['cluster_name']} (size {len(existing_event_ids)} → {len(merged_event_ids)})")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to incrementally update cluster: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return False
+
     def _create_cluster_summary(self, pain_events: List[Dict[str, Any]]) -> Dict[str, Any]:
         """创建聚类摘要"""
         if not pain_events:
@@ -292,7 +515,7 @@ Processing time: {processing_time:.2f}s
             raise
 
     def _get_pain_events_with_source_and_embeddings(self) -> List[Dict[str, Any]]:
-        """获取有嵌入向量和source信息的痛点事件"""
+        """获取有嵌入向量且未聚类（cluster_id IS NULL）的痛点事件"""
         try:
             import pickle
             with db.get_connection("pain") as conn:
@@ -305,6 +528,7 @@ Processing time: {processing_time:.2f}s
                         JOIN pain_embeddings e ON p.id = e.pain_event_id
                         LEFT JOIN filtered_posts fp ON p.post_id = fp.id
                         LEFT JOIN posts po ON p.post_id = po.id
+                        WHERE p.cluster_id IS NULL
                         ORDER BY p.extracted_at DESC
                     """)
                 else:
@@ -314,6 +538,7 @@ Processing time: {processing_time:.2f}s
                                'reddit' as source_type
                         FROM pain_events p
                         JOIN pain_embeddings e ON p.id = e.pain_event_id
+                        WHERE p.cluster_id IS NULL
                         ORDER BY p.extracted_at DESC
                     """)
 
@@ -354,6 +579,40 @@ Processing time: {processing_time:.2f}s
             if len(cluster_events) < 4:
                 logger.debug(f"Skipping cluster {i+1}: too small ({len(cluster_events)} < 4 events)")
                 continue
+
+            # 提取pain_event_ids列表
+            pain_event_ids = [event["id"] for event in cluster_events]
+
+            # === 新增：Layer 1 - 检测完全重复 ===
+            exact_duplicate = self._check_exact_duplicate(pain_event_ids)
+            if exact_duplicate:
+                logger.warning(f"⚠️ Skipping exact duplicate cluster:")
+                logger.warning(f"   Existing: Cluster {exact_duplicate['id']} - {exact_duplicate['cluster_name']}")
+                logger.warning(f"   Pain events: {pain_event_ids}")
+                continue  # 跳过重复cluster
+
+            # === 新增：Layer 2 - 检测相似cluster（用于增量合并）===
+            similar_cluster = self._find_similar_existing_cluster(cluster_events)
+            if similar_cluster:
+                logger.info(f"🔄 Found similar cluster, performing incremental merge:")
+                logger.info(f"   Existing: Cluster {similar_cluster['id']} - {similar_cluster['cluster_name']}")
+                logger.info(f"   Similarity: {similar_cluster.get('similarity', 0):.3f}")
+                logger.info(f"   New events: {len(pain_event_ids)} events")
+
+                # === Layer 3 - 增量更新现有cluster ===
+                if self._incremental_update_cluster(similar_cluster, cluster_events):
+                    final_clusters.append({
+                        "id": similar_cluster['id'],
+                        "cluster_name": similar_cluster['cluster_name'],
+                        "action": "incremental_update",
+                        "merged_events_count": len(pain_event_ids),
+                        "pain_event_ids": pain_event_ids,
+                        "cluster_size": len(pain_event_ids)
+                    })
+                    continue  # 跳过创建新cluster
+                else:
+                    logger.warning("Incremental update failed, will create new cluster as fallback")
+                    # 继续执行，创建新cluster
 
             # 对于大聚类，采样前20个事件进行验证和摘要
             events_for_processing = cluster_events
@@ -406,6 +665,10 @@ Processing time: {processing_time:.2f}s
                 # 保存到数据库
                 saved_cluster_id = self._save_cluster_to_database(final_cluster)
                 if saved_cluster_id:
+                    # 新增：更新pain_events的cluster_id（标记为已聚类）
+                    pain_event_ids = [event["id"] for event in cluster_events]
+                    db.update_pain_event_cluster_ids(pain_event_ids, saved_cluster_id)
+
                     final_cluster["saved_cluster_id"] = saved_cluster_id
                     final_clusters.append(final_cluster)
 

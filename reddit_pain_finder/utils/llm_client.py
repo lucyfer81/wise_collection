@@ -207,30 +207,59 @@ class LLMClient:
         subreddit: str,
         upvotes: int,
         comments_count: int,
-        top_comments: Optional[List[Dict[str, Any]]] = None
+        top_comments: Optional[List[Dict[str, Any]]] = None,
+        metadata: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """从Reddit帖子中提取痛点（支持评论上下文）"""
-        prompt = self._get_pain_extraction_prompt()
+        """从Reddit帖子或评论中提取痛点（支持评论上下文）
 
-        # Build user message with comment context
-        user_message = f"""Title: {title}
+        Args:
+            title: Post title (or parent post title if analyzing a comment)
+            body: Post body or comment body
+            subreddit: Subreddit name
+            upvotes: Upvote count
+            comments_count: Number of comments
+            top_comments: List of top comments (only used for post analysis)
+            metadata: Optional metadata dict with 'source_type' key ('post' or 'comment')
+        """
+        # Determine if analyzing a comment or post
+        is_comment = metadata and metadata.get("source_type") == "comment" if metadata else False
+
+        # Get appropriate prompt based on source type
+        prompt = self._get_pain_extraction_prompt(is_comment=is_comment)
+
+        # Build user message - format differs for comments vs posts
+        if is_comment:
+            # Analyzing a standalone comment
+            user_message = f"""ANALYZING A COMMENT
+
+Parent Post Title (context only): {title}
+Comment Body (PRIMARY PAIN SOURCE): {body}
+Subreddit: {subreddit}
+Comment Upvotes: {upvotes}
+"""
+            # Note: Don't include top_comments when analyzing a comment itself
+        else:
+            # Analyzing a post (original behavior)
+            user_message = f"""ANALYZING A POST
+
+Title: {title}
 Body: {body}
 Subreddit: {subreddit}
 Upvotes: {upvotes}
 Comments: {comments_count}
 """
 
-        # Add top comments if available
-        if top_comments and len(top_comments) > 0:
-            user_message += f"\nTop {len(top_comments)} Comments:\n"
-            for i, comment in enumerate(top_comments, 1):
-                comment_body = comment.get('body', '')
-                comment_score = comment.get('score', 0)
-                comment_author = comment.get('author', 'unknown')
-                # Truncate very long comments to save tokens
-                if len(comment_body) > 500:
-                    comment_body = comment_body[:500] + "... [truncated]"
-                user_message += f"\n{i}. [{comment_score} upvotes] {comment_author}: {comment_body}\n"
+            # Add top comments if available
+            if top_comments and len(top_comments) > 0:
+                user_message += f"\nTop {len(top_comments)} Comments:\n"
+                for i, comment in enumerate(top_comments, 1):
+                    comment_body = comment.get('body', '')
+                    comment_score = comment.get('score', 0)
+                    comment_author = comment.get('author', 'unknown')
+                    # Truncate very long comments to save tokens
+                    if len(comment_body) > 500:
+                        comment_body = comment_body[:500] + "... [truncated]"
+                    user_message += f"\n{i}. [{comment_score} upvotes] {comment_author}: {comment_body}\n"
 
         messages = [
             {"role": "system", "content": prompt},
@@ -399,9 +428,73 @@ Be actionable and precise.""".format(
             json_mode=True
         )
 
-    def _get_pain_extraction_prompt(self) -> str:
-        """获取痛点抽取提示 - 支持评论上下文"""
-        return """You are an information extraction engine specializing in user pain point analysis.
+    def _get_pain_extraction_prompt(self, is_comment: bool = False) -> str:
+        """获取痛点抽取提示 - 支持帖子或评论分析
+
+        Args:
+            is_comment: True if analyzing a comment, False if analyzing a post
+        """
+        if is_comment:
+            # Prompt for analyzing standalone comments
+            return """You are an information extraction engine specializing in user pain point analysis from Reddit COMMENTS.
+
+Your task:
+From the provided COMMENT, extract concrete PAIN EVENTS expressed by the commenter.
+
+IMPORTANT CONTEXT:
+- You are analyzing a COMMENT, not a post
+- The COMMENT BODY is the PRIMARY source of pain signals
+- The parent post title provides context only
+- Focus on pain expressed IN THE COMMENT itself
+
+Comment characteristics:
+- Comments are often more direct and specific than posts
+- Commenters share personal experiences and frustrations
+- Pain signals in comments are frequently actionable and concrete
+- Comments reveal real-world implementation details
+
+Rules:
+- Do NOT summarize the comment
+- Do NOT give advice
+- If no concrete pain exists in the comment, return an empty list
+- Be literal and conservative
+- Focus on actionable problems mentioned by the commenter
+- Extract pains from the COMMENT BODY, not the parent post title
+- The parent post title is only context to understand what they're responding to
+
+Output JSON only with this format:
+{
+  "pain_events": [
+    {
+      "actor": "who experiences the problem",
+      "context": "what they are trying to do",
+      "problem": "the concrete difficulty",
+      "current_workaround": "how they currently cope (if any)",
+      "frequency": "how often it happens (explicit or inferred)",
+      "emotional_signal": "frustration, anxiety, exhaustion, etc.",
+      "mentioned_tools": ["tool1", "tool2"],
+      "confidence": 0.8,
+      "evidence_sources": ["comment"]
+    }
+  ],
+  "extraction_summary": "brief summary of findings"
+}
+
+Fields explanation:
+- actor: who has this problem (developer, manager, user, etc.)
+- context: the situation or workflow where the problem occurs
+- problem: specific, concrete issue (e.g., "compilation takes 30 minutes" not "things are slow")
+- current_workaround: current solutions people use (if mentioned)
+- frequency: how often this happens (daily, weekly, occasionally, etc.)
+- emotional_signal: the emotion expressed (frustration, anger, disappointment, etc.)
+- mentioned_tools: tools, software, or methods explicitly mentioned
+- confidence: how confident you are this is a real pain point (0-1)
+- evidence_sources: should always be ["comment"] for comment analysis
+
+Extract ONLY from the comment body. Use parent post title only for context."""
+        else:
+            # Prompt for analyzing posts (original behavior)
+            return """You are an information extraction engine specializing in user pain point analysis.
 
 Your task:
 From the provided Reddit post and its top comments, extract concrete PAIN EVENTS.

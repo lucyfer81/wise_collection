@@ -991,6 +991,12 @@ class WiseCollectionDB:
 
         Returns:
             包含帖子上下文的字典，如果不存在返回空字典
+
+        Note:
+            Uses "raw" connection type because it accesses the posts table.
+            In unified database mode (default), connection type doesn't matter as
+            all tables are in the same database file. The connection type is kept
+            for semantic clarity and compatibility with non-unified mode.
         """
         try:
             with self.get_connection("raw") as conn:
@@ -1013,6 +1019,12 @@ class WiseCollectionDB:
 
         Returns:
             过滤评论列表，按pain_score降序排列
+
+        Note:
+            Uses "filtered" connection type because it accesses filtered_comments table
+            (and JOINs with posts table). In unified database mode (default), connection
+            type doesn't matter as all tables are in the same database file. The connection
+            type is kept for semantic clarity and compatibility with non-unified mode.
         """
         try:
             with self.get_connection("filtered") as conn:

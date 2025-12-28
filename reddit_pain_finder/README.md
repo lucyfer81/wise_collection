@@ -325,3 +325,30 @@ pipeline = RedditPainPipeline()
 ---
 
 **注意**: 本系统仅用于学习和研究目的。使用时请遵守 Reddit 和相关 API 的服务条款。
+
+## 📝 Phase 2: Extract Pain from Comments
+
+Phase 2 extends the pain extraction pipeline to process filtered comments as independent pain sources, not just post accessories.
+
+### Key Changes
+
+- **Database Schema**: Added `source_type`, `source_id`, and `parent_post_id` columns to track pain source origin
+- **Comment Filtering**: 3,656 high-quality comments identified from Phase 1
+- **Extraction Script**: Standalone script `scripts/extract_pain_from_comments.py` for one-time extraction
+- **LLM Updates**: Comment-aware extraction with parent post as context
+
+### Usage
+
+```bash
+# Dry run to test extraction
+python3 scripts/extract_pain_from_comments.py --limit 10 --dry-run
+
+# Extract from all filtered comments
+python3 scripts/extract_pain_from_comments.py --limit 3656
+```
+
+### Documentation
+
+See `docs/phase2_implementation_summary.md` for complete details and `docs/phase2_completion_checklist.md` for implementation status.
+
+**Status**: Phase 2 complete. Integration with main pipeline planned for Phase 3.

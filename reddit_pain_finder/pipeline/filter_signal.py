@@ -19,6 +19,7 @@ class PainSignalFilter:
         """初始化过滤器"""
         self.thresholds = self._load_thresholds(config_path)
         self.subreddits_config = self._load_subreddits_config("config/subreddits.yaml")
+        self.comment_thresholds = self._load_comment_thresholds()
         self.stats = {
             "total_processed": 0,
             "passed_filter": 0,
@@ -43,6 +44,16 @@ class PainSignalFilter:
         except Exception as e:
             logger.error(f"Failed to load subreddits config from {config_path}: {e}")
             return {}
+
+    def _load_comment_thresholds(self) -> Dict[str, Any]:
+        """加载评论专用阈值（低于帖子阈值）- Phase 1: Include Comments"""
+        return {
+            "min_score": 5,              # 帖子: 5-20
+            "min_length": 20,            # 帖子: 50
+            "min_pain_score": 0.2,       # 帖子: 0.3-0.5
+            "min_keywords": 1,           # 帖子: 1个类别
+            "engagement_threshold": 0.1  # 帖子: 0.2
+        }
 
     def _check_quality_thresholds(self, post_data: Dict[str, Any]) -> Tuple[bool, str]:
         """检查质量阈值"""
@@ -493,6 +504,149 @@ class PainSignalFilter:
 
         logger.info(f"Filter complete: {len(filtered_posts)}/{len(posts)} posts passed")
         return filtered_posts
+
+    # ==================== Phase 1: Include Comments ====================
+
+    def filter_comment(self, comment_data: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
+        """过滤单条评论（与filter_post平行）- Phase 1: Include Comments
+
+        评论阈值显著低于帖子，因为：
+        - 评论更短、更直接
+        - 高分评论 = 社区验证
+        - 评论常包含具体痛点细节
+        """
+        self.stats["total_processed"] += 1
+
+        filter_result = {
+            "comment_id": comment_data.get("id"),
+            "passed": False,
+            "pain_score": 0.0,
+            "reasons": [],
+            "matched_keywords": [],
+            "filter_summary": {}
+        }
+
+        # 1. 质量阈值检查（降低标准）
+        score = comment_data.get("score", 0)
+        body = comment_data.get("body", "")
+
+        # 检查最小分数
+        if score < self.comment_thresholds["min_score"]:
+            self.stats["filtered_out"] += 1
+            reason = f"low_score: {score} < {self.comment_thresholds['min_score']}"
+            self.stats["filter_reasons"][reason] = self.stats["filter_reasons"].get(reason, 0) + 1
+            filter_result["reasons"].append(reason)
+            filter_result["filter_summary"] = {"reason": "low_score", "score": score}
+            return False, filter_result
+
+        # 检查最小长度
+        if len(body) < self.comment_thresholds["min_length"]:
+            self.stats["filtered_out"] += 1
+            reason = f"too_short: {len(body)} < {self.comment_thresholds['min_length']}"
+            self.stats["filter_reasons"][reason] = self.stats["filter_reasons"].get(reason, 0) + 1
+            filter_result["reasons"].append(reason)
+            filter_result["filter_summary"] = {"reason": "too_short", "length": len(body)}
+            return False, filter_result
+
+        # 2. 痛点关键词检查（复用现有逻辑）
+        has_keywords, matched_keywords, keyword_score = self._check_pain_keywords(comment_data)
+        filter_result["matched_keywords"] = matched_keywords
+
+        if not has_keywords or len(matched_keywords) < self.comment_thresholds["min_keywords"]:
+            self.stats["filtered_out"] += 1
+            reason = "insufficient_keywords"
+            self.stats["filter_reasons"][reason] = self.stats["filter_reasons"].get(reason, 0) + 1
+            filter_result["reasons"].append(reason)
+            filter_result["filter_summary"] = {"reason": "insufficient_keywords"}
+            return False, filter_result
+
+        # 3. 痛点句式检查（复用现有逻辑）
+        has_patterns, matched_patterns = self._check_pain_patterns(comment_data)
+        filter_result["matched_patterns"] = matched_patterns
+
+        # 4. 情绪强度计算（复用现有逻辑）
+        emotional_intensity = self._calculate_emotional_intensity(comment_data)
+        filter_result["emotional_intensity"] = emotional_intensity
+
+        # 5. 计算pain score（调整权重适配评论特点）
+        pain_score = 0.0
+
+        # 关键词分数 (50%) - 评论更依赖关键词
+        pain_score += keyword_score * 0.5
+
+        # 句式分数 (25%) - 评论句式更简单
+        pattern_score = min(len(matched_patterns) / 2.0, 1.0) * 0.25
+        pain_score += pattern_score
+
+        # 情绪强度分数 (15%) - 评论情绪更直接
+        pain_score += emotional_intensity * 0.15
+
+        # 基础质量分数 (10%) - 评论质量主要看score
+        score_normalized = min(score / 100.0, 1.0)
+        quality_score = score_normalized * 0.1
+        pain_score += quality_score
+
+        # 确保分数在0-1范围内
+        pain_score = min(max(pain_score, 0.0), 1.0)
+
+        filter_result["pain_score"] = pain_score
+
+        # 6. 检查最小pain score阈值
+        if pain_score < self.comment_thresholds["min_pain_score"]:
+            self.stats["filtered_out"] += 1
+            reason = f"low_pain_score: {pain_score:.2f} < {self.comment_thresholds['min_pain_score']}"
+            self.stats["filter_reasons"][reason] = self.stats["filter_reasons"].get(reason, 0) + 1
+            filter_result["reasons"].append(reason)
+            filter_result["filter_summary"] = {"reason": "low_pain_score", "score": pain_score}
+            return False, filter_result
+
+        # 7. 通过！
+        self.stats["passed_filter"] += 1
+        filter_result["passed"] = True
+        filter_result["filter_summary"] = {
+            "reason": "passed",
+            "pain_score": pain_score,
+            "components": {
+                "keywords": keyword_score,
+                "patterns": pattern_score,
+                "emotion": emotional_intensity,
+                "quality": quality_score
+            }
+        }
+
+        return True, filter_result
+
+    def filter_comments_batch(self, comments: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """批量过滤评论 - Phase 1: Include Comments"""
+        logger.info(f"Filtering {len(comments)} comments through pain signal detector")
+
+        filtered_comments = []
+        for i, comment in enumerate(comments):
+            if i % 100 == 0:
+                logger.info(f"Processed {i}/{len(comments)} comments")
+
+            passed, result = self.filter_comment(comment)
+
+            if passed:
+                # 为评论添加过滤结果
+                filtered_comment = {
+                    "comment_id": comment["id"],
+                    "post_id": comment["post_id"],
+                    "source": comment.get("source", "reddit"),
+                    "author": comment.get("author"),
+                    "body": comment["body"],
+                    "score": comment.get("score", 0),
+                    "pain_score": result["pain_score"],
+                    "pain_keywords": result["matched_keywords"],
+                    "pain_patterns": result.get("matched_patterns", []),
+                    "emotional_intensity": result.get("emotional_intensity", 0.0),
+                    "filter_reason": "pain_signal_passed",
+                    "engagement_score": 0.0  # 评论的参与度评分（可后续优化）
+                }
+                filtered_comments.append(filtered_comment)
+
+        logger.info(f"Filter complete: {len(filtered_comments)}/{len(comments)} comments passed")
+        return filtered_comments
 
     def get_statistics(self) -> Dict[str, Any]:
         """获取过滤统计信息"""

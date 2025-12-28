@@ -251,6 +251,27 @@ class WiseCollectionDB:
                 )
             """)
 
+            # 创建过滤评论表（Phase 1: Include Comments）
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS filtered_comments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    comment_id INTEGER NOT NULL,
+                    source TEXT NOT NULL,
+                    post_id TEXT NOT NULL,
+                    author TEXT,
+                    body TEXT NOT NULL,
+                    score INTEGER DEFAULT 0,
+                    pain_score REAL DEFAULT 0.0,
+                    pain_keywords TEXT,
+                    filter_reason TEXT,
+                    engagement_score REAL DEFAULT 0.0,
+                    filtered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (comment_id) REFERENCES comments(id),
+                    FOREIGN KEY (post_id) REFERENCES posts(id),
+                    UNIQUE(comment_id)
+                )
+            """)
+
             # 创建所有索引
             # posts表索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_subreddit ON posts(subreddit)")
@@ -291,6 +312,11 @@ class WiseCollectionDB:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_comments_post_id_score ON comments(post_id, score DESC)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_comments_source ON comments(source)")
+
+            # filtered_comments表索引（Phase 1: Include Comments）
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_comments_post_id ON filtered_comments(post_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_comments_score ON filtered_comments(score DESC)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_comments_pain_score ON filtered_comments(pain_score DESC)")
 
             # 添加对齐跟踪列到clusters表（如果不存在）
             self._add_alignment_columns_to_clusters(conn)
@@ -889,6 +915,73 @@ class WiseCollectionDB:
         except Exception as e:
             logger.error(f"Failed to get comments for post {post_id}: {e}")
             return []
+
+    def get_all_comments_for_filtering(self, limit: int = None) -> List[Dict[str, Any]]:
+        """获取所有需要过滤的评论（Phase 1: Include Comments）
+
+        Args:
+            limit: 限制返回数量，None表示返回所有
+
+        Returns:
+            评论列表，包含comment相关信息和parent post信息
+        """
+        try:
+            with self.get_connection("raw") as conn:
+                query = """
+                    SELECT c.id, c.post_id, c.source, c.author, c.body, c.score,
+                           p.subreddit, p.title as post_title
+                    FROM comments c
+                    JOIN posts p ON c.post_id = p.id
+                    WHERE c.id NOT IN (
+                        SELECT comment_id FROM filtered_comments
+                    )
+                    ORDER BY c.score DESC
+                """
+                if limit:
+                    query += f" LIMIT {limit}"
+
+                cursor = conn.execute(query)
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Failed to get comments for filtering: {e}")
+            return []
+
+    def save_filtered_comments(self, comments: List[Dict[str, Any]]) -> int:
+        """保存通过过滤的评论（Phase 1: Include Comments）
+
+        Args:
+            comments: 通过过滤的评论列表
+
+        Returns:
+            成功保存的评论数量
+        """
+        try:
+            with self.get_connection("filtered") as conn:
+                count = 0
+                for comment in comments:
+                    conn.execute("""
+                        INSERT OR IGNORE INTO filtered_comments
+                        (comment_id, source, post_id, author, body, score,
+                         pain_score, pain_keywords, filter_reason, engagement_score)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        comment["comment_id"],
+                        comment["source"],
+                        comment["post_id"],
+                        comment.get("author"),
+                        comment["body"],
+                        comment["score"],
+                        comment["pain_score"],
+                        json.dumps(comment.get("pain_keywords", [])),
+                        comment["filter_reason"],
+                        comment.get("engagement_score", 0.0)
+                    ))
+                    count += 1
+                conn.commit()
+                return count
+        except Exception as e:
+            logger.error(f"Failed to save filtered comments: {e}")
+            return 0
 
     # Filtered posts operations
     def insert_filtered_post(self, post_data: Dict[str, Any]) -> bool:

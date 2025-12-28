@@ -185,19 +185,95 @@ class LLMClient:
                     logger.error(f"{error_msg} - Max retries exceeded")
                     raise
 
+    def _clean_json_string(self, json_str: str) -> str:
+        """清理JSON字符串中的控制字符和非法格式
+
+        Args:
+            json_str: 原始JSON字符串
+
+        Returns:
+            清理后的JSON字符串
+        """
+        import re
+
+        # 移除markdown格式（**加粗**）
+        json_str = re.sub(r'\*\*', '', json_str)
+
+        # 更简单的方法：直接替换所有控制字符
+        # 但需要保留JSON结构中的合法字符（引号、逗号、冒号、花括号等）
+
+        # 策略：逐字符处理，保留JSON结构字符，替换字符串值中的控制字符
+        result = []
+        in_string = False
+        escape_next = False
+        string_delimiter = None
+
+        for char in json_str:
+            if escape_next:
+                # 转义字符，直接保留
+                result.append(char)
+                escape_next = False
+                continue
+
+            if char == '\\' and in_string:
+                # 转义符
+                result.append(char)
+                escape_next = True
+                continue
+
+            if char in ('"', "'") and not escape_next:
+                if not in_string:
+                    # 字符串开始
+                    in_string = True
+                    string_delimiter = char
+                    result.append(char)
+                elif char == string_delimiter:
+                    # 字符串结束
+                    in_string = False
+                    string_delimiter = None
+                    result.append(char)
+                else:
+                    # 不同的引号，在字符串内
+                    result.append(char)
+                continue
+
+            if in_string:
+                # 在字符串内，处理控制字符
+                if ord(char) < 32 or char == '\x7f':
+                    # 控制字符，替换为空格
+                    result.append(' ')
+                else:
+                    result.append(char)
+            else:
+                # 不在字符串内，直接保留
+                result.append(char)
+
+        return ''.join(result)
+
     def _try_fix_json(self, content: str) -> Dict[str, Any]:
-        """尝试修复损坏的JSON"""
+        """尝试修复损坏的JSON
+
+        Handles:
+        - Control characters in string values
+        - Markdown formatting (**bold**)
+        - Malformed JSON structure
+        """
         try:
             # 尝试提取JSON部分
             start_idx = content.find('{')
             end_idx = content.rfind('}') + 1
             if start_idx != -1 and end_idx > start_idx:
                 json_str = content[start_idx:end_idx]
+
+                # 清理JSON字符串
+                json_str = self._clean_json_string(json_str)
+
                 return json.loads(json_str)
             else:
                 raise ValueError("No JSON found in response")
         except Exception as e:
             logger.error(f"Failed to fix JSON: {e}")
+            logger.debug(f"Content after cleaning: {content[:500]}...")
             return {"error": "Failed to parse JSON", "raw_content": content}
 
     def extract_pain_points(

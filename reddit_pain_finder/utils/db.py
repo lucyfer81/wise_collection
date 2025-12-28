@@ -798,29 +798,17 @@ class WiseCollectionDB:
     def get_unprocessed_posts(self, limit: int = 100) -> List[Dict]:
         """获取未处理的帖子"""
         try:
-            # 首先获取所有已处理的帖子ID
-            with self.get_connection("filtered") as conn:
-                cursor = conn.execute("SELECT id FROM filtered_posts")
-                processed_ids = {row['id'] for row in cursor.fetchall()}
-
-            # 然后获取未处理的帖子
+            # 使用 NOT EXISTS 而不是 NOT IN，以正确处理 NULL 值
             with self.get_connection("raw") as conn:
-                if processed_ids:
-                    # 如果有已处理的帖子，排除它们
-                    placeholders = ','.join('?' * len(processed_ids))
-                    cursor = conn.execute(f"""
-                        SELECT * FROM posts
-                        WHERE id NOT IN ({placeholders})
-                        ORDER BY collected_at DESC
-                        LIMIT ?
-                    """, list(processed_ids) + [limit])
-                else:
-                    # 如果没有已处理的帖子，直接获取
-                    cursor = conn.execute("""
-                        SELECT * FROM posts
-                        ORDER BY collected_at DESC
-                        LIMIT ?
-                    """, (limit,))
+                cursor = conn.execute("""
+                    SELECT * FROM posts
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM filtered_posts
+                        WHERE filtered_posts.id = posts.id
+                    )
+                    ORDER BY collected_at DESC
+                    LIMIT ?
+                """, (limit,))
                 return [dict(row) for row in cursor.fetchall()]
         except Exception as e:
             logger.error(f"Failed to get unprocessed posts: {e}")
@@ -829,31 +817,18 @@ class WiseCollectionDB:
     def get_unprocessed_posts_by_source(self, source: str, limit: int = 100) -> List[Dict]:
         """获取未处理的帖子，支持按数据源过滤"""
         try:
-            # 首先获取所有已处理的帖子ID
-            with self.get_connection("filtered") as conn:
-                cursor = conn.execute("SELECT id FROM filtered_posts")
-                processed_ids = {row['id'] for row in cursor.fetchall()}
-
-            # 然后获取未处理的帖子，按数据源过滤
+            # 使用 NOT EXISTS 而不是 NOT IN，以正确处理 NULL 值
             with self.get_connection("raw") as conn:
-                if processed_ids:
-                    # 如果有已处理的帖子，排除它们
-                    placeholders = ','.join('?' * len(processed_ids))
-                    cursor = conn.execute(f"""
-                        SELECT * FROM posts
-                        WHERE source = ?
-                        AND id NOT IN ({placeholders})
-                        ORDER BY collected_at DESC
-                        LIMIT ?
-                    """, [source] + list(processed_ids) + [limit])
-                else:
-                    # 如果没有已处理的帖子，直接获取
-                    cursor = conn.execute("""
-                        SELECT * FROM posts
-                        WHERE source = ?
-                        ORDER BY collected_at DESC
-                        LIMIT ?
-                    """, (source, limit))
+                cursor = conn.execute("""
+                    SELECT * FROM posts
+                    WHERE source = ?
+                    AND NOT EXISTS (
+                        SELECT 1 FROM filtered_posts
+                        WHERE filtered_posts.id = posts.id
+                    )
+                    ORDER BY collected_at DESC
+                    LIMIT ?
+                """, (source, limit))
                 return [dict(row) for row in cursor.fetchall()]
         except Exception as e:
             logger.error(f"Failed to get unprocessed posts for source {source}: {e}")
@@ -887,15 +862,21 @@ class WiseCollectionDB:
     def insert_filtered_post(self, post_data: Dict[str, Any]) -> bool:
         """插入过滤后的帖子"""
         try:
+            # 验证 ID 不为空或 NULL
+            post_id = post_data.get("id")
+            if not post_id or post_id.strip() == "":
+                logger.error(f"Invalid post ID: '{post_id}'. Skipping insertion.")
+                return False
+
             with self.get_connection("filtered") as conn:
                 conn.execute("""
                     INSERT OR REPLACE INTO filtered_posts
                     (id, title, body, subreddit, url, score, num_comments,
                      upvote_ratio, pain_score, pain_keywords, filter_reason,
-                     aspiration_keywords, aspiration_score, pass_type, engagement_score, trust_level)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     aspiration_keywords, aspiration_score, pass_type, engagement_score, trust_level, author)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    post_data["id"],
+                    post_id,
                     post_data["title"],
                     post_data.get("body", ""),
                     post_data["subreddit"],
@@ -910,7 +891,8 @@ class WiseCollectionDB:
                     post_data.get("aspiration_score", 0.0),
                     post_data.get("pass_type", "pain"),
                     post_data.get("engagement_score", 0.0),
-                    post_data.get("trust_level", 0.5)
+                    post_data.get("trust_level", 0.5),
+                    post_data.get("author", "")
                 ))
                 conn.commit()
                 return True

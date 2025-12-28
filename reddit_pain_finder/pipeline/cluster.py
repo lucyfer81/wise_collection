@@ -605,7 +605,9 @@ Processing time: {processing_time:.2f}s
                         "id": similar_cluster['id'],
                         "cluster_name": similar_cluster['cluster_name'],
                         "action": "incremental_update",
-                        "merged_events_count": len(pain_event_ids)
+                        "merged_events_count": len(pain_event_ids),
+                        "pain_event_ids": pain_event_ids,
+                        "cluster_size": len(pain_event_ids)
                     })
                     continue  # 跳过创建新cluster
                 else:

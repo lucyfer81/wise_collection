@@ -1262,17 +1262,24 @@ class WiseCollectionDB:
             raise
 
     def get_clusters_for_opportunity_mapping(self) -> List[Dict]:
-        """获取用于机会映射的聚类（包括对齐问题）"""
+        """获取用于机会映射的聚类（包括对齐问题）
+
+        防止重复映射：只返回尚未映射opportunities的clusters
+        """
         try:
             with self.get_connection("clusters") as conn:
-                # 获取未对齐的原始聚类
+                # 获取未对齐的原始聚类，且该cluster尚未有opportunities
                 cursor = conn.execute("""
                     SELECT id, cluster_name, source_type, centroid_summary,
                            common_pain, pain_event_ids, cluster_size,
                            cluster_description, workflow_confidence, created_at
                     FROM clusters
-                    WHERE alignment_status IN ('unprocessed', 'processed')
-                    OR alignment_status IS NULL
+                    WHERE (alignment_status IN ('unprocessed', 'processed')
+                           OR alignment_status IS NULL)
+                      AND NOT EXISTS (
+                          SELECT 1 FROM opportunities
+                          WHERE opportunities.cluster_id = clusters.id
+                      )
                 """)
 
                 clusters = [dict(row) for row in cursor.fetchall()]

@@ -983,6 +983,56 @@ class WiseCollectionDB:
             logger.error(f"Failed to save filtered comments: {e}")
             return 0
 
+    def get_parent_post_context(self, post_id: str) -> Dict[str, Any]:
+        """获取父帖子上下文信息 - Phase 2: Include Comments
+
+        Args:
+            post_id: 帖子ID
+
+        Returns:
+            包含帖子上下文的字典，如果不存在返回空字典
+        """
+        try:
+            with self.get_connection("raw") as conn:
+                cursor = conn.execute("""
+                    SELECT title, body, subreddit, score, num_comments
+                    FROM posts
+                    WHERE id = ?
+                """, (post_id,))
+                row = cursor.fetchone()
+                return dict(row) if row else {}
+        except Exception as e:
+            logger.error(f"Failed to load parent post {post_id}: {e}")
+            return {}
+
+    def get_all_filtered_comments(self, limit: int = None) -> List[Dict[str, Any]]:
+        """获取所有待提取的过滤评论 - Phase 2: Include Comments
+
+        Args:
+            limit: 限制返回数量，None表示返回所有
+
+        Returns:
+            过滤评论列表，按pain_score降序排列
+        """
+        try:
+            with self.get_connection("filtered") as conn:
+                query = """
+                    SELECT fc.id, fc.comment_id, fc.post_id, fc.author,
+                           fc.body, fc.score, fc.pain_score, fc.pain_keywords,
+                           p.subreddit, p.title as post_title
+                    FROM filtered_comments fc
+                    JOIN posts p ON fc.post_id = p.id
+                    ORDER BY fc.pain_score DESC
+                """
+                if limit:
+                    query += f" LIMIT {limit}"
+
+                cursor = conn.execute(query)
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Failed to get filtered comments: {e}")
+            return []
+
     # Filtered posts operations
     def insert_filtered_post(self, post_data: Dict[str, Any]) -> bool:
         """插入过滤后的帖子"""
@@ -1060,16 +1110,20 @@ class WiseCollectionDB:
 
     # Pain events operations
     def insert_pain_event(self, pain_data: Dict[str, Any]) -> Optional[int]:
-        """插入痛点事件"""
+        """插入痛点事件（支持post和comment来源）- Phase 2: Include Comments"""
         try:
             with self.get_connection("pain") as conn:
                 cursor = conn.execute("""
                     INSERT INTO pain_events
-                    (post_id, actor, context, problem, current_workaround,
-                     frequency, emotional_signal, mentioned_tools, extraction_confidence)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (post_id, source_type, source_id, parent_post_id, actor, context,
+                     problem, current_workaround, frequency, emotional_signal,
+                     mentioned_tools, extraction_confidence)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     pain_data["post_id"],
+                    pain_data.get("source_type", "post"),  # NEW: source_type
+                    pain_data.get("source_id"),             # NEW: source_id
+                    pain_data.get("parent_post_id"),        # NEW: parent_post_id
                     pain_data.get("actor", ""),
                     pain_data.get("context", ""),
                     pain_data["problem"],

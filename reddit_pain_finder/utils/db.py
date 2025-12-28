@@ -1021,7 +1021,9 @@ class WiseCollectionDB:
             过滤评论列表，按pain_score降序排列
 
         Note:
-            Returns ONLY comments that haven't been extracted yet (no pain_events exist).
+            Returns ONLY comments that:
+            1. Haven't been extracted yet (no pain_events exist)
+            2. Haven't been attempted before (extraction_attempted = 0)
             Uses "filtered" connection type because it accesses filtered_comments table
             (and JOINs with posts table). In unified database mode (default), connection
             type doesn't matter as all tables are in the same database file. The connection
@@ -1037,6 +1039,7 @@ class WiseCollectionDB:
                     JOIN posts p ON fc.post_id = p.id
                     LEFT JOIN pain_events pe ON pe.source_type = 'comment' AND pe.source_id = CAST(fc.comment_id AS TEXT)
                     WHERE pe.id IS NULL
+                      AND (fc.extraction_attempted IS NULL OR fc.extraction_attempted = 0)
                     ORDER BY fc.pain_score DESC
                 """
                 if limit:
@@ -1047,6 +1050,29 @@ class WiseCollectionDB:
         except Exception as e:
             logger.error(f"Failed to get filtered comments: {e}")
             return []
+
+    def mark_comment_extraction_attempted(self, comment_id: int) -> bool:
+        """标记comment为已尝试提取 - 防止重复尝试
+
+        Args:
+            comment_id: 评论ID
+
+        Returns:
+            是否成功标记
+        """
+        try:
+            with self.get_connection("filtered") as conn:
+                conn.execute("""
+                    UPDATE filtered_comments
+                    SET extraction_attempted = 1,
+                        extraction_attempted_at = CURRENT_TIMESTAMP
+                    WHERE comment_id = ?
+                """, (comment_id,))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Failed to mark comment {comment_id} as attempted: {e}")
+            return False
 
     # Filtered posts operations
     def insert_filtered_post(self, post_data: Dict[str, Any]) -> bool:

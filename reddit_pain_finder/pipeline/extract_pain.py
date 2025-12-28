@@ -442,9 +442,9 @@ class PainPointExtractor:
 
             # 记录失败的评论ID
             failed_comments = []
+            total_pain_events = []
 
             # 抽取痛点事件（带失败恢复）
-            pain_events = []
             for i, comment in enumerate(filtered_comments):
                 if i % 10 == 0:
                     logger.info(f"Processed {i}/{len(filtered_comments)} comments")
@@ -453,17 +453,31 @@ class PainPointExtractor:
                     # 尝试抽取单条评论
                     comment_events = self._extract_from_single_comment(comment)
 
-                    # 验证和增强每个痛点事件
+                    # 验证每个痛点事件
+                    validated_events = []
                     for event in comment_events:
                         if self._validate_pain_event(event):
-                            # 注意：评论不能使用 _enhance_pain_event，因为其逻辑是针对帖子的
-                            # 简化处理：直接添加事件
-                            pain_events.append(event)
+                            validated_events.append(event)
 
-                    logger.debug(f"Successfully processed comment {comment.get('comment_id')}")
+                    # 立即保存这条comment的events（支持中断恢复）
+                    if validated_events:
+                        saved = self.save_pain_events(validated_events)
+                        logger.info(f"Saved {saved} pain events from comment {comment.get('comment_id')}")
+                        total_pain_events.extend(validated_events)
+                    else:
+                        logger.warning(f"No valid pain events extracted from comment {comment.get('comment_id')}")
+
+                    # 标记comment为已尝试（无论成功或失败）
+                    db.mark_comment_extraction_attempted(comment.get('comment_id'))
+                    logger.debug(f"Marked comment {comment.get('comment_id')} as attempted")
 
                 except Exception as e:
                     logger.error(f"Failed to process comment {comment.get('comment_id')}: {e}")
+
+                    # 即使失败也标记为已尝试，避免无限重试
+                    db.mark_comment_extraction_attempted(comment.get('comment_id'))
+                    logger.debug(f"Marked failed comment {comment.get('comment_id')} as attempted")
+
                     failed_comments.append(comment.get('comment_id'))
                     self.stats["extraction_errors"] += 1
                     continue
@@ -473,8 +487,7 @@ class PainPointExtractor:
                 logger.debug(f"Waiting {delay:.1f}s before next comment...")
                 time.sleep(delay)
 
-            # 保存成功处理的痛点事件
-            saved_count = self.save_pain_events(pain_events)
+            saved_count = len(total_pain_events)
 
             # 记录失败统计
             if failed_comments:
@@ -483,7 +496,7 @@ class PainPointExtractor:
             return {
                 "processed": len(filtered_comments) - len(failed_comments),
                 "failed": len(failed_comments),
-                "pain_events_extracted": len(pain_events),
+                "pain_events_extracted": len(total_pain_events),
                 "pain_events_saved": saved_count,
                 "extraction_stats": self.get_statistics(),
                 "failed_comments": failed_comments

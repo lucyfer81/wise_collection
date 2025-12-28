@@ -77,6 +77,197 @@ verticals:
       Emotional noise is high, extraction must be strict.
 
 # =========================
+# Productivity & Automation: 生产力与自动化
+# =========================
+productivity_automation:
+  trust_level: 0.7
+
+  productivity:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      1.1M+成员，生产力工具用户集中地。
+      关注工具抱怨、工作流痛点、自动化需求。
+      排除一般性建议分享帖，聚焦负面情绪表达。
+
+  automation:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      自动化工具用户（Zapier, Make, IFTTT）。
+      极高价值的工具集成和工作流自动化痛点。
+      关注"手动流程"、"工具不兼容"、"重复任务"等关键词。
+
+  ProductivityApps:
+    min_upvotes: 12
+    min_comments: 8
+    notes: >
+      专注生产力App讨论，工具决策者和抱怨者集中。
+      高质量的工具对比和具体功能缺失讨论。
+
+  GetDisciplined:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      习惯养成和自我管理工具痛点。
+      情绪化需求表达，需要过滤纯励志内容。
+
+  nocode:
+    min_upvotes: 8
+    min_comments: 5
+    notes: >
+      No-code工具用户，技术门槛低的自动化需求。
+      寻找"我想要X功能但不会代码"类型的帖子。
+
+  zapier:
+    min_upvotes: 5
+    min_comments: 3
+    notes: >
+      Zapier用户群，高级自动化工作流痛点。
+      关注限制、集成问题、价格抱怨。
+
+# =========================
+# Business & Workflow: 商业与工作流
+# =========================
+business_workflow:
+  trust_level: 0.6
+
+  projectmanagement:
+    min_upvotes: 10
+    min_comments: 8
+    notes: >
+      项目管理工具用户（Jira, Asana, Trello, Monday）。
+      高价值的流程优化和协作痛点。
+      关注团队协作、工具复杂性、报表需求。
+
+  ProductManagement:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      产品经理工具栈讨论。
+      高价值的B2B工具决策者群体。
+      寻找工具切换讨论、工作流抱怨、集成需求。
+
+  managers:
+    min_upvotes: 12
+    min_comments: 8
+    notes: >
+      管理层工作流和团队管理工具痛点。
+      关注1-on-1管理、绩效追踪、团队协作工具。
+
+  ecommerce:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      电商工具和技术栈讨论。
+      寻找客户支持、库存管理、订单处理自动化需求。
+
+  smallbusiness:
+    min_upvotes: 20
+    min_comments: 15
+    notes: >
+      小企业技术痛点讨论。
+      需要高过滤阈值，噪音较大。
+      关注"技术工具"、"软件推荐"、"效率"相关讨论。
+
+  advancedentrepreneur:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      成熟创业者的深层次痛点。
+      比r/Entrepreneur质量更高，适合B2B工具需求挖掘。
+
+  EntrepreneurRideAlong:
+    min_upvotes: 8
+    min_comments: 5
+    notes: >
+      真实创业旅程分享，包含大量运营痛点。
+      关注增长瓶颈、工具需求、流程自动化问题。
+
+# =========================
+# Specific Tools: 特定工具用户群
+# =========================
+specific_tools:
+  trust_level: 0.8
+
+  todoist:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      Todoist任务管理工具用户。
+      关注功能缺失、同步问题、集成需求。
+
+  trello:
+    min_upvotes: 10
+    min_comments: 5
+    notes: >
+      Trello看板工具用户。
+      寻找自动化、高级功能、工作流优化的需求。
+
+  asana:
+    min_upvotes: 8
+    min_comments: 5
+    notes: >
+      Asana项目管理工具用户。
+      关注团队协作、工作流复杂度、报表需求。
+
+  slack:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      Slack协作工具用户。
+      高价值的团队沟通和集成痛点。
+      重点关注通知过载、工作流集成需求。
+
+# =========================
+# Developer & Technical: 开发者与技术
+# =========================
+developer_tech:
+  trust_level: 0.6
+
+  SoftwareEngineering:
+    min_upvotes: 20
+    min_comments: 10
+    notes: >
+      软件工程实践和工具讨论。
+      关注开发工具链、CI/CD、代码审查工具痛点。
+
+  softwaredevelopment:
+    min_upvotes: 15
+    min_comments: 8
+    notes: >
+      软件开发方法论和工具讨论。
+      比r/programming质量更高，适合挖掘开发工具需求。
+
+  ExperiencedDevs:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      资深开发者工具和工作流讨论。
+      高质量技术决策者群体。
+
+  cscareerquestions:
+    min_upvotes: 25
+    min_comments: 15
+    notes: >
+      计算机职业相关，包含工具和工作流讨论。
+      高噪音，需要严格过滤。
+
+  webdev:
+    min_upvotes: 15
+    min_comments: 8
+    notes: >
+      Web开发工具和工作流痛点。
+      关注部署工具、前端工具链、CMS系统。
+
+  gamedev:
+    min_upvotes: 12
+    min_comments: 8
+    notes: >
+      游戏开发工具和项目管理讨论。
+      寻找版本控制、素材管理、项目追踪工具需求。
+
+# =========================
 # Consumer Life: 非技术蓝海探索
 # =========================
 consumer_life:
@@ -164,6 +355,131 @@ consumer_life:
     min_comments: 5
     notes: >
       缝纫爱好者，可能抱怨图纸管理、缝纫机功能、材料购买和项目规划方面的痛点。
+
+# =========================
+# Health & Wellness: 健康与生活方式
+# =========================
+health_wellness:
+  trust_level: 0.5
+
+  loseit:
+    min_upvotes: 20
+    min_comments: 15
+    notes: >
+      减重社区，饮食追踪和习惯养成工具痛点。
+      关注追踪App、饮食计划工具、激励系统。
+
+  nutrition:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      营养科学和饮食工具讨论。
+      寻找营养追踪App、食谱管理工具需求。
+
+  Cooking:
+    min_upvotes: 25
+    min_comments: 15
+    notes: >
+      烹饪社区，食谱管理和购物清单工具痛点。
+      高噪音，重点关注"工具"、"App"相关讨论。
+
+  EatCheapAndHealthy:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      预算健康饮食，价格敏感群体。
+      潜在的价格比较和购物规划工具需求。
+
+  MealPrepSunday:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      备餐社区，食谱规划和购物清单工具痛点。
+      关注批量规划、营养计算、自动化购物清单。
+
+  HomeImprovement:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      家庭装修和维修项目管理。
+      寻找承包商管理、项目追踪、预算工具需求。
+
+  DIY:
+    min_upvotes: 15
+    min_comments: 10
+    notes: >
+      DIY项目，工具和材料管理痛点。
+      关注项目规划、教程管理、材料清单工具。
+
+  fixit:
+    min_upvotes: 12
+    min_comments: 8
+    notes: >
+      维修和修复帮助，工具诊断需求。
+      潜在的问题诊断和维修指南工具需求。
+
+# =========================
+# Relationships & Life: 人际关系与生活
+# =========================
+relationships_life:
+  trust_level: 0.4
+
+  dating:
+    min_upvotes: 30
+    min_comments: 20
+    notes: >
+      约会相关，情感和社交工具需求。
+      极高噪音，谨慎使用。
+      寻找"我希望有个App可以..."类型的帖子。
+
+  relationships:
+    min_upvotes: 30
+    min_comments: 20
+    notes: >
+      人际关系建议，沟通工具和情绪管理需求。
+      高情感噪音，需要严格过滤。
+
+  relationship_advice:
+    min_upvotes: 30
+    min_comments: 20
+    notes: >
+      类似r/relationships，建议类内容。
+      谨慎使用，仅挖掘明确的工具需求表达。
+
+  Parenting:
+    min_upvotes: 25
+    min_comments: 15
+    notes: >
+      育儿社区，时间管理和育儿工具痛点。
+      关注日程管理、健康追踪、教育工具需求。
+
+  mentalhealth:
+    min_upvotes: 20
+    min_comments: 15
+    notes: >
+      心理健康支持，习惯追踪和冥想工具需求。
+      需要特别谨慎处理，仅挖掘工具需求表达。
+
+  careeradvice:
+    min_upvotes: 25
+    min_comments: 15
+    notes: >
+      职业建议，求职工具和职业规划需求。
+      关注简历工具、面试准备、技能追踪工具。
+
+  careerguidance:
+    min_upvotes: 20
+    min_comments: 12
+    notes: >
+      职业规划，类似r/careeradvice。
+      寻找技能评估、职业路径规划工具需求。
+
+  LifeAdvice:
+    min_upvotes: 30
+    min_comments: 20
+    notes: >
+      生活建议，广泛的个人问题解决工具需求。
+      高噪音，谨慎使用。
 
 # =========================
 # Experimental: 低频探索

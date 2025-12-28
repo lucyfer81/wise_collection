@@ -313,32 +313,29 @@ class DecisionShortlistGenerator:
             )
 
             # 调用 LLM
-            response = llm_client.generate(
-                prompt=prompt,
-                model="gpt-4o-mini",  # 使用更经济的模型
+            messages = [
+                {"role": "user", "content": prompt}
+            ]
+            response = llm_client.chat_completion(
+                messages=messages,
+                model_type="main",
                 temperature=0.7,
-                max_tokens=500
+                max_tokens=500,
+                json_mode=True
             )
 
-            # 解析 JSON 响应
-            import json
-            import re
+            # 提取内容（使用json_mode时，content已经是解析后的字典）
+            content = response.get("content", {})
 
-            # 尝试提取 JSON（去除可能的 markdown 代码块标记）
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(0)
-                content = json.loads(json_str)
-
-                # 验证必需字段
-                required_fields = ['problem', 'mvp', 'why_now']
-                if all(field in content for field in required_fields):
-                    logger.info(f"✅ LLM content generated for {opportunity['opportunity_name']}")
-                    return {
-                        'problem': content['problem'],
-                        'mvp': content['mvp'],
-                        'why_now': content['why_now']
-                    }
+            # 验证必需字段
+            required_fields = ['problem', 'mvp', 'why_now']
+            if isinstance(content, dict) and all(field in content for field in required_fields):
+                logger.info(f"✅ LLM content generated for {opportunity['opportunity_name']}")
+                return {
+                    'problem': content['problem'],
+                    'mvp': content['mvp'],
+                    'why_now': content['why_now']
+                }
 
             # 如果解析失败，使用 fallback
             logger.warning(f"Failed to parse LLM response, using fallback")

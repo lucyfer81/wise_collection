@@ -641,7 +641,7 @@ class WiseCollectionPipeline:
             ("alignment", lambda: self.run_stage_cross_source_alignment()),
             ("map_opportunities", lambda: self.run_stage_map_opportunities(limit_clusters, process_all)),
             ("score", lambda: self.run_stage_score(limit_opportunities, process_all)),
-            ("decision_shortlist", lambda: self.run_stage_decision_shortlist())
+            ("shortlist", lambda: self.run_stage_decision_shortlist())
         ]
 
         for stage_name, stage_func in stages:
@@ -676,7 +676,7 @@ class WiseCollectionPipeline:
             "alignment": lambda: self.run_stage_cross_source_alignment(),
             "map": lambda: self.run_stage_map_opportunities(kwargs.get("limit_clusters"), process_all),
             "score": lambda: self.run_stage_score(kwargs.get("limit_opportunities"), process_all),
-            "decision_shortlist": lambda: self.run_stage_decision_shortlist()
+            "shortlist": lambda: self.run_stage_decision_shortlist()
         }
 
         if stage_name not in stage_map:
@@ -923,7 +923,7 @@ def main():
     parser = argparse.ArgumentParser(description="Wise Collection Multi-Source Pipeline")
 
     # 运行模式
-    parser.add_argument("--stage", choices=["fetch", "filter", "extract", "embed", "cluster", "alignment", "map", "score", "decision_shortlist", "all"],
+    parser.add_argument("--stage", choices=["fetch", "filter", "extract", "embed", "cluster", "alignment", "map", "score", "shortlist", "all"],
                        default="all", help="Which stage to run (default: all)")
 
     # 数据源选择

@@ -295,10 +295,20 @@ class WiseCollectionPipeline:
                 performance_monitor.end_stage("filter", 0)
             raise
 
-    def run_stage_extract(self, limit_posts: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
-        """阶段3: 痛点抽取"""
+    def run_stage_extract(self, limit_posts: Optional[int] = None, process_all: bool = False,
+                         include_comments: bool = False, comment_limit: Optional[int] = None) -> Dict[str, Any]:
+        """阶段3: 痛点抽取 (Posts + Comments)
+
+        Args:
+            limit_posts: 限制处理帖子数量
+            process_all: 处理所有未过滤数据
+            include_comments: 是否抽取comments（Phase 2: Include Comments）
+            comment_limit: 限制处理评论数量（独立于limit_posts）
+        """
         logger.info("=" * 50)
         logger.info("STAGE 3: Extracting pain points")
+        if include_comments:
+            logger.info("Including comments in extraction (Phase 2: Include Comments)")
         logger.info("=" * 50)
 
         if self.enable_monitoring:
@@ -307,21 +317,65 @@ class WiseCollectionPipeline:
         try:
             extractor = PainPointExtractor()
 
+            # ============ 处理Posts ============
             # 如果 process_all=True 且未指定 limit，则处理所有数据
             if process_all and limit_posts is None:
                 limit_posts = 1000000  # 处理所有数据
             elif limit_posts is None:
                 limit_posts = 100
 
-            result = extractor.process_unextracted_posts(limit=limit_posts)
+            post_result = extractor.process_unextracted_posts(limit=limit_posts)
+
+            logger.info(f"✅ Posts: Extracted {post_result.get('pain_events_saved', 0)} pain events")
+
+            # ============ 处理Comments（Phase 2: Include Comments）============
+            comment_result = {"processed": 0, "pain_events_saved": 0}
+            if include_comments:
+                logger.info("")
+                logger.info("Processing comments...")
+
+                # 重置统计
+                extractor.reset_statistics()
+
+                # 使用独立的limit参数，或默认处理所有过滤的评论
+                if process_all and comment_limit is None:
+                    comment_limit = 1000000
+                elif comment_limit is None:
+                    comment_limit = 1000000  # 默认处理所有（因为已经过滤过）
+
+                comment_result = extractor.process_unextracted_comments(limit=comment_limit)
+
+                logger.info(f"✅ Comments: Extracted {comment_result.get('pain_events_saved', 0)} pain events")
+
+            # ============ 合并结果 ============
+            result = {
+                "posts": post_result,
+                "comments": comment_result if include_comments else None,
+                "include_comments": include_comments,
+                "total_events": (
+                    post_result.get('pain_events_saved', 0) +
+                    comment_result.get('pain_events_saved', 0)
+                ) if include_comments else post_result.get('pain_events_saved', 0)
+            }
 
             self.stats["stages_completed"].append("extract")
             self.stats["stage_results"]["extract"] = result
 
             if self.enable_monitoring:
-                performance_monitor.end_stage("extract", result.get('pain_events_saved', 0))
+                events_saved = result.get('total_events', 0)
+                performance_monitor.end_stage("extract", events_saved)
 
-            logger.info(f"✅ Stage 3 completed: Extracted {result.get('pain_events_saved', 0)} pain events")
+            # 输出总结
+            logger.info("")
+            logger.info("=" * 50)
+            logger.info("Extract Stage Summary")
+            logger.info("=" * 50)
+            logger.info(f"Posts:    {post_result.get('pain_events_saved', 0)} events")
+            if include_comments:
+                logger.info(f"Comments: {comment_result.get('pain_events_saved', 0)} events")
+            logger.info(f"Total:    {result.get('total_events', 0)} events")
+            logger.info("=" * 50)
+
             return result
 
         except Exception as e:
@@ -669,7 +723,7 @@ class WiseCollectionPipeline:
         limit_opportunities: Optional[int] = None,
         sources: Optional[List[str]] = None,
         process_all: bool = False,
-        include_comments: bool = False,  # Phase 1: Include Comments
+        include_comments: bool = False,  # Include comments in ALL applicable stages (filter, extract, etc.)
         stop_on_error: bool = False,
         save_metrics: bool = False,
         metrics_file: Optional[str] = None,
@@ -679,7 +733,7 @@ class WiseCollectionPipeline:
         """运行完整pipeline
 
         Args:
-            include_comments: 是否在filter阶段处理comments（Phase 1）
+            include_comments: 是否在所有支持comments的阶段处理comments（filter、extract等）
         """
         logger.info("🚀 Starting Wise Collection Multi-Source Pipeline")
         logger.info(f"⏰ Started at: {self.pipeline_start_time}")
@@ -701,12 +755,12 @@ class WiseCollectionPipeline:
 
         # 显示comments处理设置
         if include_comments:
-            logger.info("💬 Comments processing: ENABLED (experimental)")
+            logger.info("💬 Comments processing: ENABLED (filter, extract, etc.)")
 
         stages = [
             ("fetch", lambda: self.run_stage_fetch(limit_sources, fetch_sources)),
             ("filter", lambda: self.run_stage_filter(limit_posts, process_all, include_comments)),
-            ("extract", lambda: self.run_stage_extract(limit_posts, process_all)),
+            ("extract", lambda: self.run_stage_extract(limit_posts, process_all, include_comments, None)),
             ("embed", lambda: self.run_stage_embed(limit_events, process_all)),
             ("cluster", lambda: self.run_stage_cluster(limit_events, process_all)),
             ("alignment", lambda: self.run_stage_cross_source_alignment()),
@@ -743,9 +797,14 @@ class WiseCollectionPipeline:
             "filter": lambda: self.run_stage_filter(
                 kwargs.get("limit_posts"),
                 process_all,
-                kwargs.get("include_comments", False)  # Phase 1: Include Comments
+                kwargs.get("include_comments", False)
             ),
-            "extract": lambda: self.run_stage_extract(kwargs.get("limit_posts"), process_all),
+            "extract": lambda: self.run_stage_extract(
+                kwargs.get("limit_posts"),
+                process_all,
+                kwargs.get("include_comments", False),  # Simplified: single parameter
+                None  # comment_limit: always None (process all filtered comments)
+            ),
             "embed": lambda: self.run_stage_embed(kwargs.get("limit_events"), process_all),
             "cluster": lambda: self.run_stage_cluster(kwargs.get("limit_events"), process_all),
             "alignment": lambda: self.run_stage_cross_source_alignment(),
@@ -1016,9 +1075,9 @@ def main():
     parser.add_argument("--process-all", action="store_true",
                        help="Process ALL unprocessed data (ignore default limits)")
 
-    # Comments处理选项（Phase 1: Include Comments）
+    # Comments处理选项（Include Comments in all applicable stages）
     parser.add_argument("--include-comments", action="store_true",
-                       help="Include comments in filter stage (experimental)")
+                       help="Include comments in all applicable stages (filter, extract, etc.)")
     parser.add_argument("--comment-min-score", type=int, default=5,
                        help="Minimum upvotes for comment filtering (default: 5)")
 
@@ -1050,7 +1109,7 @@ def main():
                 limit_opportunities=args.limit_opportunities,
                 sources=args.sources,
                 process_all=args.process_all,
-                include_comments=args.include_comments,  # Phase 1: Include Comments
+                include_comments=args.include_comments,  # Applies to ALL applicable stages
                 stop_on_error=args.stop_on_error,
                 save_metrics=args.save_metrics,
                 metrics_file=args.metrics_file,
@@ -1067,11 +1126,12 @@ def main():
                 "limit_opportunities": args.limit_opportunities,
                 "sources": args.sources,
                 "process_all": args.process_all,
-                "include_comments": args.include_comments  # Phase 1: Include Comments
+                "include_comments": args.include_comments  # Applies to ALL applicable stages
             }
 
-            # 只传递相关的参数
-            relevant_kwargs = {k: v for k, v in stage_kwargs.items() if v is not None}
+            # 只传递相关的参数（保留布尔值）
+            relevant_kwargs = {k: v for k, v in stage_kwargs.items()
+                             if v is not None or isinstance(v, bool)}
             result = pipeline.run_single_stage(args.stage, **relevant_kwargs)
 
         # 保存结果

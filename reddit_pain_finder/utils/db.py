@@ -1021,6 +1021,7 @@ class WiseCollectionDB:
             过滤评论列表，按pain_score降序排列
 
         Note:
+            Returns ONLY comments that haven't been extracted yet (no pain_events exist).
             Uses "filtered" connection type because it accesses filtered_comments table
             (and JOINs with posts table). In unified database mode (default), connection
             type doesn't matter as all tables are in the same database file. The connection
@@ -1034,6 +1035,8 @@ class WiseCollectionDB:
                            p.subreddit, p.title as post_title
                     FROM filtered_comments fc
                     JOIN posts p ON fc.post_id = p.id
+                    LEFT JOIN pain_events pe ON pe.source_type = 'comment' AND pe.source_id = CAST(fc.comment_id AS TEXT)
+                    WHERE pe.id IS NULL
                     ORDER BY fc.pain_score DESC
                 """
                 if limit:

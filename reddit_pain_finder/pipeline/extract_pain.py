@@ -85,6 +85,80 @@ class PainPointExtractor:
                 self.stats["extraction_errors"] += 1
                 return []
 
+    def _extract_from_single_comment(self, comment_data: Dict[str, Any], retry_count: int = 0) -> List[Dict[str, Any]]:
+        """从单条评论抽取痛点事件 - Phase 2: Include Comments
+
+        Args:
+            comment_data: 包含评论数据的字典
+            retry_count: 重试次数
+
+        Returns:
+            痛点事件列表
+        """
+        max_retries = 2
+        try:
+            comment_id = comment_data["comment_id"]
+            post_id = comment_data["post_id"]
+            body = comment_data["body"]
+            score = comment_data.get("score", 0)
+
+            # 1. 加载父帖子作为上下文（不是主要来源）
+            parent_post = db.get_parent_post_context(post_id)
+            logger.debug(f"Loaded parent post context for comment {comment_id}: {parent_post.get('title', 'N/A')[:50]}...")
+
+            # 2. 调用LLM进行抽取（comment作为主要来源）
+            response = llm_client.extract_pain_points(
+                title=parent_post.get("title", "[Comment context]"),  # 仅作为上下文
+                body=body,  # PRIMARY: 评论本身
+                subreddit=parent_post.get("subreddit", ""),
+                upvotes=score,
+                comments_count=0,  # 评论没有子评论（暂不支持）
+                top_comments=[],   # 无子评论
+                metadata={
+                    "source_type": "comment",
+                    "parent_post_title": parent_post.get("title"),
+                    "parent_post_body": parent_post.get("body", "")[:500]  # 截断上下文
+                }
+            )
+
+            extraction_result = response["content"]
+            pain_events = extraction_result.get("pain_events", [])
+
+            # 3. 为每个痛点事件添加元数据
+            for event in pain_events:
+                event.update({
+                    "post_id": post_id,           # 父帖子（用于关联）
+                    "comment_id": comment_id,     # 实际来源
+                    "source_type": "comment",     # 标记为评论来源
+                    "source_id": str(comment_id),  # NEW: 具体来源ID
+                    "parent_post_id": post_id,    # NEW: 父帖子ID
+                    "subreddit": parent_post.get("subreddit", ""),
+                    "original_score": score,
+                    "extraction_model": response["model"],
+                    "extraction_timestamp": datetime.now().isoformat(),
+                    "confidence": event.get("confidence", 0.0),
+                    "comments_used": 0,  # 评论没有使用子评论
+                    "evidence_sources": ["comment"]  # 明确标记不是来自post
+                })
+
+            self.stats["total_pain_events"] += len(pain_events)
+            logger.debug(f"Extracted {len(pain_events)} pain events from comment {comment_id}")
+
+            return pain_events
+
+        except Exception as e:
+            error_msg = f"Failed to extract pain from comment {comment_data.get('comment_id')}: {e}"
+
+            # 如果是超时错误且还有重试机会
+            if "timeout" in str(e).lower() and retry_count < max_retries:
+                logger.warning(f"{error_msg} (retry {retry_count + 1}/{max_retries})")
+                time.sleep(5)  # 等待5秒后重试
+                return self._extract_from_single_comment(comment_data, retry_count + 1)
+            else:
+                logger.error(error_msg)
+                self.stats["extraction_errors"] += 1
+                return []
+
     def _validate_pain_event(self, pain_event: Dict[str, Any]) -> bool:
         """验证痛点事件的质量"""
         try:
@@ -246,7 +320,7 @@ class PainPointExtractor:
         return all_pain_events
 
     def save_pain_events(self, pain_events: List[Dict[str, Any]]) -> int:
-        """保存痛点事件到数据库"""
+        """保存痛点事件到数据库（支持post和comment来源）"""
         saved_count = 0
 
         for event in pain_events:
@@ -254,6 +328,9 @@ class PainPointExtractor:
                 # 准备数据库记录
                 event_data = {
                     "post_id": event["post_id"],
+                    "source_type": event.get("source_type", "post"),  # NEW
+                    "source_id": event.get("source_id"),              # NEW
+                    "parent_post_id": event.get("parent_post_id"),    # NEW
                     "actor": event.get("actor", ""),
                     "context": event.get("context", ""),
                     "problem": event["problem"],
@@ -340,6 +417,80 @@ class PainPointExtractor:
 
         except Exception as e:
             logger.error(f"Failed to process unextracted posts: {e}")
+            raise
+
+    def process_unextracted_comments(self, limit: int = 100) -> Dict[str, Any]:
+        """处理未抽取的过滤评论 - Phase 2: Include Comments
+
+        Args:
+            limit: 限制处理的评论数量
+
+        Returns:
+            处理结果统计字典
+        """
+        logger.info(f"Processing up to {limit} filtered comments")
+
+        try:
+            # 获取过滤后的评论
+            filtered_comments = db.get_all_filtered_comments(limit=limit)
+
+            if not filtered_comments:
+                logger.info("No filtered comments found")
+                return {"processed": 0, "pain_events": 0}
+
+            logger.info(f"Found {len(filtered_comments)} comments to extract from")
+
+            # 记录失败的评论ID
+            failed_comments = []
+
+            # 抽取痛点事件（带失败恢复）
+            pain_events = []
+            for i, comment in enumerate(filtered_comments):
+                if i % 10 == 0:
+                    logger.info(f"Processed {i}/{len(filtered_comments)} comments")
+
+                try:
+                    # 尝试抽取单条评论
+                    comment_events = self._extract_from_single_comment(comment)
+
+                    # 验证和增强每个痛点事件
+                    for event in comment_events:
+                        if self._validate_pain_event(event):
+                            # 注意：评论不能使用 _enhance_pain_event，因为其逻辑是针对帖子的
+                            # 简化处理：直接添加事件
+                            pain_events.append(event)
+
+                    logger.debug(f"Successfully processed comment {comment.get('comment_id')}")
+
+                except Exception as e:
+                    logger.error(f"Failed to process comment {comment.get('comment_id')}: {e}")
+                    failed_comments.append(comment.get('comment_id'))
+                    self.stats["extraction_errors"] += 1
+                    continue
+
+                # 添加延迟避免API限制
+                delay = 2.0 + (i % 3)  # 2-4秒动态延迟（评论处理更快）
+                logger.debug(f"Waiting {delay:.1f}s before next comment...")
+                time.sleep(delay)
+
+            # 保存成功处理的痛点事件
+            saved_count = self.save_pain_events(pain_events)
+
+            # 记录失败统计
+            if failed_comments:
+                logger.warning(f"Failed to process {len(failed_comments)} comments: {failed_comments}")
+
+            return {
+                "processed": len(filtered_comments) - len(failed_comments),
+                "failed": len(failed_comments),
+                "pain_events_extracted": len(pain_events),
+                "pain_events_saved": saved_count,
+                "extraction_stats": self.get_statistics(),
+                "failed_comments": failed_comments
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to process unextracted comments: {e}")
             raise
 
     def get_statistics(self) -> Dict[str, Any]:

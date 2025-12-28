@@ -191,7 +191,7 @@ class PainEventClusterer:
                     with db.get_connection("pain") as pain_conn:
                         placeholders = ','.join('?' for _ in event_ids)
                         pain_cursor = pain_conn.execute(f"""
-                            SELECT pe.embedding_vector
+                            SELECT em.embedding_vector
                             FROM pain_events pe
                             JOIN pain_embeddings em ON pe.id = em.pain_event_id
                             WHERE pe.id IN ({placeholders})

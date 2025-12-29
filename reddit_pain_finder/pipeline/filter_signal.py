@@ -46,12 +46,22 @@ class PainSignalFilter:
             return {}
 
     def _load_comment_thresholds(self) -> Dict[str, Any]:
-        """加载评论专用阈值（低于帖子阈值）- Phase 1: Include Comments"""
+        """加载评论专用阈值（低于帖子阈值）- Phase 1: Include Comments
+
+        方案A: 保守收紧 - 平衡召回率和精确率
+        改进点：
+        - min_score: 5 → 10 (提高质量门槛)
+        - min_length: 20 → 30 (过滤短评)
+        - min_pain_score: 0.2 → 0.3 (与帖子对齐)
+        - min_keywords: 1 → 2 (需要多个关键词)
+        - 新增 min_emotional_intensity: 0.2 (最低情绪要求)
+        """
         return {
-            "min_score": 5,              # 帖子: 5-20
-            "min_length": 20,            # 帖子: 50
-            "min_pain_score": 0.2,       # 帖子: 0.3-0.5
-            "min_keywords": 1,           # 帖子: 1个类别
+            "min_score": 10,             # 帖子: 5-20 (提高)
+            "min_length": 30,            # 帖子: 50 (提高)
+            "min_pain_score": 0.3,       # 帖子: 0.3-0.5 (对齐)
+            "min_keywords": 2,           # 帖子: 1个类别 (提高)
+            "min_emotional_intensity": 0.2,  # 新增 (最低情绪要求)
             "engagement_threshold": 0.1  # 帖子: 0.2
         }
 
@@ -548,16 +558,16 @@ class PainSignalFilter:
             filter_result["filter_summary"] = {"reason": "too_short", "length": len(body)}
             return False, filter_result
 
-        # 2. 痛点关键词检查（复用现有逻辑）
+        # 2. 痛点关键词检查（复用现有逻辑 - 方案A: 需要2个关键词）
         has_keywords, matched_keywords, keyword_score = self._check_pain_keywords(comment_data)
         filter_result["matched_keywords"] = matched_keywords
 
         if not has_keywords or len(matched_keywords) < self.comment_thresholds["min_keywords"]:
             self.stats["filtered_out"] += 1
-            reason = "insufficient_keywords"
+            reason = f"insufficient_keywords: {len(matched_keywords)} < {self.comment_thresholds['min_keywords']}"
             self.stats["filter_reasons"][reason] = self.stats["filter_reasons"].get(reason, 0) + 1
             filter_result["reasons"].append(reason)
-            filter_result["filter_summary"] = {"reason": "insufficient_keywords"}
+            filter_result["filter_summary"] = {"reason": "insufficient_keywords", "count": len(matched_keywords)}
             return False, filter_result
 
         # 3. 痛点句式检查（复用现有逻辑）
@@ -567,6 +577,15 @@ class PainSignalFilter:
         # 4. 情绪强度计算（复用现有逻辑）
         emotional_intensity = self._calculate_emotional_intensity(comment_data)
         filter_result["emotional_intensity"] = emotional_intensity
+
+        # 4.5 情绪强度阈值检查（新增 - 方案A）
+        if emotional_intensity < self.comment_thresholds["min_emotional_intensity"]:
+            self.stats["filtered_out"] += 1
+            reason = f"low_emotional_intensity: {emotional_intensity:.2f} < {self.comment_thresholds['min_emotional_intensity']}"
+            self.stats["filter_reasons"][reason] = self.stats["filter_reasons"].get(reason, 0) + 1
+            filter_result["reasons"].append(reason)
+            filter_result["filter_summary"] = {"reason": "low_emotional_intensity", "intensity": emotional_intensity}
+            return False, filter_result
 
         # 5. 计算pain score（调整权重适配评论特点）
         pain_score = 0.0

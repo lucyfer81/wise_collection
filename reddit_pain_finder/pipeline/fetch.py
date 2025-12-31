@@ -30,6 +30,18 @@ class RedditSourceFetcher:
         self.config = self._load_config(config_path)
         self.reddit_client = self._init_reddit_client()
         self.processed_posts = set()
+
+        # 初始化filter器（用于在保存前进行完整过滤）
+        try:
+            from pipeline.filter_signal import PainSignalFilter
+            self.signal_filter = PainSignalFilter()
+            self.filter_enabled = True
+            logger.info("✅ PainSignalFilter initialized - will filter posts before saving")
+        except ImportError as e:
+            logger.warning(f"Could not import PainSignalFilter: {e}")
+            self.signal_filter = None
+            self.filter_enabled = False
+
         self.stats = {
             "total_fetched": 0,
             "total_saved": 0,
@@ -309,16 +321,38 @@ class RedditSourceFetcher:
             if unified_id in self.processed_posts:
                 return False
 
-            # 检查是否为痛点帖子
-            if not self._is_pain_post(submission, subreddit_config):
-                self.stats["filtered_out"] += 1
-                return False
-
             # 提取帖子数据
             post_data = self._extract_post_data(submission, subreddit_config)
             if not post_data:
                 self.stats["errors"] += 1
                 return False
+
+            # 使用PainSignalFilter进行完整过滤（在保存前）
+            if self.filter_enabled and self.signal_filter:
+                passed, filter_result = self.signal_filter.filter_post(post_data)
+
+                if not passed:
+                    self.stats["filtered_out"] += 1
+                    logger.debug(f"Post filtered out: {submission.title[:60]}... - Reason: {filter_result.get('filter_summary', {}).get('reason', 'unknown')}")
+                    return False
+
+                # 将filter结果添加到post_data
+                post_data.update({
+                    "pain_score": filter_result.get("pain_score", post_data.get("pain_score", 0.0)),
+                    "pain_keywords": filter_result.get("matched_keywords", []),
+                    "pain_patterns": filter_result.get("matched_patterns", []),
+                    "emotional_intensity": filter_result.get("emotional_intensity", 0.0),
+                    "filter_reason": "pain_signal_passed",
+                    "aspiration_keywords": filter_result.get("matched_aspirations", []),
+                    "aspiration_score": filter_result.get("aspiration_score", 0.0),
+                    "pass_type": filter_result.get("pass_type", "pain"),
+                    "engagement_score": filter_result.get("engagement_score", 0.0)
+                })
+            else:
+                # 备用：使用简单过滤
+                if not self._is_pain_post(submission, subreddit_config):
+                    self.stats["filtered_out"] += 1
+                    return False
 
             # 保存到数据库
             if 'db' in globals():
@@ -332,13 +366,18 @@ class RedditSourceFetcher:
                 self.stats["total_saved"] += 1
                 logger.info(f"Saved post: {submission.title[:60]}... (Score: {submission.score}, Pain: {post_data['pain_score']:.2f})")
 
-                # 保存评论到独立的 comments 表
+                # 保存评论到独立的 comments 表（在fetch阶段就过滤）
                 comments = post_data.get("comments", [])
                 if comments and 'db' in globals():
                     try:
-                        comment_count = db.insert_comments(unified_id, comments, "reddit")
-                        if comment_count > 0:
-                            logger.info(f"Saved {comment_count} comments for post {unified_id}")
+                        # 对comments进行过滤
+                        filtered_comments = self._filter_comments(comments, post_data)
+                        if filtered_comments:
+                            comment_count = db.insert_comments(unified_id, filtered_comments, "reddit")
+                            if comment_count > 0:
+                                logger.info(f"Saved {comment_count}/{len(comments)} comments for post {unified_id}")
+                        else:
+                            logger.debug(f"No comments passed filter for post {unified_id}")
                     except Exception as e:
                         logger.error(f"Failed to save comments for {unified_id}: {e}")
 
@@ -351,6 +390,44 @@ class RedditSourceFetcher:
             logger.error(f"Failed to process submission: {e}")
             self.stats["errors"] += 1
             return False
+
+    def _filter_comments(self, comments: List[Dict[str, Any]], post_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """过滤评论，只保留符合质量标准的评论
+
+        Args:
+            comments: 原始评论列表
+            post_data: 父帖子数据
+
+        Returns:
+            过滤后的评论列表
+        """
+        if not self.filter_enabled or not self.signal_filter:
+            # 如果没有启用filter，返回所有评论
+            return comments
+
+        filtered_comments = []
+        for comment in comments:
+            try:
+                # 使用PainSignalFilter的filter_comment方法
+                passed, filter_result = self.signal_filter.filter_comment(comment)
+
+                if passed:
+                    # 添加filter结果到comment数据
+                    comment["pain_score"] = filter_result.get("pain_score", 0.0)
+                    comment["pain_keywords"] = filter_result.get("matched_keywords", [])
+                    comment["pain_patterns"] = filter_result.get("matched_patterns", [])
+                    comment["emotional_intensity"] = filter_result.get("emotional_intensity", 0.0)
+                    comment["filter_reason"] = "pain_signal_passed"
+                    comment["engagement_score"] = filter_result.get("engagement_score", 0.0)
+                    filtered_comments.append(comment)
+                # else: comment被过滤掉，不保存
+
+            except Exception as e:
+                logger.debug(f"Error filtering comment {comment.get('id')}: {e}")
+                # 出错时保守起见，不保存该comment
+                continue
+
+        return filtered_comments
 
     def _save_post_to_file(self, post_data: Dict[str, Any]) -> bool:
         """保存帖子到文件（备用方案）"""
@@ -498,38 +575,22 @@ Posts per minute: {self.stats["total_saved"] / max(runtime.total_seconds() / 60,
 
         return self.stats.copy()
 
-class HackerNewsSourceFetcher:
-    """Hacker News痛点数据抓取器"""
-
-    def __init__(self):
-        """初始化抓取器"""
-        # 导入HN抓取器
-        from .hn_fetch import HackerNewsFetcher
-        self.hn_fetcher = HackerNewsFetcher()
-
-    def fetch_all(self) -> Dict[str, Any]:
-        """抓取HN数据（兼容现有接口）"""
-        return self.hn_fetcher.fetch_all()
-
-
 class MultiSourceFetcher:
-    """多数据源抓取器"""
+    """多数据源抓取器（当前仅支持Reddit）"""
 
     def __init__(self, sources: List[str] = None, config_path: str = "config/subreddits.yaml"):
         """初始化抓取器
 
         Args:
-            sources: 要抓取的数据源列表，如 ['reddit', 'hackernews']
+            sources: 要抓取的数据源列表（当前仅支持 'reddit'）
             config_path: Reddit配置文件路径
         """
-        self.sources = sources or ['reddit', 'hackernews']
+        self.sources = sources or ['reddit']
         self.fetchers = {}
 
         # 初始化各个抓取器
         if 'reddit' in self.sources:
             self.fetchers['reddit'] = RedditSourceFetcher(config_path)
-        if 'hackernews' in self.sources:
-            self.fetchers['hackernews'] = HackerNewsSourceFetcher()
 
     def fetch_all(self, limit_sources: Optional[int] = None) -> Dict[str, Any]:
         """抓取所有配置的数据源"""
@@ -592,13 +653,11 @@ def main():
     parser = argparse.ArgumentParser(description="Fetch posts for pain point discovery")
     parser.add_argument("--limit", type=int, help="Limit number of sources to process")
     parser.add_argument("--config", default="config/subreddits.yaml", help="Reddit config file path")
-    parser.add_argument("--sources", nargs="+", choices=["reddit", "hackernews"],
-                       default=["reddit", "hackernews"], help="Data sources to fetch")
     args = parser.parse_args()
 
     try:
-        # 使用新的多数据源抓取器
-        fetcher = MultiSourceFetcher(sources=args.sources, config_path=args.config)
+        # 使用Reddit抓取器
+        fetcher = RedditSourceFetcher(config_path=args.config)
         stats = fetcher.fetch_all(limit_sources=args.limit)
 
         # 输出JSON格式的统计信息（用于脚本集成）

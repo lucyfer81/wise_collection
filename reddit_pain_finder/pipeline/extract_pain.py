@@ -419,20 +419,28 @@ class PainPointExtractor:
             logger.error(f"Failed to process unextracted posts: {e}")
             raise
 
-    def process_unextracted_comments(self, limit: int = 100) -> Dict[str, Any]:
+    def process_unextracted_comments(self, limit: int = 100,
+                                     min_parent_pain_score: float = None) -> Dict[str, Any]:
         """处理未抽取的过滤评论 - Phase 2: Include Comments
 
         Args:
             limit: 限制处理的评论数量
+            min_parent_pain_score: 只处理父帖子pain_score >= 此值的comments（默认None表示不过滤）
 
         Returns:
             处理结果统计字典
         """
-        logger.info(f"Processing up to {limit} filtered comments")
+        if min_parent_pain_score is not None:
+            logger.info(f"Processing up to {limit} filtered comments (min_parent_pain_score >= {min_parent_pain_score})")
+        else:
+            logger.info(f"Processing up to {limit} filtered comments")
 
         try:
-            # 获取过滤后的评论
-            filtered_comments = db.get_all_filtered_comments(limit=limit)
+            # 获取过滤后的评论（应用父帖子pain_score过滤）
+            filtered_comments = db.get_all_filtered_comments(
+                limit=limit,
+                min_parent_pain_score=min_parent_pain_score
+            )
 
             if not filtered_comments:
                 logger.info("No filtered comments found")

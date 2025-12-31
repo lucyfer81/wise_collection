@@ -218,21 +218,6 @@ class WiseCollectionDB:
                 )
             """)
 
-            # 创建跨源对齐问题表
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS aligned_problems (
-                    id TEXT PRIMARY KEY,  -- aligned_AP_XX_timestamp format
-                    aligned_problem_id TEXT UNIQUE,  -- AP_XX format
-                    sources TEXT,  -- JSON array of source types
-                    core_problem TEXT,
-                    why_they_look_different TEXT,
-                    evidence TEXT,  -- JSON array of evidence objects
-                    cluster_ids TEXT,  -- JSON array of original cluster IDs
-                    alignment_score REAL DEFAULT 0.0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-
             # 创建评论表
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS comments (
@@ -329,9 +314,6 @@ class WiseCollectionDB:
 
             # 添加workflow_similarity列到clusters表（如果不存在）
             self._add_workflow_similarity_column(conn)
-
-            # 添加alignment_score列到aligned_problems表（如果不存在）
-            self._add_alignment_score_column(conn)
 
             # 添加Phase 2字段到filtered_posts表（如果不存在）
             self._add_phase2_filtered_posts_columns(conn)
@@ -513,21 +495,6 @@ class WiseCollectionDB:
                 )
             """)
 
-            # 创建跨源对齐问题表
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS aligned_problems (
-                    id TEXT PRIMARY KEY,  -- aligned_AP_XX_timestamp format
-                    aligned_problem_id TEXT UNIQUE,  -- AP_XX format
-                    sources TEXT,  -- JSON array of source types
-                    core_problem TEXT,
-                    why_they_look_different TEXT,
-                    evidence TEXT,  -- JSON array of evidence objects
-                    cluster_ids TEXT,  -- JSON array of original cluster IDs
-                    alignment_score REAL DEFAULT 0.0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-
             # 创建索引
             conn.execute("CREATE INDEX IF NOT EXISTS idx_clusters_size ON clusters(cluster_size)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_score ON opportunities(total_score)")
@@ -538,9 +505,6 @@ class WiseCollectionDB:
 
             # 添加workflow_similarity列到clusters表（如果不存在）
             self._add_workflow_similarity_column(conn)
-
-            # 添加alignment_score列到aligned_problems表（如果不存在）
-            self._add_alignment_score_column(conn)
 
             # 添加Phase 3字段到opportunities表（如果不存在）
             self._add_phase3_opportunities_columns(conn)
@@ -663,30 +627,6 @@ class WiseCollectionDB:
         except Exception as e:
             logger.error(f"Failed to add cluster_id column: {e}")
 
-    def _add_alignment_score_column(self, conn):
-        """Add alignment_score column to aligned_problems table if not exists"""
-        try:
-            cursor = conn.execute("PRAGMA table_info(aligned_problems)")
-            existing_columns = {row['name'] for row in cursor.fetchall()}
-
-            if 'alignment_score' not in existing_columns:
-                conn.execute("""
-                    ALTER TABLE aligned_problems
-                    ADD COLUMN alignment_score REAL DEFAULT 0.0
-                """)
-                logger.info("Added alignment_score column to aligned_problems table")
-
-                # Existing alignments get default high score
-                conn.execute("""
-                    UPDATE aligned_problems
-                    SET alignment_score = 0.85
-                    WHERE alignment_score = 0.0
-                """)
-                logger.info("Set default alignment_score for existing aligned problems")
-
-        except Exception as e:
-            logger.error(f"Failed to add alignment_score column: {e}")
-
     def _add_phase2_filtered_posts_columns(self, conn):
         """Add Phase 2 aspiration and trust columns to filtered_posts table if not exist"""
         try:
@@ -768,9 +708,13 @@ class WiseCollectionDB:
 
     # Raw posts operations
     def insert_raw_post(self, post_data: Dict[str, Any]) -> bool:
-        """插入原始帖子数据（支持多数据源）"""
+        """插入原始帖子数据（支持多数据源）
+
+        如果数据包含filter结果（pain_score, pain_keywords等），也会同时保存到filtered_posts表
+        """
         try:
             with self.get_connection("raw") as conn:
+                # 1. 保存到posts表（原始数据，向后兼容）
                 conn.execute("""
                     INSERT OR REPLACE INTO posts
                     (id, title, body, subreddit, url, source, source_id, platform_data,
@@ -797,6 +741,38 @@ class WiseCollectionDB:
                     post_data.get("trust_level", 0.5),      # 新字段，默认0.5
                     json.dumps(post_data)
                 ))
+
+                # 2. 如果包含filter结果，同时保存到filtered_posts表
+                if "pain_score" in post_data and "filter_reason" in post_data:
+                    conn.execute("""
+                        INSERT OR REPLACE INTO filtered_posts
+                        (id, title, body, subreddit, url, score, num_comments, upvote_ratio,
+                         pain_score, pain_keywords, pain_patterns, emotional_intensity,
+                         filter_reason, aspiration_keywords, aspiration_score, pass_type,
+                         engagement_score, trust_level, author)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        post_data.get("id"),
+                        post_data["title"],
+                        post_data.get("body", ""),
+                        post_data.get("subreddit", "unknown"),
+                        post_data["url"],
+                        post_data["score"],
+                        post_data["num_comments"],
+                        post_data.get("upvote_ratio", 0.0),
+                        post_data.get("pain_score", 0.0),
+                        json.dumps(post_data.get("pain_keywords", [])),
+                        json.dumps(post_data.get("pain_patterns", [])),
+                        post_data.get("emotional_intensity", 0.0),
+                        post_data.get("filter_reason", ""),
+                        json.dumps(post_data.get("aspiration_keywords", [])),
+                        post_data.get("aspiration_score", 0.0),
+                        post_data.get("pass_type", "pain"),
+                        post_data.get("engagement_score", 0.0),
+                        post_data.get("trust_level", 0.5),
+                        post_data.get("author", "")
+                    ))
+
                 conn.commit()
                 return True
         except Exception as e:
@@ -805,6 +781,8 @@ class WiseCollectionDB:
 
     def insert_comments(self, post_id: str, comments: List[Dict[str, Any]], source: str) -> int:
         """批量插入评论数据
+
+        如果评论包含filter结果（pain_score, pain_keywords等），也会同时保存到filtered_comments表
 
         Args:
             post_id: 帖子ID
@@ -831,6 +809,7 @@ class WiseCollectionDB:
                         body_hash = hashlib.md5(comment.get('body', '').encode('utf-8')).hexdigest()[:12]
                         comment_id = f"{source}_{comment.get('author', 'unknown')}_{body_hash}"
 
+                    # 1. 保存到comments表（原始数据，向后兼容）
                     conn.execute("""
                         INSERT OR IGNORE INTO comments
                         (post_id, source, source_comment_id, author, body, score, created_utc, created_at)
@@ -845,6 +824,36 @@ class WiseCollectionDB:
                         comment.get("created_utc"),
                         comment.get("created_at")
                     ))
+
+                    # 2. 如果包含filter结果，同时保存到filtered_comments表
+                    if "pain_score" in comment and "filter_reason" in comment:
+                        # 获取自增ID作为comment_id
+                        cursor = conn.execute("SELECT id FROM comments WHERE source_comment_id = ?", (comment_id,))
+                        comment_row = cursor.fetchone()
+                        if comment_row:
+                            auto_increment_id = comment_row[0]
+
+                            conn.execute("""
+                                INSERT OR IGNORE INTO filtered_comments
+                                (comment_id, source, post_id, author, body, score,
+                                 pain_score, pain_keywords, pain_patterns, emotional_intensity,
+                                 filter_reason, engagement_score)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """, (
+                                auto_increment_id,
+                                source,
+                                post_id,
+                                comment.get("author", ""),
+                                comment.get("body", ""),
+                                comment.get("score", 0),
+                                comment.get("pain_score", 0.0),
+                                json.dumps(comment.get("pain_keywords", [])),
+                                json.dumps(comment.get("pain_patterns", [])),
+                                comment.get("emotional_intensity", 0.0),
+                                comment.get("filter_reason", ""),
+                                comment.get("engagement_score", 0.0)
+                            ))
+
                     # Count the comment as processed (INSERT OR IGNORE silently skips duplicates)
                     inserted_count += 1
                 conn.commit()
@@ -1011,11 +1020,13 @@ class WiseCollectionDB:
             logger.error(f"Failed to load parent post {post_id}: {e}")
             return {}
 
-    def get_all_filtered_comments(self, limit: int = None) -> List[Dict[str, Any]]:
+    def get_all_filtered_comments(self, limit: int = None,
+                                  min_parent_pain_score: float = None) -> List[Dict[str, Any]]:
         """获取所有待提取的过滤评论 - Phase 2: Include Comments
 
         Args:
             limit: 限制返回数量，None表示返回所有
+            min_parent_pain_score: 只返回父帖子pain_score >= 此值的comments（默认None表示不过滤）
 
         Returns:
             过滤评论列表，按pain_score降序排列
@@ -1024,6 +1035,7 @@ class WiseCollectionDB:
             Returns ONLY comments that:
             1. Haven't been extracted yet (no pain_events exist)
             2. Haven't been attempted before (extraction_attempted = 0)
+            3. (Optional) Parent post pain_score >= min_parent_pain_score
             Uses "filtered" connection type because it accesses filtered_comments table
             (and JOINs with posts table). In unified database mode (default), connection
             type doesn't matter as all tables are in the same database file. The connection
@@ -1034,14 +1046,22 @@ class WiseCollectionDB:
                 query = """
                     SELECT fc.id, fc.comment_id, fc.post_id, fc.author,
                            fc.body, fc.score, fc.pain_score, fc.pain_keywords,
-                           p.subreddit, p.title as post_title
+                           p.subreddit, p.title as post_title,
+                           fp.pain_score as parent_pain_score
                     FROM filtered_comments fc
                     JOIN posts p ON fc.post_id = p.id
+                    LEFT JOIN filtered_posts fp ON p.id = fp.id
                     LEFT JOIN pain_events pe ON pe.source_type = 'comment' AND pe.source_id = CAST(fc.comment_id AS TEXT)
                     WHERE pe.id IS NULL
                       AND (fc.extraction_attempted IS NULL OR fc.extraction_attempted = 0)
-                    ORDER BY fc.pain_score DESC
                 """
+
+                # 根据父帖子pain_score过滤（如果指定）
+                if min_parent_pain_score is not None:
+                    query += f" AND fp.pain_score >= {min_parent_pain_score}"
+
+                query += " ORDER BY fc.pain_score DESC"
+
                 if limit:
                     query += f" LIMIT {limit}"
 
@@ -1393,10 +1413,6 @@ class WiseCollectionDB:
                 cursor = conn.execute("SELECT COUNT(*) as count FROM opportunities")
                 stats["opportunities_count"] = cursor.fetchone()["count"]
 
-                # 对齐统计
-                cursor = conn.execute("SELECT COUNT(*) as count FROM aligned_problems")
-                stats["aligned_problems_count"] = cursor.fetchone()["count"]
-
                 cursor = conn.execute("""
                     SELECT alignment_status, COUNT(*) as count
                     FROM clusters
@@ -1436,32 +1452,6 @@ class WiseCollectionDB:
         if not self.unified:
             logger.warning("Switch to unified database mode requires application restart")
 
-    # 跨源对齐相关方法
-    def get_aligned_problems(self) -> List[Dict]:
-        """获取所有对齐问题"""
-        try:
-            with self.get_connection("clusters") as conn:
-                cursor = conn.execute("""
-                    SELECT id, aligned_problem_id, sources, core_problem,
-                           why_they_look_different, evidence, cluster_ids, created_at
-                    FROM aligned_problems
-                    ORDER BY created_at DESC
-                """)
-
-                results = []
-                for row in cursor.fetchall():
-                    result = dict(row)
-                    result['sources'] = json.loads(result['sources'])
-                    result['evidence'] = json.loads(result['evidence'])
-                    result['cluster_ids'] = json.loads(result['cluster_ids'])
-                    results.append(result)
-
-                return results
-
-        except Exception as e:
-            logger.error(f"Failed to get aligned problems: {e}")
-            return []
-
     def update_cluster_alignment_status(self, cluster_name: str, status: str, aligned_problem_id: str = None):
         """更新聚类对齐状态"""
         try:
@@ -1488,38 +1478,14 @@ class WiseCollectionDB:
             logger.error(f"Failed to update cluster alignment status: {e}")
             raise
 
-    def insert_aligned_problem(self, aligned_problem_data: Dict):
-        """插入新的对齐问题"""
-        try:
-            with self.get_connection("clusters") as conn:
-                conn.execute("""
-                    INSERT OR REPLACE INTO aligned_problems
-                    (id, aligned_problem_id, sources, core_problem,
-                     why_they_look_different, evidence, cluster_ids, alignment_score)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    aligned_problem_data['id'],
-                    aligned_problem_data['aligned_problem_id'],
-                    json.dumps(aligned_problem_data['sources']),
-                    aligned_problem_data['core_problem'],
-                    aligned_problem_data['why_they_look_different'],
-                    json.dumps(aligned_problem_data['evidence']),
-                    json.dumps(aligned_problem_data['cluster_ids']),
-                    aligned_problem_data.get('alignment_score', 0.0)
-                ))
-                conn.commit()
-        except Exception as e:
-            logger.error(f"Failed to insert aligned problem: {e}")
-            raise
-
     def get_clusters_for_opportunity_mapping(self) -> List[Dict]:
-        """获取用于机会映射的聚类（包括对齐问题）
+        """获取用于机会映射的聚类
 
         防止重复映射：只返回尚未映射opportunities的clusters
         """
         try:
             with self.get_connection("clusters") as conn:
-                # 获取未对齐的原始聚类，且该cluster尚未有opportunities
+                # 获取原始聚类，且该cluster尚未有opportunities
                 cursor = conn.execute("""
                     SELECT id, cluster_name, source_type, centroid_summary,
                            common_pain, pain_event_ids, cluster_size,
@@ -1534,28 +1500,7 @@ class WiseCollectionDB:
                 """)
 
                 clusters = [dict(row) for row in cursor.fetchall()]
-
-                # 获取对齐问题作为"虚拟聚类"，在Python中计算cluster_size
-                cursor = conn.execute("""
-                    SELECT aligned_problem_id as cluster_name,
-                           'aligned' as source_type,
-                           core_problem as centroid_summary,
-                           '' as common_pain,
-                           '[]' as pain_event_ids,
-                           cluster_ids
-                    FROM aligned_problems
-                """)
-
-                aligned_clusters = []
-                for row in cursor.fetchall():
-                    cluster_dict = dict(row)
-                    # 在Python中计算JSON数组的长度
-                    cluster_ids = json.loads(cluster_dict['cluster_ids'])
-                    cluster_dict['cluster_size'] = len(cluster_ids)
-                    aligned_clusters.append(cluster_dict)
-
-                # 合并结果
-                return clusters + aligned_clusters
+                return clusters
 
         except Exception as e:
             logger.error(f"Failed to get clusters for opportunity mapping: {e}")
@@ -1630,107 +1575,6 @@ class WiseCollectionDB:
             logger.error(f"Failed to get cross-source validated opportunities: {e}")
             return []
 
-    def _check_cross_source_validation_sync(
-        self,
-        cluster_name: str,
-        source_type: Optional[str],
-        aligned_problem_id: Optional[str],
-        cluster_size: int
-    ) -> Dict[str, Any]:
-        """同步版本的跨源验证检查（用于数据库查询）
-
-        注意：由于 pain_events 表没有 subreddit 和 cluster_name 列，
-        目前只能检测 Level 1（跨平台对齐）的验证。
-
-        Args:
-            cluster_name: 聚类名称
-            source_type: 来源类型
-            aligned_problem_id: 对齐问题ID
-            cluster_size: 聚类规模
-
-        Returns:
-            验证信息字典
-        """
-        # Level 1: 检查 aligned source_type 或 aligned_problem_id
-        if source_type == 'aligned' or aligned_problem_id:
-            return {
-                "has_cross_source": True,
-                "validation_level": 1,
-                "boost_score": 2.0,
-                "validated_problem": True,
-                "evidence": "Independent validation across Reddit + Hacker News"
-            }
-
-        # Level 1: 检查 aligned_problems 表（cluster_ids JSON 字段中可能包含此 cluster）
-        try:
-            with self.get_connection("clusters") as conn:
-                cursor = conn.execute("""
-                    SELECT aligned_problem_id
-                    FROM aligned_problems
-                    WHERE cluster_ids LIKE ?
-                    LIMIT 1
-                """, (f'%{cluster_name}%',))
-                result = cursor.fetchone()
-                if result:
-                    return {
-                        "has_cross_source": True,
-                        "validation_level": 1,
-                        "boost_score": 2.0,
-                        "validated_problem": True,
-                        "evidence": f"Found in aligned_problems: {result[0]}"
-                    }
-        except Exception as e:
-            logger.warning(f"Failed to check aligned_problems for {cluster_name}: {e}")
-
-        # 注意：Level 2 和 Level 3 需要 subreddit 跨度统计，
-        # 但 pain_events 表没有 cluster_name 和 subreddit 列，无法查询
-        # 因此暂时只支持 Level 1 验证
-
-        # 无跨源验证
-        return {
-            "has_cross_source": False,
-            "validation_level": 0,
-            "boost_score": 0.0,
-            "validated_problem": False,
-            "evidence": "No cross-source validation (only Level 1 detection supported)"
-        }
-
-    def get_clusters_for_aligned_problem(self, aligned_problem_id: str) -> List[Dict]:
-        """获取对齐问题的支持聚类"""
-        try:
-            with self.get_connection("clusters") as conn:
-                # 首先获取对齐问题的cluster_ids
-                cursor = conn.execute("""
-                    SELECT cluster_ids
-                    FROM aligned_problems
-                    WHERE aligned_problem_id = ?
-                """, (aligned_problem_id,))
-
-                result = cursor.fetchone()
-                if not result:
-                    return []
-
-                cluster_ids = json.loads(result['cluster_ids'])
-
-                # 获取这些聚类的详细信息
-                if not cluster_ids:
-                    return []
-
-                placeholders = ','.join(['?' for _ in cluster_ids])
-                cursor = conn.execute(f"""
-                    SELECT cluster_name, source_type, centroid_summary,
-                           common_pain, cluster_size
-                    FROM clusters
-                    WHERE cluster_name IN ({placeholders})
-                """, cluster_ids)
-
-                return [dict(row) for row in cursor.fetchall()]
-
-        except Exception as e:
-            logger.error(f"Failed to get clusters for aligned problem {aligned_problem_id}: {e}")
-            return []
-
-    def get_cross_table_stats(self) -> Dict[str, Any]:
         """获取跨表统计信息（仅在统一模式下有效）"""
         if not self.unified:
             logger.warning("Cross-table stats only available in unified mode")
@@ -1805,20 +1649,6 @@ class WiseCollectionDB:
                     GROUP BY bucket
                 """)
                 stats['workflow_similarity_distribution'] = {row['bucket']: row['count'] for row in cursor.fetchall()}
-
-            with self.get_connection("clusters") as conn:
-                # Alignment score distribution
-                cursor = conn.execute("""
-                    SELECT
-                        COUNT(*) as total_alignments,
-                        AVG(alignment_score) as avg_alignment,
-                        MIN(alignment_score) as min_alignment,
-                        MAX(alignment_score) as max_alignment
-                    FROM aligned_problems
-                    WHERE alignment_score IS NOT NULL
-                """)
-                row = cursor.fetchone()
-                stats['alignment_score'] = dict(row) if row else {}
 
             with self.get_connection("raw") as conn:
                 # Trust level distribution by source

@@ -24,7 +24,6 @@ from pipeline.embed import PainEventEmbedder
 from pipeline.cluster import PainEventClusterer
 from pipeline.score_viability import ViabilityScorer
 from pipeline.map_opportunity import OpportunityMapper
-from pipeline.align_cross_sources import CrossSourceAligner
 from pipeline.decision_shortlist import DecisionShortlistGenerator
 
 # 导入工具模块
@@ -101,8 +100,8 @@ class WiseCollectionPipeline:
         try:
             from pipeline.fetch import MultiSourceFetcher
 
-            # 使用指定的数据源，默认为 reddit + hackernews
-            fetch_sources = sources or ['reddit', 'hackernews']
+            # 使用指定的数据源，默认为 reddit
+            fetch_sources = sources or ['reddit']
             fetcher = MultiSourceFetcher(sources=fetch_sources)
             result = fetcher.fetch_all(limit_sources=limit_sources)
 
@@ -131,18 +130,20 @@ class WiseCollectionPipeline:
             raise
 
     def run_stage_filter(self, limit_posts: Optional[int] = None, process_all: bool = False,
-                        include_comments: bool = False) -> Dict[str, Any]:
+                        include_comments: bool = False,
+                        comment_min_score: int = 10) -> Dict[str, Any]:
         """阶段2: 信号过滤（Posts + Comments）
 
         Args:
             limit_posts: 限制处理帖子数量
             process_all: 处理所有未过滤数据
             include_comments: 是否过滤comments（Phase 1: Include Comments）
+            comment_min_score: Comments最低分数阈值（默认10，在filter_signal.py中硬编码）
         """
         logger.info("=" * 50)
         logger.info("STAGE 2: Filtering pain signals")
         if include_comments:
-            logger.info("Including comments in filtering (experimental)")
+            logger.info(f"Including comments in filtering (min_score={comment_min_score})")
         logger.info("=" * 50)
 
         if self.enable_monitoring:
@@ -296,7 +297,8 @@ class WiseCollectionPipeline:
             raise
 
     def run_stage_extract(self, limit_posts: Optional[int] = None, process_all: bool = False,
-                         include_comments: bool = False, comment_limit: Optional[int] = None) -> Dict[str, Any]:
+                         include_comments: bool = False, comment_limit: Optional[int] = None,
+                         comment_min_parent_pain_score: float = 0.7) -> Dict[str, Any]:
         """阶段3: 痛点抽取 (Posts + Comments)
 
         Args:
@@ -304,11 +306,12 @@ class WiseCollectionPipeline:
             process_all: 处理所有未过滤数据
             include_comments: 是否抽取comments（Phase 2: Include Comments）
             comment_limit: 限制处理评论数量（独立于limit_posts）
+            comment_min_parent_pain_score: 只处理父帖子pain_score >= 此值的comments（默认0.7）
         """
         logger.info("=" * 50)
         logger.info("STAGE 3: Extracting pain points")
         if include_comments:
-            logger.info("Including comments in extraction (Phase 2: Include Comments)")
+            logger.info(f"Including comments in extraction (min_parent_pain_score={comment_min_parent_pain_score})")
         logger.info("=" * 50)
 
         if self.enable_monitoring:
@@ -343,7 +346,10 @@ class WiseCollectionPipeline:
                 elif comment_limit is None:
                     comment_limit = 1000000  # 默认处理所有（因为已经过滤过）
 
-                comment_result = extractor.process_unextracted_comments(limit=comment_limit)
+                comment_result = extractor.process_unextracted_comments(
+                    limit=comment_limit,
+                    min_parent_pain_score=comment_min_parent_pain_score
+                )
 
                 logger.info(f"✅ Comments: Extracted {comment_result.get('pain_events_saved', 0)} pain events")
 
@@ -455,59 +461,6 @@ class WiseCollectionPipeline:
             self.stats["stages_failed"].append("cluster")
             if self.enable_monitoring:
                 performance_monitor.end_stage("cluster", 0)
-            raise
-
-    def run_stage_cross_source_alignment(self) -> Dict[str, Any]:
-        """阶段5.5: 跨源对齐"""
-        logger.info("=" * 50)
-        logger.info("STAGE 5.5: Cross-Source Alignment")
-        logger.info("=" * 50)
-
-        if self.enable_monitoring:
-            performance_monitor.start_stage("alignment")
-
-        try:
-            # 初始化对齐器
-            llm_client = LLMClient()  # Uses default config path
-            aligner = CrossSourceAligner(db, llm_client)
-
-            # 执行跨源对齐
-            logger.info("Processing cross-source alignment...")
-            aligner.process_alignments()
-
-            # 获取对齐结果
-            aligned_problems = db.get_aligned_problems()
-
-            result = {
-                "aligned_problems_count": len(aligned_problems),
-                "aligned_problems": aligned_problems
-            }
-
-            self.stats["stages_completed"].append("alignment")
-            self.stats["stage_results"]["alignment"] = result
-
-            if self.enable_monitoring:
-                performance_monitor.end_stage("alignment", len(aligned_problems))
-
-            logger.info(f"✅ Stage 5.5 completed: Found {len(aligned_problems)} aligned problems")
-
-            # 显示对齐摘要
-            if aligned_problems:
-                logger.info("\nAlignment Summary:")
-                logger.info(f"- Total aligned problems: {len(aligned_problems)}")
-                for problem in aligned_problems[:3]:  # 显示前3个
-                    logger.info(f"  {problem['aligned_problem_id']}: {problem['core_problem'][:100]}...")
-                    logger.info(f"  Sources: {', '.join(problem['sources'])}")
-            else:
-                logger.info("No cross-source alignments found in this run")
-
-            return result
-
-        except Exception as e:
-            logger.error(f"❌ Stage 5.5 failed: {e}")
-            self.stats["stages_failed"].append("alignment")
-            if self.enable_monitoring:
-                performance_monitor.end_stage("alignment", 0)
             raise
 
     def run_stage_map_opportunities(self, limit_clusters: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
@@ -724,6 +677,8 @@ class WiseCollectionPipeline:
         sources: Optional[List[str]] = None,
         process_all: bool = False,
         include_comments: bool = False,  # Include comments in ALL applicable stages (filter, extract, etc.)
+        comment_min_score: int = 10,  # Comments最低分数阈值（默认10）
+        comment_min_parent_pain_score: float = 0.7,  # 只处理高价值posts的comments（默认0.7）
         stop_on_error: bool = False,
         save_metrics: bool = False,
         metrics_file: Optional[str] = None,
@@ -734,6 +689,8 @@ class WiseCollectionPipeline:
 
         Args:
             include_comments: 是否在所有支持comments的阶段处理comments（filter、extract等）
+            comment_min_score: Comments最低分数阈值（默认10）
+            comment_min_parent_pain_score: 只处理父帖子pain_score >= 此值的comments（默认0.7）
         """
         logger.info("🚀 Starting Wise Collection Multi-Source Pipeline")
         logger.info(f"⏰ Started at: {self.pipeline_start_time}")
@@ -743,8 +700,8 @@ class WiseCollectionPipeline:
         else:
             logger.info("📊 Performance monitoring: DISABLED")
 
-        # 使用指定的数据源，默认为 reddit + hackernews
-        fetch_sources = sources or ['reddit', 'hackernews']
+        # 使用指定的数据源，默认为 reddit
+        fetch_sources = sources or ['reddit']
         logger.info(f"📡 Data sources: {', '.join(fetch_sources)}")
 
         # 显示处理模式
@@ -755,15 +712,16 @@ class WiseCollectionPipeline:
 
         # 显示comments处理设置
         if include_comments:
-            logger.info("💬 Comments processing: ENABLED (filter, extract, etc.)")
+            logger.info(f"💬 Comments processing: ENABLED")
+            logger.info(f"   - min_score: {comment_min_score}")
+            logger.info(f"   - min_parent_pain_score: {comment_min_parent_pain_score}")
 
         stages = [
             ("fetch", lambda: self.run_stage_fetch(limit_sources, fetch_sources)),
-            ("filter", lambda: self.run_stage_filter(limit_posts, process_all, include_comments)),
-            ("extract", lambda: self.run_stage_extract(limit_posts, process_all, include_comments, None)),
+            ("filter", lambda: self.run_stage_filter(limit_posts, process_all, include_comments, comment_min_score)),
+            ("extract", lambda: self.run_stage_extract(limit_posts, process_all, include_comments, None, comment_min_parent_pain_score)),
             ("embed", lambda: self.run_stage_embed(limit_events, process_all)),
             ("cluster", lambda: self.run_stage_cluster(limit_events, process_all)),
-            ("alignment", lambda: self.run_stage_cross_source_alignment()),
             ("map_opportunities", lambda: self.run_stage_map_opportunities(limit_clusters, process_all)),
             ("score", lambda: self.run_stage_score(limit_opportunities, process_all)),
             ("shortlist", lambda: self.run_stage_decision_shortlist())
@@ -807,7 +765,6 @@ class WiseCollectionPipeline:
             ),
             "embed": lambda: self.run_stage_embed(kwargs.get("limit_events"), process_all),
             "cluster": lambda: self.run_stage_cluster(kwargs.get("limit_events"), process_all),
-            "alignment": lambda: self.run_stage_cross_source_alignment(),
             "map": lambda: self.run_stage_map_opportunities(kwargs.get("limit_clusters"), process_all),
             "score": lambda: self.run_stage_score(kwargs.get("limit_opportunities"), process_all),
             "shortlist": lambda: self.run_stage_decision_shortlist()
@@ -1057,12 +1014,12 @@ def main():
     parser = argparse.ArgumentParser(description="Wise Collection Multi-Source Pipeline")
 
     # 运行模式
-    parser.add_argument("--stage", choices=["fetch", "filter", "extract", "embed", "cluster", "alignment", "map", "score", "shortlist", "all"],
+    parser.add_argument("--stage", choices=["fetch", "filter", "extract", "embed", "cluster", "map", "score", "shortlist", "all"],
                        default="all", help="Which stage to run (default: all)")
 
     # 数据源选择
-    parser.add_argument("--sources", nargs="+", choices=["reddit", "hackernews"],
-                       default=["reddit", "hackernews"], help="Data sources to fetch (default: reddit hackernews)")
+    parser.add_argument("--sources", nargs="+", choices=["reddit"],
+                       default=["reddit"], help="Data sources to fetch (default: reddit)")
 
     # 限制参数
     parser.add_argument("--limit-sources", type=int, help="Limit number of sources to fetch")
@@ -1078,8 +1035,10 @@ def main():
     # Comments处理选项（Include Comments in all applicable stages）
     parser.add_argument("--include-comments", action="store_true",
                        help="Include comments in all applicable stages (filter, extract, etc.)")
-    parser.add_argument("--comment-min-score", type=int, default=5,
-                       help="Minimum upvotes for comment filtering (default: 5)")
+    parser.add_argument("--comment-min-score", type=int, default=10,
+                       help="Minimum upvotes for comment filtering (default: 10, increased from 5)")
+    parser.add_argument("--comment-min-parent-pain-score", type=float, default=0.7,
+                       help="Only process comments from posts with pain_score >= this value (default: 0.7)")
 
     # 性能监控选项
     parser.add_argument("--no-monitoring", action="store_true", help="Disable performance monitoring")
@@ -1110,6 +1069,8 @@ def main():
                 sources=args.sources,
                 process_all=args.process_all,
                 include_comments=args.include_comments,  # Applies to ALL applicable stages
+                comment_min_score=args.comment_min_score,  # Comments最低分数阈值
+                comment_min_parent_pain_score=args.comment_min_parent_pain_score,  # 只处理高价值posts的comments
                 stop_on_error=args.stop_on_error,
                 save_metrics=args.save_metrics,
                 metrics_file=args.metrics_file,

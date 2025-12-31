@@ -126,35 +126,13 @@ class DecisionShortlistGenerator:
     def _check_cross_source_validation(self, opportunity: Dict) -> Dict[str, Any]:
         """检查跨源验证，返回验证信息和加分
 
-        三层优先级：
-        - Level 1 (强信号): source_type='aligned' 或在 aligned_problems 表中
-        - Level 2 (中等信号): cluster_size >= 10 AND 跨 >=3 subreddits
-        - Level 3 (弱信号): cluster_size >= 8 AND 跨 >=2 subreddits
+        两层优先级（仅基于跨subreddit验证）：
+        - Level 1 (强信号): cluster_size >= 10 AND 跨 >=3 subreddits
+        - Level 2 (中等信号): cluster_size >= 8 AND 跨 >=2 subreddits
         """
         cluster = opportunity
 
-        # Level 1: 检查 source_type
-        if cluster.get('source_type') == 'aligned':
-            return {
-                "has_cross_source": True,
-                "validation_level": 1,
-                "boost_score": 2.0,
-                "validated_problem": True,
-                "evidence": "source_type='aligned'"
-            }
-
-        # Level 1: 检查 aligned_problems 表
-        aligned_problem = self._check_aligned_problems_table(cluster['cluster_name'])
-        if aligned_problem:
-            return {
-                "has_cross_source": True,
-                "validation_level": 1,
-                "boost_score": 2.0,
-                "validated_problem": True,
-                "evidence": f"Found in aligned_problems: {aligned_problem['aligned_problem_id']}"
-            }
-
-        # Level 2 & 3: 检查 cluster_size + 跨 subreddit
+        # 检查 cluster_size + 跨 subreddit
         pain_event_ids = cluster.get('pain_event_ids', [])
         if not pain_event_ids:
             return {
@@ -168,21 +146,21 @@ class DecisionShortlistGenerator:
         subreddit_count = self._count_subreddits(pain_event_ids)
         cluster_size = cluster['cluster_size']
 
-        # Level 2
+        # Level 1
         if cluster_size >= 10 and subreddit_count >= 3:
             return {
                 "has_cross_source": True,
-                "validation_level": 2,
+                "validation_level": 1,
                 "boost_score": 1.0,
                 "validated_problem": True,
                 "evidence": f"Large cluster ({cluster_size}) across {subreddit_count} subreddits"
             }
 
-        # Level 3
+        # Level 2
         if cluster_size >= 8 and subreddit_count >= 2:
             return {
                 "has_cross_source": True,
-                "validation_level": 3,
+                "validation_level": 2,
                 "boost_score": 0.5,
                 "validated_problem": False,
                 "evidence": f"Medium cluster ({cluster_size}) across {subreddit_count} subreddits"
@@ -196,21 +174,6 @@ class DecisionShortlistGenerator:
             "validated_problem": False,
             "evidence": "No cross-source validation"
         }
-
-    def _check_aligned_problems_table(self, cluster_name: str) -> Optional[Dict]:
-        """检查 cluster 是否在 aligned_problems 表中"""
-        try:
-            with db.get_connection("clusters") as conn:
-                cursor = conn.execute("""
-                    SELECT aligned_problem_id, sources, alignment_score
-                    FROM aligned_problems
-                    WHERE cluster_ids LIKE ?
-                """, (f'%{cluster_name}%',))
-                result = cursor.fetchone()
-                return dict(result) if result else None
-        except Exception as e:
-            logger.error(f"Failed to check aligned_problems: {e}")
-            return None
 
     def _count_subreddits(self, pain_event_ids: List[int]) -> int:
         """计算涉及的不同 subreddit 数量"""
@@ -534,27 +497,16 @@ class DecisionShortlistGenerator:
         validation_level = cross_source.get('validation_level', 0)
 
         if validation_level == 1:
-            # Level 1: 最强信号 - 多平台独立验证
-            return """
-<div align="center">
-
-### 🎯 INDEPENDENT VALIDATION ACROSS REDDIT + HACKER NEWS
-
-**This pain point has been independently validated across multiple communities**
-
-</div>
-"""
-        elif validation_level == 2:
-            # Level 2: 中等信号 - 多 subreddit 验证
+            # Level 1: 最强信号 - 多 subreddit 验证
             return """
 ### ✓ Multi-Subreddit Validation
 *Validated across 3+ subreddits with strong cluster size*
 """
-        elif validation_level == 3:
-            # Level 3: 弱信号
+        elif validation_level == 2:
+            # Level 2: 中等信号
             return """
-### ◐ Weak Cross-Source Signal
-*Initial cross-community detection signal*
+### ◐ Multi-Subreddit Detection
+*Detected across 2+ subreddits with moderate cluster size*
 """
         else:
             return ""
@@ -574,9 +526,8 @@ class DecisionShortlistGenerator:
         validation_level = cross_source.get('validation_level', 0)
 
         badge_texts = {
-            1: "🎯 INDEPENDENT VALIDATION ACROSS REDDIT + HACKER NEWS",
-            2: "✓ Multi-Subreddit Validation",
-            3: "◐ Weak Cross-Source Signal"
+            1: "✓ Multi-Subreddit Validation",
+            2: "◐ Multi-Subreddit Detection"
         }
 
         return badge_texts.get(validation_level, "")

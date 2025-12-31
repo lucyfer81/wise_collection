@@ -129,21 +129,15 @@ class WiseCollectionPipeline:
                 performance_monitor.end_stage("fetch", 0)
             raise
 
-    def run_stage_filter(self, limit_posts: Optional[int] = None, process_all: bool = False,
-                        include_comments: bool = False,
-                        comment_min_score: int = 10) -> Dict[str, Any]:
-        """阶段2: 信号过滤（Posts + Comments）
+    def run_stage_filter(self, limit_posts: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
+        """阶段2: 信号过滤（Posts）
 
         Args:
             limit_posts: 限制处理帖子数量
             process_all: 处理所有未过滤数据
-            include_comments: 是否过滤comments（Phase 1: Include Comments）
-            comment_min_score: Comments最低分数阈值（默认10，在filter_signal.py中硬编码）
         """
         logger.info("=" * 50)
         logger.info("STAGE 2: Filtering pain signals")
-        if include_comments:
-            logger.info(f"Including comments in filtering (min_score={comment_min_score})")
         logger.info("=" * 50)
 
         if self.enable_monitoring:
@@ -225,47 +219,9 @@ class WiseCollectionPipeline:
                     "filter_stats": filter.get_statistics()
                 }
 
-            # ============ 处理Comments（Phase 1: Include Comments）============
-            comment_result = {"processed": 0, "filtered": 0}
-            if include_comments:
-                logger.info("")
-                logger.info("Processing comments...")
-
-                # 重置filter统计
-                filter.stats = {
-                    "total_processed": 0,
-                    "passed_filter": 0,
-                    "filtered_out": 0,
-                    "filter_reasons": {}
-                }
-
-                unfiltered_comments = db.get_all_comments_for_filtering()
-
-                if not unfiltered_comments:
-                    logger.info("No comments to filter")
-                else:
-                    logger.info(f"Filtering {len(unfiltered_comments)} comments")
-
-                    # 批量处理comments（效率更高）
-                    filtered_comments = filter.filter_comments_batch(unfiltered_comments)
-
-                    # 保存结果
-                    saved_comments = db.save_filtered_comments(filtered_comments)
-
-                    comment_result = {
-                        "processed": len(unfiltered_comments),
-                        "filtered": saved_comments,
-                        "pass_rate": saved_comments / len(unfiltered_comments) if unfiltered_comments else 0,
-                        "filter_stats": filter.get_statistics()
-                    }
-
-                    logger.info(f"✅ Filtered {saved_comments}/{len(unfiltered_comments)} comments ({comment_result['pass_rate']:.1%} pass rate)")
-
-            # ============ 合并结果 ============
+            # ============ 返回结果 ============
             result = {
-                "posts": post_result,
-                "comments": comment_result if include_comments else None,
-                "include_comments": include_comments
+                "posts": post_result
             }
 
             if self.enable_monitoring:
@@ -280,8 +236,6 @@ class WiseCollectionPipeline:
             logger.info("Filter Stage Summary")
             logger.info("=" * 50)
             logger.info(f"Posts:   {post_result['filtered']}/{post_result['processed']} passed")
-            if include_comments:
-                logger.info(f"Comments: {comment_result['filtered']}/{comment_result['processed']} passed ({comment_result['pass_rate']:.1%})")
             logger.info("=" * 50)
 
             if failed_count > 0:
@@ -296,22 +250,15 @@ class WiseCollectionPipeline:
                 performance_monitor.end_stage("filter", 0)
             raise
 
-    def run_stage_extract(self, limit_posts: Optional[int] = None, process_all: bool = False,
-                         include_comments: bool = False, comment_limit: Optional[int] = None,
-                         comment_min_parent_pain_score: float = 0.7) -> Dict[str, Any]:
-        """阶段3: 痛点抽取 (Posts + Comments)
+    def run_stage_extract(self, limit_posts: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
+        """阶段3: 痛点抽取
 
         Args:
             limit_posts: 限制处理帖子数量
             process_all: 处理所有未过滤数据
-            include_comments: 是否抽取comments（Phase 2: Include Comments）
-            comment_limit: 限制处理评论数量（独立于limit_posts）
-            comment_min_parent_pain_score: 只处理父帖子pain_score >= 此值的comments（默认0.7）
         """
         logger.info("=" * 50)
         logger.info("STAGE 3: Extracting pain points")
-        if include_comments:
-            logger.info(f"Including comments in extraction (min_parent_pain_score={comment_min_parent_pain_score})")
         logger.info("=" * 50)
 
         if self.enable_monitoring:
@@ -331,37 +278,10 @@ class WiseCollectionPipeline:
 
             logger.info(f"✅ Posts: Extracted {post_result.get('pain_events_saved', 0)} pain events")
 
-            # ============ 处理Comments（Phase 2: Include Comments）============
-            comment_result = {"processed": 0, "pain_events_saved": 0}
-            if include_comments:
-                logger.info("")
-                logger.info("Processing comments...")
-
-                # 重置统计
-                extractor.reset_statistics()
-
-                # 使用独立的limit参数，或默认处理所有过滤的评论
-                if process_all and comment_limit is None:
-                    comment_limit = 1000000
-                elif comment_limit is None:
-                    comment_limit = 1000000  # 默认处理所有（因为已经过滤过）
-
-                comment_result = extractor.process_unextracted_comments(
-                    limit=comment_limit,
-                    min_parent_pain_score=comment_min_parent_pain_score
-                )
-
-                logger.info(f"✅ Comments: Extracted {comment_result.get('pain_events_saved', 0)} pain events")
-
-            # ============ 合并结果 ============
+            # ============ 返回结果 ============
             result = {
                 "posts": post_result,
-                "comments": comment_result if include_comments else None,
-                "include_comments": include_comments,
-                "total_events": (
-                    post_result.get('pain_events_saved', 0) +
-                    comment_result.get('pain_events_saved', 0)
-                ) if include_comments else post_result.get('pain_events_saved', 0)
+                "total_events": post_result.get('pain_events_saved', 0)
             }
 
             self.stats["stages_completed"].append("extract")
@@ -376,10 +296,7 @@ class WiseCollectionPipeline:
             logger.info("=" * 50)
             logger.info("Extract Stage Summary")
             logger.info("=" * 50)
-            logger.info(f"Posts:    {post_result.get('pain_events_saved', 0)} events")
-            if include_comments:
-                logger.info(f"Comments: {comment_result.get('pain_events_saved', 0)} events")
-            logger.info(f"Total:    {result.get('total_events', 0)} events")
+            logger.info(f"Total events: {result.get('total_events', 0)}")
             logger.info("=" * 50)
 
             return result
@@ -676,22 +593,13 @@ class WiseCollectionPipeline:
         limit_opportunities: Optional[int] = None,
         sources: Optional[List[str]] = None,
         process_all: bool = False,
-        include_comments: bool = False,  # Include comments in ALL applicable stages (filter, extract, etc.)
-        comment_min_score: int = 10,  # Comments最低分数阈值（默认10）
-        comment_min_parent_pain_score: float = 0.7,  # 只处理高价值posts的comments（默认0.7）
         stop_on_error: bool = False,
         save_metrics: bool = False,
         metrics_file: Optional[str] = None,
         generate_report: bool = False,
         report_file: Optional[str] = None
     ) -> Dict[str, Any]:
-        """运行完整pipeline
-
-        Args:
-            include_comments: 是否在所有支持comments的阶段处理comments（filter、extract等）
-            comment_min_score: Comments最低分数阈值（默认10）
-            comment_min_parent_pain_score: 只处理父帖子pain_score >= 此值的comments（默认0.7）
-        """
+        """运行完整pipeline"""
         logger.info("🚀 Starting Wise Collection Multi-Source Pipeline")
         logger.info(f"⏰ Started at: {self.pipeline_start_time}")
 
@@ -710,16 +618,10 @@ class WiseCollectionPipeline:
         else:
             logger.info("📊 Processing mode: Default limits")
 
-        # 显示comments处理设置
-        if include_comments:
-            logger.info(f"💬 Comments processing: ENABLED")
-            logger.info(f"   - min_score: {comment_min_score}")
-            logger.info(f"   - min_parent_pain_score: {comment_min_parent_pain_score}")
-
         stages = [
             ("fetch", lambda: self.run_stage_fetch(limit_sources, fetch_sources)),
-            ("filter", lambda: self.run_stage_filter(limit_posts, process_all, include_comments, comment_min_score)),
-            ("extract", lambda: self.run_stage_extract(limit_posts, process_all, include_comments, None, comment_min_parent_pain_score)),
+            ("filter", lambda: self.run_stage_filter(limit_posts, process_all)),
+            ("extract", lambda: self.run_stage_extract(limit_posts, process_all)),
             ("embed", lambda: self.run_stage_embed(limit_events, process_all)),
             ("cluster", lambda: self.run_stage_cluster(limit_events, process_all)),
             ("map_opportunities", lambda: self.run_stage_map_opportunities(limit_clusters, process_all)),
@@ -754,14 +656,11 @@ class WiseCollectionPipeline:
             "fetch": lambda: self.run_stage_fetch(kwargs.get("limit_sources"), kwargs.get("sources")),
             "filter": lambda: self.run_stage_filter(
                 kwargs.get("limit_posts"),
-                process_all,
-                kwargs.get("include_comments", False)
+                process_all
             ),
             "extract": lambda: self.run_stage_extract(
                 kwargs.get("limit_posts"),
-                process_all,
-                kwargs.get("include_comments", False),  # Simplified: single parameter
-                None  # comment_limit: always None (process all filtered comments)
+                process_all
             ),
             "embed": lambda: self.run_stage_embed(kwargs.get("limit_events"), process_all),
             "cluster": lambda: self.run_stage_cluster(kwargs.get("limit_events"), process_all),
@@ -1032,14 +931,6 @@ def main():
     parser.add_argument("--process-all", action="store_true",
                        help="Process ALL unprocessed data (ignore default limits)")
 
-    # Comments处理选项（Include Comments in all applicable stages）
-    parser.add_argument("--include-comments", action="store_true",
-                       help="Include comments in all applicable stages (filter, extract, etc.)")
-    parser.add_argument("--comment-min-score", type=int, default=10,
-                       help="Minimum upvotes for comment filtering (default: 10, increased from 5)")
-    parser.add_argument("--comment-min-parent-pain-score", type=float, default=0.7,
-                       help="Only process comments from posts with pain_score >= this value (default: 0.7)")
-
     # 性能监控选项
     parser.add_argument("--no-monitoring", action="store_true", help="Disable performance monitoring")
     parser.add_argument("--save-metrics", action="store_true", help="Save performance metrics to file")
@@ -1068,9 +959,6 @@ def main():
                 limit_opportunities=args.limit_opportunities,
                 sources=args.sources,
                 process_all=args.process_all,
-                include_comments=args.include_comments,  # Applies to ALL applicable stages
-                comment_min_score=args.comment_min_score,  # Comments最低分数阈值
-                comment_min_parent_pain_score=args.comment_min_parent_pain_score,  # 只处理高价值posts的comments
                 stop_on_error=args.stop_on_error,
                 save_metrics=args.save_metrics,
                 metrics_file=args.metrics_file,
@@ -1087,7 +975,6 @@ def main():
                 "limit_opportunities": args.limit_opportunities,
                 "sources": args.sources,
                 "process_all": args.process_all,
-                "include_comments": args.include_comments  # Applies to ALL applicable stages
             }
 
             # 只传递相关的参数（保留布尔值）

@@ -251,24 +251,6 @@ class RedditSourceFetcher:
     def _extract_post_data(self, submission, subreddit_config: Dict[str, Any]) -> Dict[str, Any]:
         """提取帖子数据（支持多数据源schema）"""
         try:
-            # 获取评论
-            comments = []
-            try:
-                submission.comment_sort = "top"
-                submission.comments.replace_more(limit=0)
-                for comment in submission.comments.list()[:20]:  # 获取前20条评论
-                    if hasattr(comment, 'author') and comment.author:
-                        comments.append({
-                            "id": comment.id,  # 添加评论ID
-                            "author": comment.author.name,
-                            "body": comment.body,
-                            "score": comment.score,
-                            "created_utc": getattr(comment, 'created_utc', None),  # 添加时间戳
-                            "created_at": datetime.fromtimestamp(getattr(comment, 'created_utc', 0)).isoformat() + "Z" if hasattr(comment, 'created_utc') else None
-                        })
-            except Exception as e:
-                logger.warning(f"Failed to fetch comments for {submission.id}: {e}")
-
             # 计算痛点分数
             pain_score = self._calculate_pain_score(submission, subreddit_config)
 
@@ -303,7 +285,6 @@ class RedditSourceFetcher:
                 "created_utc": submission.created_utc,        # 向后兼容
                 "created_at": created_at,                    # 新的标准化时间
                 "author": submission.author.name if submission.author else "[deleted]",
-                "comments": comments,
                 "pain_score": pain_score,
                 "trust_level": self._get_trust_level_for_category(subreddit_config["category"]),
                 "collected_at": datetime.now().isoformat()
@@ -366,21 +347,6 @@ class RedditSourceFetcher:
                 self.stats["total_saved"] += 1
                 logger.info(f"Saved post: {submission.title[:60]}... (Score: {submission.score}, Pain: {post_data['pain_score']:.2f})")
 
-                # 保存评论到独立的 comments 表（在fetch阶段就过滤）
-                comments = post_data.get("comments", [])
-                if comments and 'db' in globals():
-                    try:
-                        # 对comments进行过滤
-                        filtered_comments = self._filter_comments(comments, post_data)
-                        if filtered_comments:
-                            comment_count = db.insert_comments(unified_id, filtered_comments, "reddit")
-                            if comment_count > 0:
-                                logger.info(f"Saved {comment_count}/{len(comments)} comments for post {unified_id}")
-                        else:
-                            logger.debug(f"No comments passed filter for post {unified_id}")
-                    except Exception as e:
-                        logger.error(f"Failed to save comments for {unified_id}: {e}")
-
                 return True
             else:
                 self.stats["errors"] += 1
@@ -390,44 +356,6 @@ class RedditSourceFetcher:
             logger.error(f"Failed to process submission: {e}")
             self.stats["errors"] += 1
             return False
-
-    def _filter_comments(self, comments: List[Dict[str, Any]], post_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """过滤评论，只保留符合质量标准的评论
-
-        Args:
-            comments: 原始评论列表
-            post_data: 父帖子数据
-
-        Returns:
-            过滤后的评论列表
-        """
-        if not self.filter_enabled or not self.signal_filter:
-            # 如果没有启用filter，返回所有评论
-            return comments
-
-        filtered_comments = []
-        for comment in comments:
-            try:
-                # 使用PainSignalFilter的filter_comment方法
-                passed, filter_result = self.signal_filter.filter_comment(comment)
-
-                if passed:
-                    # 添加filter结果到comment数据
-                    comment["pain_score"] = filter_result.get("pain_score", 0.0)
-                    comment["pain_keywords"] = filter_result.get("matched_keywords", [])
-                    comment["pain_patterns"] = filter_result.get("matched_patterns", [])
-                    comment["emotional_intensity"] = filter_result.get("emotional_intensity", 0.0)
-                    comment["filter_reason"] = "pain_signal_passed"
-                    comment["engagement_score"] = filter_result.get("engagement_score", 0.0)
-                    filtered_comments.append(comment)
-                # else: comment被过滤掉，不保存
-
-            except Exception as e:
-                logger.debug(f"Error filtering comment {comment.get('id')}: {e}")
-                # 出错时保守起见，不保存该comment
-                continue
-
-        return filtered_comments
 
     def _save_post_to_file(self, post_data: Dict[str, Any]) -> bool:
         """保存帖子到文件（备用方案）"""

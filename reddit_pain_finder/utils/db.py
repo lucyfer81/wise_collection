@@ -774,26 +774,18 @@ class WiseCollectionDB:
     def get_top_comments_for_post(self, post_id: str, top_n: int = 10) -> List[Dict[str, Any]]:
         """获取指定帖子的Top N高赞评论
 
+        NOTE: Comments functionality has been removed from the pipeline.
+        This function now returns an empty list for compatibility.
+
         Args:
             post_id: 帖子ID
             top_n: 返回评论数量，默认10条
 
         Returns:
-            评论列表，按score降序排列
+            空列表（comments功能已移除）
         """
-        try:
-            with self.get_connection("raw") as conn:
-                cursor = conn.execute("""
-                    SELECT source_comment_id, author, body, score
-                    FROM comments
-                    WHERE post_id = ?
-                    ORDER BY score DESC
-                    LIMIT ?
-                """, (post_id, top_n))
-                return [dict(row) for row in cursor.fetchall()]
-        except Exception as e:
-            logger.error(f"Failed to get comments for post {post_id}: {e}")
-            return []
+        logger.debug(f"Comments feature removed, returning empty list for post {post_id}")
+        return []
 
     def get_parent_post_context(self, post_id: str) -> Dict[str, Any]:
         """获取父帖子上下文信息 - Phase 2: Include Comments
@@ -827,75 +819,33 @@ class WiseCollectionDB:
                                   min_parent_pain_score: float = None) -> List[Dict[str, Any]]:
         """获取所有待提取的过滤评论 - Phase 2: Include Comments
 
+        NOTE: Comments functionality has been removed from the pipeline.
+        This function now returns an empty list for compatibility.
+
         Args:
             limit: 限制返回数量，None表示返回所有
             min_parent_pain_score: 只返回父帖子pain_score >= 此值的comments（默认None表示不过滤）
 
         Returns:
-            过滤评论列表，按pain_score降序排列
-
-        Note:
-            Returns ONLY comments that:
-            1. Haven't been extracted yet (no pain_events exist)
-            2. Haven't been attempted before (extraction_attempted = 0)
-            3. (Optional) Parent post pain_score >= min_parent_pain_score
-            Uses "filtered" connection type because it accesses filtered_comments table
-            (and JOINs with posts table). In unified database mode (default), connection
-            type doesn't matter as all tables are in the same database file. The connection
-            type is kept for semantic clarity and compatibility with non-unified mode.
+            空列表（comments功能已移除）
         """
-        try:
-            with self.get_connection("filtered") as conn:
-                query = """
-                    SELECT fc.id, fc.comment_id, fc.post_id, fc.author,
-                           fc.body, fc.score, fc.pain_score, fc.pain_keywords,
-                           p.subreddit, p.title as post_title,
-                           fp.pain_score as parent_pain_score
-                    FROM filtered_comments fc
-                    JOIN posts p ON fc.post_id = p.id
-                    LEFT JOIN filtered_posts fp ON p.id = fp.id
-                    LEFT JOIN pain_events pe ON pe.source_type = 'comment' AND pe.source_id = CAST(fc.comment_id AS TEXT)
-                    WHERE pe.id IS NULL
-                      AND (fc.extraction_attempted IS NULL OR fc.extraction_attempted = 0)
-                """
-
-                # 根据父帖子pain_score过滤（如果指定）
-                if min_parent_pain_score is not None:
-                    query += f" AND fp.pain_score >= {min_parent_pain_score}"
-
-                query += " ORDER BY fc.pain_score DESC"
-
-                if limit:
-                    query += f" LIMIT {limit}"
-
-                cursor = conn.execute(query)
-                return [dict(row) for row in cursor.fetchall()]
-        except Exception as e:
-            logger.error(f"Failed to get filtered comments: {e}")
-            return []
+        logger.debug("Comments feature removed, returning empty list for filtered comments")
+        return []
 
     def mark_comment_extraction_attempted(self, comment_id: int) -> bool:
         """标记comment为已尝试提取 - 防止重复尝试
+
+        NOTE: Comments functionality has been removed from the pipeline.
+        This function now does nothing and returns False.
 
         Args:
             comment_id: 评论ID
 
         Returns:
-            是否成功标记
+            False（comments功能已移除）
         """
-        try:
-            with self.get_connection("filtered") as conn:
-                conn.execute("""
-                    UPDATE filtered_comments
-                    SET extraction_attempted = 1,
-                        extraction_attempted_at = CURRENT_TIMESTAMP
-                    WHERE comment_id = ?
-                """, (comment_id,))
-                conn.commit()
-                return True
-        except Exception as e:
-            logger.error(f"Failed to mark comment {comment_id} as attempted: {e}")
-            return False
+        logger.debug(f"Comments feature removed, ignoring mark attempt for comment {comment_id}")
+        return False
 
     # Filtered posts operations
     def insert_filtered_post(self, post_data: Dict[str, Any]) -> bool:

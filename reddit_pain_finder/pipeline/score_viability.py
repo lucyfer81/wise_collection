@@ -618,7 +618,6 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
                 "crowded_market": 0.15,
                 "integration": 0.10,
                 "cluster_strength": 0.10
-                # trust_level 通过加权因子体现，不直接参与权重
             }
 
             weighted_total = sum(
@@ -626,11 +625,19 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
                 for component, weight in weights.items()
             )
 
-            # 应用trust_level加权
-            trust_weighted_total = weighted_total * cluster_trust_level
+            # 方案B：软性trust_level惩罚（而非硬性乘数）
+            # trust_level ≥ 0.7: 不惩罚
+            # 0.5 ≤ trust_level < 0.7: 0.85倍惩罚
+            # trust_level < 0.5: 0.7倍惩罚
+            if cluster_trust_level >= 0.7:
+                trust_adjusted_total = weighted_total  # 不惩罚
+            elif cluster_trust_level >= 0.5:
+                trust_adjusted_total = weighted_total * 0.85  # 轻度惩罚
+            else:
+                trust_adjusted_total = weighted_total * 0.7  # 中度惩罚
 
             # 确保分数在0-10范围内
-            final_total_score = min(max(trust_weighted_total, 0), 10)
+            final_total_score = min(max(trust_adjusted_total, 0), 10)
 
             # 生成杀手风险（包含trust_level风险）
             killer_risks = self._generate_killer_risks(final_component_scores, opportunity_data, cluster_trust_level)

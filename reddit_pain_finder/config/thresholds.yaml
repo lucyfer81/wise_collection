@@ -144,11 +144,11 @@ opportunity_mapping:
 
 # 可行性评分阈值
 viability_scoring:
-  # 总分阈值
+  # 总分阈值（方案B：平衡型调整）
   total_score:
-    min_viable: 5.0        # 最小可行分数
-    good_opportunity: 7.0  # 好机会分数
-    excellent: 8.5         # 优秀机会分数
+    min_viable: 4.5        # 从5.0降至4.5 - 降低最小可行分数要求
+    good_opportunity: 6.5  # 从7.0降至6.5 - 降低好机会分数要求
+    excellent: 8.5         # 保持优秀机会分数不变
 
   # 分项评分最低要求
   component_scores:
@@ -201,11 +201,11 @@ filtering_rules:
   # 是否启用过滤规则
   enabled: true
 
-  # 最小阈值要求
-  min_cluster_size: 8
-  min_unique_authors: 5
-  min_cross_subreddit_count: 2
-  min_avg_frequency_score: 6
+  # 最小阈值要求（方案B：平衡型调整）
+  min_cluster_size: 5           # 从8降至5（折中）- 允许小规模新发现聚类
+  min_unique_authors: 4         # 从5降至4 - 降低独立作者要求
+  min_cross_subreddit_count: 1  # 从2降至1 - 允许单源验证的聚类
+  min_avg_frequency_score: 5.0  # 从6降至5.0（折中）- 救回大规模聚类
 
   # 频率评分映射
   frequency_score_mapping:

@@ -16,52 +16,28 @@ logger = logging.getLogger(__name__)
 class WiseCollectionDB:
     """Wise Collection系统数据库管理器"""
 
-    def __init__(self, db_dir: str = "data", unified: bool = True):
+    def __init__(self, db_dir: str = "data"):
         """初始化数据库连接"""
         self.db_dir = db_dir
-        self.unified = unified  # 是否使用统一数据库
         os.makedirs(db_dir, exist_ok=True)
 
-        if unified:
-            # 使用统一数据库文件
-            self.unified_db_path = os.path.join(db_dir, "wise_collection.db")
-            # 兼容性：保持原有路径变量
-            self.raw_db_path = self.unified_db_path
-            self.filtered_db_path = self.unified_db_path
-            self.pain_db_path = self.unified_db_path
-            self.clusters_db_path = self.unified_db_path
-        else:
-            # 使用多个数据库文件（原有模式）
-            self.raw_db_path = os.path.join(db_dir, "raw_posts.db")
-            self.filtered_db_path = os.path.join(db_dir, "filtered_posts.db")
-            self.pain_db_path = os.path.join(db_dir, "pain_events.db")
-            self.clusters_db_path = os.path.join(db_dir, "clusters.db")
+        # 使用统一数据库文件
+        self.unified_db_path = os.path.join(db_dir, "wise_collection.db")
 
-        # 初始化所有数据库
-        self._init_databases()
+        # 初始化数据库
+        self._init_database()
 
     @contextmanager
     def get_connection(self, db_type: str = "raw"):
-        """获取数据库连接的上下文管理器"""
-        if self.unified:
-            # 统一数据库模式：所有连接都指向同一个文件
-            db_path = self.unified_db_path
-        else:
-            # 多数据库模式：根据db_type选择不同的文件
-            db_paths = {
-                "raw": self.raw_db_path,
-                "filtered": self.filtered_db_path,
-                "pain": self.pain_db_path,
-                "clusters": self.clusters_db_path
-            }
+        """获取数据库连接的上下文管理器
 
-            if db_type not in db_paths:
-                raise ValueError(f"Invalid db_type: {db_type}")
-            db_path = db_paths[db_type]
-
+        Args:
+            db_type: 连接类型（用于语义说明，实际都使用统一数据库）
+                     可选值: "raw", "filtered", "pain", "clusters"
+        """
         conn = None
         try:
-            conn = sqlite3.connect(db_path)
+            conn = sqlite3.connect(self.unified_db_path)
             conn.row_factory = sqlite3.Row
             yield conn
         except Exception as e:
@@ -73,15 +49,9 @@ class WiseCollectionDB:
             if conn:
                 conn.close()
 
-    def _init_databases(self):
-        """初始化所有数据库表结构"""
-        if self.unified:
-            self._init_unified_database()
-        else:
-            self._init_raw_posts_db()
-            self._init_filtered_posts_db()
-            self._init_pain_events_db()
-            self._init_clusters_db()
+    def _init_database(self):
+        """初始化数据库表结构"""
+        self._init_unified_database()
 
     def _init_unified_database(self):
         """初始化统一数据库，包含所有表"""
@@ -279,193 +249,6 @@ class WiseCollectionDB:
 
             conn.commit()
             logger.info("Unified database initialized successfully")
-
-    def _init_raw_posts_db(self):
-        """初始化原始帖子数据库"""
-        with self.get_connection("raw") as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS posts (
-                    id TEXT PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    body TEXT,
-                    subreddit TEXT,
-                    url TEXT NOT NULL,
-                    source TEXT NOT NULL DEFAULT 'reddit',
-                    source_id TEXT NOT NULL,
-                    platform_data TEXT,
-                    score INTEGER NOT NULL,
-                    num_comments INTEGER NOT NULL,
-                    upvote_ratio REAL,
-                    is_self INTEGER,
-                    created_utc REAL NOT NULL,
-                    created_at TIMESTAMP NOT NULL,
-                    author TEXT,
-                    category TEXT,
-                    trust_level REAL DEFAULT 0.5,
-                    collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    raw_data TEXT,  -- 原始JSON数据
-                    UNIQUE(source, source_id)
-                )
-            """)
-
-            # 创建索引
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_subreddit ON posts(subreddit)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_score ON posts(score)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_collected_at ON posts(collected_at)")
-
-            # 检查新列是否存在，然后创建相应索引
-            cursor = conn.execute("PRAGMA table_info(posts)")
-            existing_columns = {row['name'] for row in cursor.fetchall()}
-
-            if 'source' in existing_columns:
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_source ON posts(source)")
-
-            if 'created_at' in existing_columns:
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_source_created ON posts(source, created_at)")
-
-            if 'source' in existing_columns and 'source_id' in existing_columns:
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_unique_source ON posts(source, source_id)")
-
-            # 添加trust_level列到posts表（如果不存在）
-            self._add_trust_level_column(conn)
-
-            conn.commit()
-
-    def _init_filtered_posts_db(self):
-        """初始化过滤后的帖子数据库"""
-        with self.get_connection("filtered") as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS filtered_posts (
-                    id TEXT PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    body TEXT,
-                    subreddit TEXT NOT NULL,
-                    url TEXT NOT NULL,
-                    score INTEGER NOT NULL,
-                    num_comments INTEGER NOT NULL,
-                    upvote_ratio REAL NOT NULL,
-                    pain_score REAL NOT NULL,
-                    pain_keywords TEXT,
-                    filtered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    filter_reason TEXT
-                )
-            """)
-
-            # 创建索引
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_pain_score ON filtered_posts(pain_score)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_subreddit ON filtered_posts(subreddit)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_filtered_at ON filtered_posts(filtered_at)")
-            conn.commit()
-
-    def _init_pain_events_db(self):
-        """初始化痛点事件数据库"""
-        with self.get_connection("pain") as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS pain_events (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    post_id TEXT NOT NULL,
-                    actor TEXT,
-                    context TEXT,
-                    problem TEXT NOT NULL,
-                    current_workaround TEXT,
-                    frequency TEXT,
-                    emotional_signal TEXT,
-                    mentioned_tools TEXT,
-                    extraction_confidence REAL,
-                    extracted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (post_id) REFERENCES filtered_posts(id)
-                )
-            """)
-
-            # 创建嵌入向量表
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS pain_embeddings (
-                    pain_event_id INTEGER PRIMARY KEY,
-                    embedding_vector BLOB NOT NULL,
-                    embedding_model TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (pain_event_id) REFERENCES pain_events(id)
-                )
-            """)
-
-            # 创建索引
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_pain_post_id ON pain_events(post_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_pain_problem ON pain_events(problem)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_pain_extracted_at ON pain_events(extracted_at)")
-            conn.commit()
-
-    def _init_clusters_db(self):
-        """初始化聚类数据库"""
-        with self.get_connection("clusters") as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS clusters (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    cluster_name TEXT NOT NULL,
-                    cluster_description TEXT,
-                    source_type TEXT,  -- 新增：数据源类型 (hn_ask, hn_show, reddit, etc.)
-                    centroid_summary TEXT,  -- 新增：聚类中心摘要
-                    common_pain TEXT,  -- 新增：共同痛点
-                    common_context TEXT,  -- 新增：共同上下文
-                    example_events TEXT,  -- 新增：代表性事件 (JSON数组)
-                    pain_event_ids TEXT NOT NULL,  -- JSON数组
-                    cluster_size INTEGER NOT NULL,
-                    avg_pain_score REAL,
-                    workflow_confidence REAL,
-                    workflow_similarity REAL DEFAULT 0.0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    -- JTBD产品语义字段
-                    job_statement TEXT,
-                    job_steps TEXT,
-                    desired_outcomes TEXT,
-                    job_context TEXT,
-                    customer_profile TEXT,
-                    semantic_category TEXT,
-                    product_impact REAL DEFAULT 0.0
-                )
-            """)
-
-            # 创建机会表
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS opportunities (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    cluster_id INTEGER NOT NULL,
-                    opportunity_name TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    current_tools TEXT,
-                    missing_capability TEXT,
-                    why_existing_fail TEXT,
-                    target_users TEXT,
-                    pain_frequency_score REAL,
-                    market_size_score REAL,
-                    mvp_complexity_score REAL,
-                    competition_risk_score REAL,
-                    integration_complexity_score REAL,
-                    total_score REAL,
-                    killer_risks TEXT,  -- JSON数组
-                    recommendation TEXT,  -- AI建议：pursue/modify/abandon with reason
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (cluster_id) REFERENCES clusters(id)
-                )
-            """)
-
-            # 创建索引
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_clusters_size ON clusters(cluster_size)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_score ON opportunities(total_score)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_opportunities_cluster_id ON opportunities(cluster_id)")
-
-            # 添加对齐跟踪列到clusters表（如果不存在）
-            self._add_alignment_columns_to_clusters(conn)
-
-            # 添加workflow_similarity列到clusters表（如果不存在）
-            self._add_workflow_similarity_column(conn)
-
-            # 添加Phase 3字段到opportunities表（如果不存在）
-            self._add_phase3_opportunities_columns(conn)
-
-            # 添加JTBD字段到clusters表（如果不存在）
-            self._add_jtbd_columns(conn)
-
-            conn.commit()
 
     def _add_alignment_columns_to_clusters(self, conn):
         """为clusters表添加对齐跟踪列（如果不存在）"""
@@ -1191,20 +974,6 @@ class WiseCollectionDB:
 
         return stats
 
-# 添加一些便利方法
-    def is_unified(self) -> bool:
-        """检查是否使用统一数据库"""
-        return self.unified
-
-    def get_database_path(self) -> str:
-        """获取当前使用的数据库路径"""
-        return self.unified_db_path if self.unified else "Multiple DB files"
-
-    def switch_to_unified(self):
-        """切换到统一数据库模式（需要重启应用）"""
-        if not self.unified:
-            logger.warning("Switch to unified database mode requires application restart")
-
     def update_cluster_alignment_status(self, cluster_name: str, status: str, aligned_problem_id: str = None):
         """更新聚类对齐状态"""
         try:
@@ -1422,8 +1191,5 @@ class WiseCollectionDB:
         return stats
 
 
-# 全局数据库实例（使用统一数据库）
-db = WiseCollectionDB(unified=True)
-
-# 保持向后兼容的多数据库实例
-db_multi = WiseCollectionDB(unified=False)
+# 全局数据库实例（统一数据库）
+db = WiseCollectionDB()

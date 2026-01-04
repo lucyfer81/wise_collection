@@ -519,28 +519,17 @@ Processing time: {processing_time:.2f}s
         try:
             import pickle
             with db.get_connection("pain") as conn:
-                # 如果是统一数据库，可以从posts表获取source信息
-                if db.is_unified():
-                    cursor = conn.execute("""
-                        SELECT p.*, e.embedding_vector, e.embedding_model,
-                               COALESCE(po.source, 'reddit') as source_type
-                        FROM pain_events p
-                        JOIN pain_embeddings e ON p.id = e.pain_event_id
-                        LEFT JOIN filtered_posts fp ON p.post_id = fp.id
-                        LEFT JOIN posts po ON p.post_id = po.id
-                        WHERE p.cluster_id IS NULL
-                        ORDER BY p.extracted_at DESC
-                    """)
-                else:
-                    # 多数据库模式，默认为reddit
-                    cursor = conn.execute("""
-                        SELECT p.*, e.embedding_vector, e.embedding_model,
-                               'reddit' as source_type
-                        FROM pain_events p
-                        JOIN pain_embeddings e ON p.id = e.pain_event_id
-                        WHERE p.cluster_id IS NULL
-                        ORDER BY p.extracted_at DESC
-                    """)
+                # 从posts表获取source信息
+                cursor = conn.execute("""
+                    SELECT p.*, e.embedding_vector, e.embedding_model,
+                           COALESCE(po.source, 'reddit') as source_type
+                    FROM pain_events p
+                    JOIN pain_embeddings e ON p.id = e.pain_event_id
+                    LEFT JOIN filtered_posts fp ON p.post_id = fp.id
+                    LEFT JOIN posts po ON p.post_id = po.id
+                    WHERE p.cluster_id IS NULL
+                    ORDER BY p.extracted_at DESC
+                """)
 
                 results = []
                 for row in cursor.fetchall():

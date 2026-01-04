@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-01-03T20:43:09.844678",
+  "total_candidates": 2,
+  "candidates": [
+    {
+      "opportunity_name": "LifeSpark",
+      "final_score": 10.0,
+      "viability_score": 8.306732776617954,
+      "cluster_size": 1064,
+      "trust_level": 0.5766179540709812,
+      "target_users": "Corporate professionals, interns, or solo entrepreneurs who feel their personal life is being consumed by work, lack the energy for proactive journaling, and crave a simple, automated way to notice and remember small positive moments.",
+      "missing_capability": "A simple, automated way to capture and reflect on small, meaningful personal moments outside of work to counteract the feeling that life has 'shrunk to just work,' especially for those in draining corporate or entrepreneurial environments.",
+      "why_existing_fail": "Calendar and to-do apps are work-centric and add to the burden of planning. Mindfulness and therapy apps address symptoms but not the core problem of a life devoid of memorable non-work moments. Manual journaling or scrapbooking requires consistent energy and motivation, which exhausted professionals lack. Existing tools are either too generic, require proactive effort, or fail to create a tangible record of life beyond work.",
+      "readable_content": {
+        "problem": "工作耗尽精力的职场人感觉个人生活被吞噬，却因疲惫而无力主动记录和回味工作外的小确幸，导致生活变得单调乏味。",
+        "mvp": "一款极简应用：自动通过时间/位置触发，推送一个问题捕捉瞬间感受，并生成可浏览的“美好时刻”时间线。",
+        "why_now": "后疫情时代混合办公模糊了工作生活界限，用户对心理健康工具需求激增，且低代码和推送通知技术已成熟。"
+      },
+      "cross_source_validation": {
+        "has_cross_source": true,
+        "validation_level": 1,
+        "validated_problem": true,
+        "boost_score": 1.0,
+        "evidence": "Large cluster (1064) across 63 subreddits",
+        "badge_text": "✓ Multi-Subreddit Validation"
+      }
+    },
+    {
+      "opportunity_name": "AutoSmoke",
+      "final_score": 10.0,
+      "viability_score": 7.291666666666667,
+      "cluster_size": 9,
+      "trust_level": 0.7222222222222222,
+      "target_users": "Solo founders and indie developers shipping web apps who are terrified of breaking critical flows with weekly updates, currently wasting hours on manual testing or struggling with unsustainable test automation.",
+      "missing_capability": "A lightweight, zero-maintenance tool that automatically generates and runs a minimal set of critical end-to-end tests after each code change, specifically for solo founders and small teams who cannot afford the time or complexity of traditional test automation.",
+      "why_existing_fail": "Existing tools like Selenium and Playwright require significant setup, ongoing maintenance, and coding expertise, becoming a 'part-time job' to keep tests passing as the app evolves. They are too complex and time-consuming for solo founders or small teams who need to ship quickly. Manual checklists are error-prone and don't scale, while outsourcing test creation often fails due to misalignment and lack of ownership.",
+      "readable_content": {
+        "problem": "独立开发者和初创团队因缺乏高效自动化测试而饱受手动测试困扰，既耗时又易出错，导致更新时提心吊胆，损害用户信任并拖慢发布速度。",
+        "mvp": "一个轻量级工具，能在每次代码变更后自动生成并运行关键端到端测试，无需配置和维护，专注于保障核心流程稳定。",
+        "why_now": "随着AI和低代码技术成熟，自动化测试门槛降低；独立开发者数量激增，对低成本、零维护的稳定发布工具需求迫切。"
+      },
+      "cross_source_validation": {
+        "has_cross_source": true,
+        "validation_level": 2,
+        "validated_problem": false,
+        "boost_score": 0.5,
+        "evidence": "Medium cluster (9) across 4 subreddits",
+        "badge_text": "◐ Multi-Subreddit Detection"
+      }
+    }
+  ]
+}

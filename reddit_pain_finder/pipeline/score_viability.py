@@ -915,45 +915,54 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
             # 此时所有opportunities都已经有LLM评分了
             if not skip_filtering and self.filtering_rules.get("enabled", False):
                 logger.info("Applying filtering rules after LLM scoring...")
-                # 获取所有已评分的opportunities
-                scored_opportunity_ids = [opp["opportunity_id"] for opp in scored_opportunities]
 
-                # 重新获取完整的opportunity数据（包含评分结果）
-                with db.get_connection("clusters") as conn:
-                    placeholders = ','.join('?' for _ in scored_opportunity_ids)
-                    cursor = conn.execute(f"""
-                        SELECT * FROM opportunities
-                        WHERE id IN ({placeholders})
-                    """, scored_opportunity_ids)
-                    filtered_opportunities = [dict(row) for row in cursor.fetchall()]
+                try:
+                    # 获取所有已评分的opportunities
+                    scored_opportunity_ids = [opp["opportunity_id"] for opp in scored_opportunities]
 
-                # 应用filtering rules（只更新标记，不删除）
-                filtered_count = 0
-                for opp in filtered_opportunities:
-                    cluster_id = opp["cluster_id"]
-                    if cluster_id in processed_clusters:
-                        continue
+                    # 重新获取完整的opportunity数据（包含评分结果）
+                    # 使用新的连接上下文
+                    with db.get_connection("clusters") as conn:
+                        placeholders = ','.join('?' for _ in scored_opportunity_ids)
+                        cursor = conn.execute(f"""
+                            SELECT * FROM opportunities
+                            WHERE id IN ({placeholders})
+                        """, scored_opportunity_ids)
+                        filtered_opportunities = [dict(row) for row in cursor.fetchall()]
 
-                    # 获取cluster数据
-                    cursor = conn.execute("""
-                        SELECT * FROM clusters WHERE id = ?
-                    """, (cluster_id,))
-                    cluster_data = dict(cursor.fetchone()) if cursor.rowcount > 0 else None
+                    # 应用filtering rules（只更新标记，不删除）
+                    filtered_count = 0
+                    with db.get_connection("clusters") as conn:
+                        for opp in filtered_opportunities:
+                            cluster_id = opp["cluster_id"]
+                            if cluster_id in processed_clusters:
+                                continue
 
-                    if cluster_data:
-                        should_skip, skip_reason = self.should_skip_solution_design(cluster_data)
-                        if should_skip:
-                            # 更新recommendation为"abandon"，但保留评分结果
-                            self._update_opportunities_recommendation(
-                                cluster_id, "abandon", skip_reason
-                            )
-                            processed_clusters.add(cluster_id)
-                            filtered_count += 1
-                            logger.info(f"  Filtered: {opp['opportunity_name']} - {skip_reason}")
-                        else:
-                            processed_clusters.add(cluster_id)
+                            # 获取cluster数据
+                            cursor = conn.execute("""
+                                SELECT * FROM clusters WHERE id = ?
+                            """, (cluster_id,))
+                            cluster_data = dict(cursor.fetchone()) if cursor.rowcount > 0 else None
 
-                logger.info(f"Filtering applied: {filtered_count} opportunities marked as abandon")
+                            if cluster_data:
+                                should_skip, skip_reason = self.should_skip_solution_design(cluster_data)
+                                if should_skip:
+                                    # 更新recommendation为"abandon"，但保留评分结果
+                                    self._update_opportunities_recommendation(
+                                        cluster_id, "abandon", skip_reason
+                                    )
+                                    processed_clusters.add(cluster_id)
+                                    filtered_count += 1
+                                    logger.info(f"  Filtered: {opp['opportunity_name']} - {skip_reason}")
+                                else:
+                                    processed_clusters.add(cluster_id)
+
+                    logger.info(f"Filtering applied: {filtered_count} opportunities marked as abandon")
+
+                except Exception as e:
+                    logger.error(f"Failed to apply filtering rules: {e}")
+                    # 不影响主流程，继续执行
+                    pass
 
             # 更新统计信息
             processing_time = time.time() - start_time

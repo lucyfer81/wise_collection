@@ -59,19 +59,15 @@ logger.info("环境变量加载完成")
 
 
 class PainPointAnalyzer:
-    def __init__(self, unified_db: bool = True):
+    def __init__(self):
         """初始化分析器"""
         logger.info("初始化 PainPointAnalyzer...")
 
-        # 初始化统一数据库管理器
+        # 初始化数据库管理器
         logger.info("初始化数据库管理器...")
-        self.db = WiseCollectionDB(unified=unified_db)
-        self.unified_db = unified_db
+        self.db = WiseCollectionDB()
 
-        if unified_db:
-            logger.info(f"使用统一数据库模式: {self.db.get_database_path()}")
-        else:
-            logger.info("使用多数据库模式")
+        logger.info(f"使用统一数据库模式: {self.db.unified_db_path}")
 
         self.base_url = os.getenv('Siliconflow_Base_URL', 'https://api.siliconflow.cn/v1')
         self.api_key = os.getenv('Siliconflow_KEY')
@@ -90,9 +86,8 @@ class PainPointAnalyzer:
         logger.info(f"输出目录已创建: {self.output_dir}")
 
         print(f"🔧 初始化分析器")
-        print(f"   • 数据库模式: {'统一数据库' if unified_db else '多数据库文件'}")
-        if unified_db:
-            print(f"   • 数据库路径: {self.db.get_database_path()}")
+        print(f"   • 数据库模式: 统一数据库")
+        print(f"   • 数据库路径: {self.db.unified_db_path}")
         print(f"   • API模型: {self.model}")
         print(f"   • 输出目录: {self.output_dir}")
 
@@ -638,7 +633,6 @@ def main():
     parser = argparse.ArgumentParser(description="Reddit痛点机会分析器")
     parser.add_argument("--min-score", type=float, default=0.8, help="最低机会评分")
     parser.add_argument("--limit", type=int, default=15, help="最大分析数量")
-    parser.add_argument("--legacy-db", action="store_true", help="使用旧的多数据库模式")
     parser.add_argument("--dry-run", action="store_true", help="试运行模式（仅获取数据，不生成报告）")
     parser.add_argument("--evaluate", action="store_true", help="生成报告后自动评估质量")
 
@@ -646,7 +640,7 @@ def main():
 
     logger.info("=" * 50)
     logger.info("痛点分析器开始运行")
-    logger.info(f"数据库模式: {'多数据库文件' if args.legacy_db else '统一数据库'}")
+    logger.info(f"数据库模式: 统一数据库")
     logger.info(f"最低评分: {args.min_score}, 最大数量: {args.limit}")
     if args.evaluate:
         logger.info("启用自动评估模式")
@@ -654,7 +648,7 @@ def main():
 
     try:
         logger.info("初始化 PainPointAnalyzer...")
-        analyzer = PainPointAnalyzer(unified_db=not args.legacy_db)
+        analyzer = PainPointAnalyzer()
 
         if args.dry_run:
             # 试运行：仅获取数据并显示

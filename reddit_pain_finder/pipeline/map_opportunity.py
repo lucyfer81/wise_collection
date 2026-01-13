@@ -294,15 +294,42 @@ class OpportunityMapper:
             logger.error(f"Failed to save opportunity to database: {e}")
             return None
 
-    def map_opportunities_for_clusters(self, limit: int = 50) -> Dict[str, Any]:
-        """为聚类映射机会"""
-        logger.info(f"Mapping opportunities for up to {limit} clusters")
+    def map_opportunities_for_clusters(
+        self,
+        limit: int = 50,
+        clusters_to_update: List[int] = None
+    ) -> Dict[str, Any]:
+        """为聚类映射机会（Phase 3改进：支持为指定的clusters重新生成opportunities）
+
+        Args:
+            limit: 最多处理的clusters数量
+            clusters_to_update: 指定需要更新opportunities的cluster IDs
+                              None表示只为新clusters创建（默认行为）
+
+        Returns:
+            映射结果统计
+        """
+        if clusters_to_update:
+            logger.info(f"Re-mapping opportunities for {len(clusters_to_update)} specified clusters")
+        else:
+            logger.info(f"Mapping opportunities for up to {limit} clusters")
 
         start_time = time.time()
 
         try:
-            # 获取聚类（包括对齐的虚拟聚类）
-            clusters = db.get_clusters_for_opportunity_mapping()
+            # 获取聚类
+            if clusters_to_update:
+                # 为指定的clusters重新生成opportunities
+                clusters = self._get_clusters_by_ids(clusters_to_update)
+
+                # 删除这些clusters的旧opportunities
+                for cluster_id in clusters_to_update:
+                    deleted_count = self._delete_opportunities_for_cluster(cluster_id)
+                    if deleted_count > 0:
+                        logger.info(f"  Deleted {deleted_count} old opportunities for cluster {cluster_id}")
+            else:
+                # 默认行为：只获取没有opportunities的clusters
+                clusters = db.get_clusters_for_opportunity_mapping()
 
             # 如果有指定限制，截取
             if limit and len(clusters) > limit:
@@ -447,6 +474,47 @@ Processing time: {processing_time:.2f}s
             "avg_opportunity_score": 0.0
         }
 
+    def _get_clusters_by_ids(self, cluster_ids: List[int]) -> List[Dict[str, Any]]:
+        """根据cluster IDs获取clusters（Phase 3新增）"""
+        try:
+            if not cluster_ids:
+                return []
+
+            with db.get_connection("clusters") as conn:
+                placeholders = ','.join('?' for _ in cluster_ids)
+                cursor = conn.execute(f"""
+                    SELECT id, cluster_name, source_type, centroid_summary,
+                           common_pain, pain_event_ids, cluster_size,
+                           cluster_description, workflow_confidence, created_at
+                    FROM clusters
+                    WHERE id IN ({placeholders})
+                """, cluster_ids)
+
+                clusters = [dict(row) for row in cursor.fetchall()]
+                return clusters
+
+        except Exception as e:
+            logger.error(f"Failed to get clusters by IDs: {e}")
+            return []
+
+    def _delete_opportunities_for_cluster(self, cluster_id: int) -> int:
+        """删除指定cluster的所有opportunities（Phase 3新增）"""
+        try:
+            with db.get_connection("clusters") as conn:
+                cursor = conn.execute("""
+                    DELETE FROM opportunities
+                    WHERE cluster_id = ?
+                """, (cluster_id,))
+
+                deleted_count = cursor.rowcount
+                conn.commit()
+                return deleted_count
+
+        except Exception as e:
+            logger.error(f"Failed to delete opportunities for cluster {cluster_id}: {e}")
+            return 0
+
+
 def main():
     """主函数"""
     import argparse
@@ -482,6 +550,7 @@ Mapping stats: {result['mapping_stats']}
     except Exception as e:
         logger.error(f"Fatal error: {e}")
         raise
+
 
 if __name__ == "__main__":
     main()

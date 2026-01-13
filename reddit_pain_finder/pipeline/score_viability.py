@@ -711,12 +711,20 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
             return "abandon - Too many risks or unclear value proposition"
 
     def _update_opportunity_in_database(self, opportunity_id: int, scoring_result: Dict[str, Any]) -> bool:
-        """更新数据库中的机会评分（Phase 3：支持raw_total_score和trust_level）"""
+        """更新数据库中的机会评分（Phase 3：支持raw_total_score、trust_level和版本字段）"""
         try:
+            from datetime import datetime
+
             with db.get_connection("clusters") as conn:
                 # 检查是否存在新列
                 cursor = conn.execute("PRAGMA table_info(opportunities)")
                 existing_columns = {row['name'] for row in cursor.fetchall()}
+
+                # 获取当前opportunity的version
+                cursor.execute("SELECT current_version, rescore_count FROM opportunities WHERE id = ?", (opportunity_id,))
+                current_opp = cursor.fetchone()
+                current_version = current_opp['current_version'] if current_opp else 1
+                rescore_count = current_opp['rescore_count'] if current_opp else 0
 
                 # 基础更新语句（适用于旧schema）
                 update_sql = """
@@ -760,6 +768,23 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
                     }
                     update_values.append(json.dumps(breakdown))
 
+                # Phase 3: 添加版本和时间戳字段
+                if "scored_at" in existing_columns:
+                    update_sql = update_sql.rstrip() + ",\nscored_at = ?"
+                    update_values.append(datetime.now().isoformat())
+
+                if "current_version" in existing_columns:
+                    update_sql = update_sql.rstrip() + ",\ncurrent_version = ?"
+                    update_values.append(current_version + 1)
+
+                if "last_rescored_at" in existing_columns:
+                    update_sql = update_sql.rstrip() + ",\nlast_rescored_at = ?"
+                    update_values.append(datetime.now().isoformat())
+
+                if "rescore_count" in existing_columns:
+                    update_sql = update_sql.rstrip() + ",\nrescore_count = ?"
+                    update_values.append(rescore_count + 1)
+
                 update_sql = update_sql.rstrip() + "\nWHERE id = ?"
                 update_values.append(opportunity_id)
 
@@ -769,36 +794,71 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
 
         except Exception as e:
             logger.error(f"Failed to update opportunity in database: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
 
-    def score_opportunities(self, limit: int = 100) -> Dict[str, Any]:
-        """为机会评分"""
-        logger.info(f"Scoring up to {limit} opportunities")
+    def score_opportunities(
+        self,
+        limit: int = 100,
+        skip_filtering: bool = False,
+        batch_id: str = None,
+        clusters_to_update: List[int] = None
+    ) -> Dict[str, Any]:
+        """为机会评分（Phase 3改进：filtering在LLM评分之后）
+
+        Args:
+            limit: 最多评分的机会数量
+            skip_filtering: 是否跳过filtering rules（用于重新评分已存在的opportunities）
+            batch_id: 评分批次ID（用于追踪）
+            clusters_to_update: 指定需要重新评分的cluster IDs（None表示评分所有未评分的）
+
+        Returns:
+            评分结果统计
+        """
+        logger.info(f"Scoring up to {limit} opportunities (skip_filtering={skip_filtering})")
+
+        if batch_id:
+            logger.info(f"Batch ID: {batch_id}")
+
+        if clusters_to_update:
+            logger.info(f"Re-scoring {len(clusters_to_update)} specified clusters")
 
         start_time = time.time()
 
         try:
-            # 获取未评分的机会
-            with db.get_connection("clusters") as conn:
-                cursor = conn.execute("""
-                    SELECT * FROM opportunities
-                    WHERE total_score = 0 OR total_score IS NULL
-                    ORDER BY cluster_id DESC
-                    LIMIT ?
-                """, (limit,))
-                opportunities = [dict(row) for row in cursor.fetchall()]
+            # 获取需要评分的机会
+            if clusters_to_update:
+                # 为指定的clusters重新评分（包括已评分的）
+                with db.get_connection("clusters") as conn:
+                    placeholders = ','.join('?' for _ in clusters_to_update)
+                    cursor = conn.execute(f"""
+                        SELECT * FROM opportunities
+                        WHERE cluster_id IN ({placeholders})
+                        ORDER BY cluster_id DESC
+                    """, clusters_to_update)
+                    opportunities = [dict(row) for row in cursor.fetchall()]
+            else:
+                # 默认：获取未评分的机会
+                with db.get_connection("clusters") as conn:
+                    cursor = conn.execute("""
+                        SELECT * FROM opportunities
+                        WHERE total_score = 0 OR total_score IS NULL
+                        ORDER BY cluster_id DESC
+                        LIMIT ?
+                    """, (limit,))
+                    opportunities = [dict(row) for row in cursor.fetchall()]
 
             if not opportunities:
-                logger.info("No unscored opportunities found")
+                logger.info("No opportunities found to score")
                 return {"opportunities_scored": 0, "viable_opportunities": 0}
 
             logger.info(f"Found {len(opportunities)} opportunities to score")
 
-            # 如果启用了过滤规则，首先检查聚类
+            # ⚠️ Phase 3 关键改动：移除这里的filtering，改到LLM评分之后
+            # 之前：filtering在LLM评分之前，阻止了新clusters被评分
+            # 现在：先让所有opportunities被LLM评分，然后应用filtering标记
             processed_clusters = set()
-            if self.filtering_rules.get("enabled", False):
-                logger.info("Filtering rules enabled, checking clusters first...")
-                opportunities = self._apply_filtering_rules(opportunities, processed_clusters)
 
             scored_opportunities = []
             viable_count = 0
@@ -850,6 +910,59 @@ Competition Analysis: {opportunity_data.get('competition_analysis', {})}
 
                 # 添加延迟避免API限制
                 time.sleep(2)
+
+            # ⚠️ Phase 3 关键改动：LLM评分完成后，应用filtering rules（如果启用）
+            # 此时所有opportunities都已经有LLM评分了
+            if not skip_filtering and self.filtering_rules.get("enabled", False):
+                logger.info("Applying filtering rules after LLM scoring...")
+
+                try:
+                    # 获取所有已评分的opportunities
+                    scored_opportunity_ids = [opp["opportunity_id"] for opp in scored_opportunities]
+
+                    # 重新获取完整的opportunity数据（包含评分结果）
+                    # 使用新的连接上下文
+                    with db.get_connection("clusters") as conn:
+                        placeholders = ','.join('?' for _ in scored_opportunity_ids)
+                        cursor = conn.execute(f"""
+                            SELECT * FROM opportunities
+                            WHERE id IN ({placeholders})
+                        """, scored_opportunity_ids)
+                        filtered_opportunities = [dict(row) for row in cursor.fetchall()]
+
+                    # 应用filtering rules（只更新标记，不删除）
+                    filtered_count = 0
+                    with db.get_connection("clusters") as conn:
+                        for opp in filtered_opportunities:
+                            cluster_id = opp["cluster_id"]
+                            if cluster_id in processed_clusters:
+                                continue
+
+                            # 获取cluster数据
+                            cursor = conn.execute("""
+                                SELECT * FROM clusters WHERE id = ?
+                            """, (cluster_id,))
+                            cluster_data = dict(cursor.fetchone()) if cursor.rowcount > 0 else None
+
+                            if cluster_data:
+                                should_skip, skip_reason = self.should_skip_solution_design(cluster_data)
+                                if should_skip:
+                                    # 更新recommendation为"abandon"，但保留评分结果
+                                    self._update_opportunities_recommendation(
+                                        cluster_id, "abandon", skip_reason
+                                    )
+                                    processed_clusters.add(cluster_id)
+                                    filtered_count += 1
+                                    logger.info(f"  Filtered: {opp['opportunity_name']} - {skip_reason}")
+                                else:
+                                    processed_clusters.add(cluster_id)
+
+                    logger.info(f"Filtering applied: {filtered_count} opportunities marked as abandon")
+
+                except Exception as e:
+                    logger.error(f"Failed to apply filtering rules: {e}")
+                    # 不影响主流程，继续执行
+                    pass
 
             # 更新统计信息
             processing_time = time.time() - start_time

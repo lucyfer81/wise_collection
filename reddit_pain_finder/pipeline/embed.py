@@ -1,6 +1,8 @@
 """
 Embed module for Reddit Pain Point Finder
 痛点事件向量化模块 - 为聚类做准备
+
+Updated to use Chroma for vector storage instead of pain_embeddings table.
 """
 import logging
 import time
@@ -9,6 +11,7 @@ from datetime import datetime
 
 from utils.embedding import embedding_client
 from utils.db import db
+from utils.chroma_client import get_chroma_client
 
 logger = logging.getLogger(__name__)
 
@@ -79,18 +82,55 @@ class PainEventEmbedder:
             self.stats["errors"] += 1
             return None
 
-    def save_embedding(self, pain_event_id: int, embedding: List[float]) -> bool:
-        """保存嵌入向量到数据库"""
+    def save_embedding(self, pain_event_id: int, embedding: List[float], pain_event_data: Dict[str, Any] = None) -> bool:
+        """保存嵌入向量到Chroma（新架构）"""
         try:
-            success = db.insert_pain_embedding(
-                pain_event_id=pain_event_id,
-                embedding_vector=embedding,
-                model_name=embedding_client.model_name
+            chroma = get_chroma_client()
+
+            # Get pain event data if not provided
+            if pain_event_data is None:
+                with db.get_connection("pain") as conn:
+                    cursor = conn.execute("""
+                        SELECT * FROM pain_events WHERE id = ?
+                    """, (pain_event_id,))
+                    row = cursor.fetchone()
+                    if row:
+                        pain_event_data = dict(row)
+                    else:
+                        logger.error(f"Pain event {pain_event_id} not found")
+                        return False
+
+            # Convert embedding to list if needed
+            if hasattr(embedding, 'tolist'):
+                embedding = embedding.tolist()
+            elif not isinstance(embedding, list):
+                embedding = list(embedding)
+
+            # Prepare metadata
+            metadata = {
+                "pain_event_id": pain_event_id,
+                "problem": (pain_event_data.get('problem', '') or "")[:500],
+                "context": (pain_event_data.get('context', '') or "")[:500],
+                "extracted_at": pain_event_data.get('extracted_at', '') or "",
+                "cluster_id": pain_event_data.get('cluster_id') or 0,
+                "lifecycle_stage": pain_event_data.get('lifecycle_stage', 'orphan'),
+                "embedding_model": embedding_client.model_name
+            }
+
+            # Save to Chroma
+            success = chroma.add_embeddings(
+                pain_event_ids=[pain_event_id],
+                embeddings=[embedding],
+                metadatas=[metadata]
             )
+
+            if success:
+                logger.debug(f"Saved embedding for pain_event {pain_event_id} to Chroma")
+
             return success
 
         except Exception as e:
-            logger.error(f"Failed to save embedding for pain event {pain_event_id}: {e}")
+            logger.error(f"Failed to save embedding for pain event {pain_event_id} to Chroma: {e}")
             return False
 
     def process_pain_events_batch(self, pain_events: List[Dict[str, Any]], batch_size: int = 20) -> int:
@@ -109,8 +149,8 @@ class PainEventEmbedder:
             if embedding is None:
                 continue
 
-            # 保存到数据库
-            if self.save_embedding(event["id"], embedding):
+            # 保存到Chroma（传递event data）
+            if self.save_embedding(event["id"], embedding, event):
                 saved_count += 1
 
             # 批量处理延迟
@@ -126,30 +166,63 @@ class PainEventEmbedder:
         embedding_stats = embedding_client.get_embedding_statistics()
         self.stats["cache_hits"] = embedding_stats.get("cache_hits", 0)
 
-        logger.info(f"Embedding complete: {saved_count}/{len(pain_events)} embeddings saved")
+        logger.info(f"Embedding complete: {saved_count}/{len(pain_events)} embeddings saved to Chroma")
         logger.info(f"Processing time: {processing_time:.2f}s")
 
         return saved_count
 
     def process_missing_embeddings(self, limit: int = 100) -> Dict[str, Any]:
-        """处理缺失嵌入向量的痛点事件"""
+        """处理缺失嵌入向量的痛点事件（使用Chroma）"""
         logger.info(f"Processing up to {limit} pain events without embeddings")
 
         try:
-            # 获取没有嵌入向量的痛点事件
-            pain_events = db.get_pain_events_without_embeddings(limit=limit)
+            # Get recent pain events from SQLite
+            with db.get_connection("pain") as conn:
+                cursor = conn.execute("""
+                    SELECT * FROM pain_events
+                    ORDER BY extracted_at DESC
+                    LIMIT ?
+                """, (limit * 2,))  # Get more to account for already embedded
+                all_pain_events = [dict(row) for row in cursor.fetchall()]
 
-            if not pain_events:
-                logger.info("No pain events without embeddings found")
+            if not all_pain_events:
+                logger.info("No pain events found")
                 return {"processed": 0, "embeddings_created": 0}
 
-            logger.info(f"Found {len(pain_events)} pain events to embed")
+            # Check which ones are already in Chroma
+            chroma = get_chroma_client()
+            existing_ids = set()
+
+            # Check in batches
+            batch_size = 100
+            for i in range(0, len(all_pain_events), batch_size):
+                batch = all_pain_events[i:i+batch_size]
+                batch_ids = [str(e['id']) for e in batch]
+
+                try:
+                    results = chroma.collection.get(
+                        ids=batch_ids,
+                        include=["metadatas"]
+                    )
+                    existing_ids.update(int(id) for id in results['ids'])
+                except:
+                    pass  # Chroma might not have these IDs yet
+
+            # Filter to only those without embeddings
+            pain_events_without = [e for e in all_pain_events if e['id'] not in existing_ids]
+            pain_events_without = pain_events_without[:limit]  # Apply limit
+
+            if not pain_events_without:
+                logger.info(f"All recent pain events already have embeddings in Chroma")
+                return {"processed": 0, "embeddings_created": 0}
+
+            logger.info(f"Found {len(pain_events_without)} pain events to embed (out of {len(all_pain_events)} recent events)")
 
             # 批量创建嵌入向量
-            saved_count = self.process_pain_events_batch(pain_events)
+            saved_count = self.process_pain_events_batch(pain_events_without)
 
             return {
-                "processed": len(pain_events),
+                "processed": len(pain_events_without),
                 "embeddings_created": saved_count,
                 "embedding_stats": self.get_statistics()
             }

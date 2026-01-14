@@ -1000,26 +1000,42 @@ class WiseCollectionDB:
             logger.error(f"Failed to update cluster alignment status: {e}")
             raise
 
-    def get_clusters_for_opportunity_mapping(self) -> List[Dict]:
+    def get_clusters_for_opportunity_mapping(self, force: bool = False) -> List[Dict]:
         """获取用于机会映射的聚类
 
-        防止重复映射：只返回尚未映射opportunities的clusters
+        防止重复映射：默认只返回尚未映射opportunities的clusters
+
+        Args:
+            force: 如果为True，强制返回所有符合条件的clusters（包括已有opportunities的）
+                  如果为False，只返回尚未映射opportunities的clusters（默认行为）
         """
         try:
             with self.get_connection("clusters") as conn:
-                # 获取原始聚类，且该cluster尚未有opportunities
-                cursor = conn.execute("""
-                    SELECT id, cluster_name, source_type, centroid_summary,
-                           common_pain, pain_event_ids, cluster_size,
-                           cluster_description, workflow_confidence, created_at
-                    FROM clusters
-                    WHERE (alignment_status IN ('unprocessed', 'processed')
-                           OR alignment_status IS NULL)
-                      AND NOT EXISTS (
-                          SELECT 1 FROM opportunities
-                          WHERE opportunities.cluster_id = clusters.id
-                      )
-                """)
+                if force:
+                    # 强制模式：返回所有符合条件的clusters，包括已有opportunities的
+                    cursor = conn.execute("""
+                        SELECT id, cluster_name, source_type, centroid_summary,
+                               common_pain, pain_event_ids, cluster_size,
+                               cluster_description, workflow_confidence, created_at
+                        FROM clusters
+                        WHERE (alignment_status IN ('unprocessed', 'processed')
+                               OR alignment_status IS NULL)
+                    """)
+                    logger.info("Force mode enabled: returning ALL eligible clusters, including those with existing opportunities")
+                else:
+                    # 默认模式：只返回尚未有opportunities的clusters
+                    cursor = conn.execute("""
+                        SELECT id, cluster_name, source_type, centroid_summary,
+                               common_pain, pain_event_ids, cluster_size,
+                               cluster_description, workflow_confidence, created_at
+                        FROM clusters
+                        WHERE (alignment_status IN ('unprocessed', 'processed')
+                               OR alignment_status IS NULL)
+                          AND NOT EXISTS (
+                              SELECT 1 FROM opportunities
+                              WHERE opportunities.cluster_id = clusters.id
+                          )
+                    """)
 
                 clusters = [dict(row) for row in cursor.fetchall()]
                 return clusters

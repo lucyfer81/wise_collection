@@ -380,7 +380,7 @@ class WiseCollectionPipeline:
                 performance_monitor.end_stage("cluster", 0)
             raise
 
-    def run_stage_map_opportunities(self, limit_clusters: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
+    def run_stage_map_opportunities(self, limit_clusters: Optional[int] = None, process_all: bool = False, force_remap: bool = False) -> Dict[str, Any]:
         """阶段6: 机会映射"""
         logger.info("=" * 50)
         logger.info("STAGE 6: Mapping opportunities")
@@ -398,7 +398,7 @@ class WiseCollectionPipeline:
             elif limit_clusters is None:
                 limit_clusters = 50
 
-            result = mapper.map_opportunities_for_clusters(limit=limit_clusters)
+            result = mapper.map_opportunities_for_clusters(limit=limit_clusters, force_remap=force_remap)
 
             self.stats["stages_completed"].append("map_opportunities")
             self.stats["stage_results"]["map_opportunities"] = result
@@ -593,6 +593,7 @@ class WiseCollectionPipeline:
         limit_opportunities: Optional[int] = None,
         sources: Optional[List[str]] = None,
         process_all: bool = False,
+        force_remap: bool = False,
         stop_on_error: bool = False,
         save_metrics: bool = False,
         metrics_file: Optional[str] = None,
@@ -624,7 +625,7 @@ class WiseCollectionPipeline:
             ("extract", lambda: self.run_stage_extract(limit_posts, process_all)),
             ("embed", lambda: self.run_stage_embed(limit_events, process_all)),
             ("cluster", lambda: self.run_stage_cluster(limit_events, process_all)),
-            ("map_opportunities", lambda: self.run_stage_map_opportunities(limit_clusters, process_all)),
+            ("map_opportunities", lambda: self.run_stage_map_opportunities(limit_clusters, process_all, force_remap)),
             ("score", lambda: self.run_stage_score(limit_opportunities, process_all)),
             ("shortlist", lambda: self.run_stage_decision_shortlist())
         ]
@@ -664,7 +665,7 @@ class WiseCollectionPipeline:
             ),
             "embed": lambda: self.run_stage_embed(kwargs.get("limit_events"), process_all),
             "cluster": lambda: self.run_stage_cluster(kwargs.get("limit_events"), process_all),
-            "map": lambda: self.run_stage_map_opportunities(kwargs.get("limit_clusters"), process_all),
+            "map": lambda: self.run_stage_map_opportunities(kwargs.get("limit_clusters"), process_all, kwargs.get("force_remap", False)),
             "score": lambda: self.run_stage_score(kwargs.get("limit_opportunities"), process_all),
             "shortlist": lambda: self.run_stage_decision_shortlist()
         }
@@ -930,6 +931,8 @@ def main():
     # 全量处理选项
     parser.add_argument("--process-all", action="store_true",
                        help="Process ALL unprocessed data (ignore default limits)")
+    parser.add_argument("--force-remap", action="store_true",
+                       help="Force re-map opportunities for ALL clusters (including those with existing opportunities)")
 
     # 性能监控选项
     parser.add_argument("--no-monitoring", action="store_true", help="Disable performance monitoring")
@@ -959,6 +962,7 @@ def main():
                 limit_opportunities=args.limit_opportunities,
                 sources=args.sources,
                 process_all=args.process_all,
+                force_remap=args.force_remap,
                 stop_on_error=args.stop_on_error,
                 save_metrics=args.save_metrics,
                 metrics_file=args.metrics_file,
@@ -975,6 +979,7 @@ def main():
                 "limit_opportunities": args.limit_opportunities,
                 "sources": args.sources,
                 "process_all": args.process_all,
+                "force_remap": args.force_remap,
             }
 
             # 只传递相关的参数（保留布尔值）

@@ -132,14 +132,14 @@ echo ""
 # 运行完整pipeline
 if [ "$1" = "--process-all" ]; then
     echo "Mode: Process all data (full pipeline)"
-    python3 run_pipeline.py --stage all --process-all --save-results --enable-monitoring
+    python3 run_pipeline.py --stage all --process-all --save-results
 elif [ "$1" = "--incremental" ]; then
     echo "Mode: Incremental (only new data)"
-    python3 run_pipeline.py --stage all --save-results --enable-monitoring
+    python3 run_pipeline.py --stage all --save-results
 else
     echo "Mode: Default limits (test run)"
     echo "Use --process-all for full processing or --incremental for incremental"
-    python3 run_pipeline.py --stage all --save-results --enable-monitoring
+    python3 run_pipeline.py --stage all --save-results
 fi
 
 PIPELINE_EXIT_CODE=$?

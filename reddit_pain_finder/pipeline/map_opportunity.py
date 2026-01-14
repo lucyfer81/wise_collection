@@ -297,7 +297,8 @@ class OpportunityMapper:
     def map_opportunities_for_clusters(
         self,
         limit: int = 50,
-        clusters_to_update: List[int] = None
+        clusters_to_update: List[int] = None,
+        force_remap: bool = False
     ) -> Dict[str, Any]:
         """为聚类映射机会（Phase 3改进：支持为指定的clusters重新生成opportunities）
 
@@ -305,14 +306,18 @@ class OpportunityMapper:
             limit: 最多处理的clusters数量
             clusters_to_update: 指定需要更新opportunities的cluster IDs
                               None表示只为新clusters创建（默认行为）
+            force_remap: 如果为True，强制重新映射所有符合条件的clusters（包括已有opportunities的）
+                        如果为False，只处理尚未有opportunities的clusters（默认行为）
 
         Returns:
             映射结果统计
         """
         if clusters_to_update:
             logger.info(f"Re-mapping opportunities for {len(clusters_to_update)} specified clusters")
+        elif force_remap:
+            logger.info(f"Force re-mapping opportunities for all eligible clusters (including those with existing opportunities)")
         else:
-            logger.info(f"Mapping opportunities for up to {limit} clusters")
+            logger.info(f"Mapping opportunities for up to {limit} new clusters")
 
         start_time = time.time()
 
@@ -328,8 +333,18 @@ class OpportunityMapper:
                     if deleted_count > 0:
                         logger.info(f"  Deleted {deleted_count} old opportunities for cluster {cluster_id}")
             else:
-                # 默认行为：只获取没有opportunities的clusters
-                clusters = db.get_clusters_for_opportunity_mapping()
+                # 获取clusters进行映射
+                clusters = db.get_clusters_for_opportunity_mapping(force=force_remap)
+
+                # 如果是强制重新映射模式，删除所有clusters的旧opportunities
+                if force_remap and clusters:
+                    logger.info(f"Force remap mode: deleting old opportunities for {len(clusters)} clusters...")
+                    for cluster in clusters:
+                        cluster_id = cluster.get("id")
+                        if cluster_id:
+                            deleted_count = self._delete_opportunities_for_cluster(cluster_id)
+                            if deleted_count > 0:
+                                logger.debug(f"  Deleted {deleted_count} old opportunities for cluster {cluster_id}")
 
             # 如果有指定限制，截取
             if limit and len(clusters) > limit:

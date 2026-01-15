@@ -206,8 +206,18 @@ class OpportunityMapper:
     def _map_opportunity_with_llm(self, cluster_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """使用LLM映射机会"""
         try:
-            # 调用LLM进行机会映射
-            response = llm_client.map_opportunity(cluster_data)
+            # 创建紧凑的摘要以减少token使用
+            compact_summary = self._create_llm_friendly_cluster_summary(cluster_data)
+
+            # 记录原始和紧凑大小的差异
+            original_size = len(str(cluster_data))
+            compact_size = len(str(compact_summary))
+            reduction_pct = (1 - compact_size / original_size) * 100 if original_size > 0 else 0
+
+            logger.info(f"Data compression: {original_size} → {compact_size} chars ({reduction_pct:.1f}% reduction)")
+
+            # 调用LLM进行机会映射，使用紧凑摘要
+            response = llm_client.map_opportunity(compact_summary)
 
             opportunity_data = response["content"]
 

@@ -130,30 +130,38 @@ class WiseCollectionPipeline:
             raise
 
     def run_stage_filter(self, limit_posts: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
-        """阶段2: 信号过滤（Posts）
+        """阶段2: 信号过滤（Posts）- 支持增量处理
 
         Args:
             limit_posts: 限制处理帖子数量
             process_all: 处理所有未过滤数据
         """
         logger.info("=" * 50)
-        logger.info("STAGE 2: Filtering pain signals")
+        logger.info("STAGE 2: Filtering pain signals (Incremental)")
         logger.info("=" * 50)
 
         if self.enable_monitoring:
             performance_monitor.start_stage("filter")
 
         try:
+            from utils.pipeline_state import get_pipeline_state
+
+            # 获取上次运行时间（增量处理）
+            last_run = get_pipeline_state().get_last_run_time("filter")
+            if last_run:
+                logger.info(f"Last run: {last_run}")
+                logger.info("Processing posts collected since then...")
+
             filter = PainSignalFilter()
 
-            # 获取未过滤的帖子
+            # 获取未过滤的帖子（支持增量）
             # 如果 process_all=True 且未指定 limit，则处理所有数据
             if process_all and limit_posts is None:
                 limit_posts = 1000000  # 处理所有数据
             elif limit_posts is None:
                 limit_posts = 1000
 
-            unfiltered_posts = db.get_unprocessed_posts(limit=limit_posts)
+            unfiltered_posts = db.get_unprocessed_posts(limit=limit_posts, since=last_run)
 
             # 初始化计数器
             saved_count = 0
@@ -241,6 +249,9 @@ class WiseCollectionPipeline:
             if failed_count > 0:
                 logger.warning(f"⚠️  {failed_count} posts failed to process and will be retried next run")
 
+            # 更新pipeline状态
+            get_pipeline_state().update_stage_run("filter", saved_count)
+
             return result
 
         except Exception as e:
@@ -251,20 +262,28 @@ class WiseCollectionPipeline:
             raise
 
     def run_stage_extract(self, limit_posts: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
-        """阶段3: 痛点抽取
+        """阶段3: 痛点抽取 - 支持增量处理
 
         Args:
             limit_posts: 限制处理帖子数量
             process_all: 处理所有未过滤数据
         """
         logger.info("=" * 50)
-        logger.info("STAGE 3: Extracting pain points")
+        logger.info("STAGE 3: Extracting pain points (Incremental)")
         logger.info("=" * 50)
 
         if self.enable_monitoring:
             performance_monitor.start_stage("extract")
 
         try:
+            from utils.pipeline_state import get_pipeline_state
+
+            # 获取上次运行时间（增量处理）
+            last_run = get_pipeline_state().get_last_run_time("extract")
+            if last_run:
+                logger.info(f"Last run: {last_run}")
+                logger.info("Processing posts filtered since then...")
+
             extractor = PainPointExtractor()
 
             # ============ 处理Posts ============
@@ -274,7 +293,8 @@ class WiseCollectionPipeline:
             elif limit_posts is None:
                 limit_posts = 100
 
-            post_result = extractor.process_unextracted_posts(limit=limit_posts)
+            # 使用并行处理（max_workers=8）
+            post_result = extractor.process_unextracted_posts(limit=limit_posts, max_workers=8)
 
             logger.info(f"✅ Posts: Extracted {post_result.get('pain_events_saved', 0)} pain events")
 
@@ -298,6 +318,9 @@ class WiseCollectionPipeline:
             logger.info("=" * 50)
             logger.info(f"Total events: {result.get('total_events', 0)}")
             logger.info("=" * 50)
+
+            # 更新pipeline状态
+            get_pipeline_state().update_stage_run("extract", result.get('total_events', 0))
 
             return result
 
@@ -345,7 +368,7 @@ class WiseCollectionPipeline:
             raise
 
     def run_stage_cluster(self, limit_events: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
-        """阶段5: 动态聚类更新 (Dynamic Clustering)"""
+        """阶段5: 动态聚类更新 (Dynamic Clustering) - 支持增量处理"""
         logger.info("=" * 50)
         logger.info("STAGE 5: Dynamic Clustering (Real-time)")
         logger.info("=" * 50)
@@ -355,6 +378,7 @@ class WiseCollectionPipeline:
 
         try:
             from pipeline.dynamic_cluster import DynamicClusterUpdater
+            from utils.pipeline_state import get_pipeline_state
             import pickle
 
             # 初始化动态聚类器
@@ -428,6 +452,10 @@ class WiseCollectionPipeline:
             logger.info(f"   Events processed: {result.get('events_processed', 0)}")
             logger.info(f"   New clusters: {result.get('clusters_created', 0)}")
             logger.info(f"   Updated clusters: {result.get('clusters_updated', 0)}")
+
+            # 更新pipeline状态
+            get_pipeline_state().update_stage_run("cluster", result.get('events_processed', 0))
+
             return result
 
         except Exception as e:

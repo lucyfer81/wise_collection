@@ -9,6 +9,7 @@ import hashlib
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from contextlib import contextmanager
+from threading import Lock
 import os
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,9 @@ class WiseCollectionDB:
 
         # 使用统一数据库文件
         self.unified_db_path = os.path.join(db_dir, "wise_collection.db")
+
+        # 线程锁（用于保护写入操作）
+        self._write_lock = Lock()
 
         # 初始化数据库
         self._init_database()
@@ -56,6 +60,10 @@ class WiseCollectionDB:
     def _init_unified_database(self):
         """初始化统一数据库，包含所有表"""
         with self.get_connection("raw") as conn:
+            # 启用WAL模式以提升并发性能
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
+            logger.info("SQLite WAL mode enabled for better concurrent access")
             # 创建原始帖子表（升级版 - 支持多数据源）
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS posts (
@@ -515,20 +523,43 @@ class WiseCollectionDB:
             logger.error(f"Failed to insert raw post {post_data.get('id')}: {e}")
             return False
 
-    def get_unprocessed_posts(self, limit: int = 100) -> List[Dict]:
-        """获取未处理的帖子"""
+    def get_unprocessed_posts(self, limit: int = 100, since: Optional[str] = None) -> List[Dict]:
+        """获取未处理的帖子（支持增量处理）
+
+        Args:
+            limit: 限制数量
+            since: ISO格式时间戳，只获取此时间之后收集的posts（用于增量处理）
+
+        Returns:
+            未处理的帖子列表
+        """
         try:
             # 使用 NOT EXISTS 而不是 NOT IN，以正确处理 NULL 值
             with self.get_connection("raw") as conn:
-                cursor = conn.execute("""
-                    SELECT * FROM posts
-                    WHERE NOT EXISTS (
-                        SELECT 1 FROM filtered_posts
-                        WHERE filtered_posts.id = posts.id
-                    )
-                    ORDER BY collected_at DESC
-                    LIMIT ?
-                """, (limit,))
+                if since:
+                    # 增量模式：只获取指定时间之后的新数据
+                    cursor = conn.execute("""
+                        SELECT * FROM posts
+                        WHERE collected_at > ?
+                        AND NOT EXISTS (
+                            SELECT 1 FROM filtered_posts
+                            WHERE filtered_posts.id = posts.id
+                        )
+                        ORDER BY collected_at DESC
+                        LIMIT ?
+                    """, (since, limit))
+                    logger.debug(f"Fetching unprocessed posts since {since}")
+                else:
+                    # 全量模式：获取所有未处理的数据
+                    cursor = conn.execute("""
+                        SELECT * FROM posts
+                        WHERE NOT EXISTS (
+                            SELECT 1 FROM filtered_posts
+                            WHERE filtered_posts.id = posts.id
+                        )
+                        ORDER BY collected_at DESC
+                        LIMIT ?
+                    """, (limit,))
                 return [dict(row) for row in cursor.fetchall()]
         except Exception as e:
             logger.error(f"Failed to get unprocessed posts: {e}")
@@ -672,8 +703,17 @@ class WiseCollectionDB:
             logger.error(f"Failed to insert filtered post {post_data.get('id')}: {e}")
             return False
 
-    def get_filtered_posts(self, limit: int = 100, min_pain_score: float = 0.0) -> List[Dict]:
-        """获取过滤后的帖子"""
+    def get_filtered_posts(self, limit: int = 100, min_pain_score: float = 0.0, since: Optional[str] = None) -> List[Dict]:
+        """获取过滤后的帖子（支持增量处理）
+
+        Args:
+            limit: 限制数量
+            min_pain_score: 最低pain_score阈值
+            since: ISO格式时间戳，只获取此时间之后过滤的posts（用于增量处理）
+
+        Returns:
+            过滤后的帖子列表
+        """
         try:
             # 首先获取所有已提取的帖子ID
             with self.get_connection("pain") as conn:
@@ -685,21 +725,45 @@ class WiseCollectionDB:
                 if extracted_ids:
                     # 如果有已提取的帖子，排除它们
                     placeholders = ','.join('?' * len(extracted_ids))
-                    cursor = conn.execute(f"""
-                        SELECT * FROM filtered_posts
-                        WHERE pain_score >= ?
-                        AND id NOT IN ({placeholders})
-                        ORDER BY pain_score DESC
-                        LIMIT ?
-                    """, [min_pain_score] + list(extracted_ids) + [limit])
+                    if since:
+                        # 增量模式
+                        cursor = conn.execute(f"""
+                            SELECT * FROM filtered_posts
+                            WHERE pain_score >= ?
+                            AND filtered_at > ?
+                            AND id NOT IN ({placeholders})
+                            ORDER BY pain_score DESC
+                            LIMIT ?
+                        """, [min_pain_score, since] + list(extracted_ids) + [limit])
+                        logger.debug(f"Fetching filtered posts since {since}")
+                    else:
+                        # 全量模式
+                        cursor = conn.execute(f"""
+                            SELECT * FROM filtered_posts
+                            WHERE pain_score >= ?
+                            AND id NOT IN ({placeholders})
+                            ORDER BY pain_score DESC
+                            LIMIT ?
+                        """, [min_pain_score] + list(extracted_ids) + [limit])
                 else:
                     # 如果没有已提取的帖子，直接获取
-                    cursor = conn.execute("""
-                        SELECT * FROM filtered_posts
-                        WHERE pain_score >= ?
-                        ORDER BY pain_score DESC
-                        LIMIT ?
-                    """, (min_pain_score, limit))
+                    if since:
+                        # 增量模式
+                        cursor = conn.execute("""
+                            SELECT * FROM filtered_posts
+                            WHERE pain_score >= ?
+                            AND filtered_at > ?
+                            ORDER BY pain_score DESC
+                            LIMIT ?
+                        """, (min_pain_score, since, limit))
+                    else:
+                        # 全量模式
+                        cursor = conn.execute("""
+                            SELECT * FROM filtered_posts
+                            WHERE pain_score >= ?
+                            ORDER BY pain_score DESC
+                            LIMIT ?
+                        """, (min_pain_score, limit))
                 return [dict(row) for row in cursor.fetchall()]
         except Exception as e:
             logger.error(f"Failed to get filtered posts: {e}")
@@ -707,50 +771,57 @@ class WiseCollectionDB:
 
     # Pain events operations
     def insert_pain_event(self, pain_data: Dict[str, Any]) -> Optional[int]:
-        """插入痛点事件（支持post和comment来源）- Phase 2: Include Comments"""
+        """插入痛点事件（支持post和comment来源）- Phase 2: Include Comments
+
+        线程安全：使用_write_lock保护并发写入
+        """
         try:
-            with self.get_connection("pain") as conn:
-                cursor = conn.execute("""
-                    INSERT INTO pain_events
-                    (post_id, source_type, source_id, parent_post_id, actor, context,
-                     problem, current_workaround, frequency, emotional_signal,
-                     mentioned_tools, extraction_confidence)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    pain_data["post_id"],
-                    pain_data.get("source_type", "post"),  # NEW: source_type
-                    pain_data.get("source_id"),             # NEW: source_id
-                    pain_data.get("parent_post_id"),        # NEW: parent_post_id
-                    pain_data.get("actor", ""),
-                    pain_data.get("context", ""),
-                    pain_data["problem"],
-                    pain_data.get("current_workaround", ""),
-                    pain_data.get("frequency", ""),
-                    pain_data.get("emotional_signal", ""),
-                    json.dumps(pain_data.get("mentioned_tools", [])),
-                    pain_data.get("extraction_confidence", 0.0)
-                ))
-                pain_event_id = cursor.lastrowid
-                conn.commit()
-                return pain_event_id
+            # 使用锁保护并发写入
+            with self._write_lock:
+                with self.get_connection("pain") as conn:
+                    cursor = conn.execute("""
+                        INSERT INTO pain_events
+                        (post_id, source_type, source_id, parent_post_id, actor, context,
+                         problem, current_workaround, frequency, emotional_signal,
+                         mentioned_tools, extraction_confidence)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        pain_data["post_id"],
+                        pain_data.get("source_type", "post"),  # NEW: source_type
+                        pain_data.get("source_id"),             # NEW: source_id
+                        pain_data.get("parent_post_id"),        # NEW: parent_post_id
+                        pain_data.get("actor", ""),
+                        pain_data.get("context", ""),
+                        pain_data["problem"],
+                        pain_data.get("current_workaround", ""),
+                        pain_data.get("frequency", ""),
+                        pain_data.get("emotional_signal", ""),
+                        json.dumps(pain_data.get("mentioned_tools", [])),
+                        pain_data.get("extraction_confidence", 0.0)
+                    ))
+                    pain_event_id = cursor.lastrowid
+                    conn.commit()
+                    return pain_event_id
         except Exception as e:
             logger.error(f"Failed to insert pain event: {e}")
             return None
 
     def insert_pain_embedding(self, pain_event_id: int, embedding_vector: List[float], model_name: str) -> bool:
-        """插入痛点嵌入向量"""
+        """插入痛点嵌入向量（线程安全）"""
         try:
             import pickle
             embedding_blob = pickle.dumps(embedding_vector)
 
-            with self.get_connection("pain") as conn:
-                conn.execute("""
-                    INSERT OR REPLACE INTO pain_embeddings
-                    (pain_event_id, embedding_vector, embedding_model)
-                    VALUES (?, ?, ?)
-                """, (pain_event_id, embedding_blob, model_name))
-                conn.commit()
-                return True
+            # 使用锁保护并发写入
+            with self._write_lock:
+                with self.get_connection("pain") as conn:
+                    conn.execute("""
+                        INSERT OR REPLACE INTO pain_embeddings
+                        (pain_event_id, embedding_vector, embedding_model)
+                        VALUES (?, ?, ?)
+                    """, (pain_event_id, embedding_blob, model_name))
+                    conn.commit()
+                    return True
         except Exception as e:
             logger.error(f"Failed to insert pain embedding for event {pain_event_id}: {e}")
             return False

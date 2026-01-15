@@ -3,11 +3,14 @@ Embed module for Reddit Pain Point Finder
 痛点事件向量化模块 - 为聚类做准备
 
 Updated to use Chroma for vector storage instead of pain_embeddings table.
+
+Phase 6更新：添加Chroma写入线程锁
 """
 import logging
 import time
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+from threading import Lock
 
 from utils.embedding import embedding_client
 from utils.db import db
@@ -27,6 +30,8 @@ class PainEventEmbedder:
             "processing_time": 0.0,
             "cache_hits": 0
         }
+        # Chroma写入锁（保护并发写入）
+        self._chroma_lock = Lock()
 
     def _create_embedding_text(self, pain_event: Dict[str, Any]) -> str:
         """创建用于嵌入的文本"""
@@ -83,11 +88,12 @@ class PainEventEmbedder:
             return None
 
     def save_embedding(self, pain_event_id: int, embedding: List[float], pain_event_data: Dict[str, Any] = None) -> bool:
-        """保存嵌入向量到Chroma（新架构）"""
-        try:
-            chroma = get_chroma_client()
+        """保存嵌入向量到Chroma（新架构，线程安全）
 
-            # Get pain event data if not provided
+        使用_chroma_lock保护并发写入
+        """
+        try:
+            # 获取pain event数据（如果未提供）
             if pain_event_data is None:
                 with db.get_connection("pain") as conn:
                     cursor = conn.execute("""
@@ -117,12 +123,14 @@ class PainEventEmbedder:
                 "embedding_model": embedding_client.model_name
             }
 
-            # Save to Chroma
-            success = chroma.add_embeddings(
-                pain_event_ids=[pain_event_id],
-                embeddings=[embedding],
-                metadatas=[metadata]
-            )
+            # 使用锁保护Chroma写入
+            with self._chroma_lock:
+                chroma = get_chroma_client()
+                success = chroma.add_embeddings(
+                    pain_event_ids=[pain_event_id],
+                    embeddings=[embedding],
+                    metadatas=[metadata]
+                )
 
             if success:
                 logger.debug(f"Saved embedding for pain_event {pain_event_id} to Chroma")

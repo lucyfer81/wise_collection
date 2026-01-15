@@ -345,32 +345,89 @@ class WiseCollectionPipeline:
             raise
 
     def run_stage_cluster(self, limit_events: Optional[int] = None, process_all: bool = False) -> Dict[str, Any]:
-        """阶段5: 聚类"""
+        """阶段5: 动态聚类更新 (Dynamic Clustering)"""
         logger.info("=" * 50)
-        logger.info("STAGE 5: Clustering pain events")
+        logger.info("STAGE 5: Dynamic Clustering (Real-time)")
         logger.info("=" * 50)
 
         if self.enable_monitoring:
             performance_monitor.start_stage("cluster")
 
         try:
-            clusterer = PainEventClusterer()
+            from pipeline.dynamic_cluster import DynamicClusterUpdater
+            import pickle
 
-            # 如果 process_all=True 且未指定 limit，则处理所有数据（设置为大数值）
-            if process_all and limit_events is None:
-                limit_events = 1000000  # 处理所有数据
-            elif limit_events is None:
-                limit_events = 200
+            # 初始化动态聚类器
+            clusterer = DynamicClusterUpdater()
 
-            result = clusterer.cluster_pain_events(limit=limit_events)
+            # 获取需要处理的pain_events (新增的或unclustered的)
+            with db.get_connection("pain") as conn:
+                # 策略：处理所有未clustered的events
+                if process_all and limit_events is None:
+                    # 处理所有unclustered events
+                    cursor = conn.execute("""
+                        SELECT pe.*, em.embedding_vector
+                        FROM pain_events pe
+                        JOIN pain_embeddings em ON pe.id = em.pain_event_id
+                        WHERE pe.cluster_id IS NULL
+                        ORDER BY pe.extracted_at DESC
+                    """)
+                    rows = cursor.fetchall()
+                else:
+                    # 限制处理数量
+                    limit = limit_events if limit_events else 200
+                    cursor = conn.execute("""
+                        SELECT pe.*, em.embedding_vector
+                        FROM pain_events pe
+                        JOIN pain_embeddings em ON pe.id = em.pain_event_id
+                        WHERE pe.cluster_id IS NULL
+                        ORDER BY pe.extracted_at DESC
+                        LIMIT ?
+                    """, (limit,))
+                    rows = cursor.fetchall()
+
+                # 反序列化embedding_vector (pickle BLOB -> list)
+                new_events = []
+                for row in rows:
+                    event = dict(row)
+                    if event.get('embedding_vector'):
+                        try:
+                            event['embedding_vector'] = pickle.loads(event['embedding_vector'])
+                        except Exception as e:
+                            logger.warning(f"Failed to deserialize embedding for event {event.get('id')}: {e}")
+                            event['embedding_vector'] = None
+                    new_events.append(event)
+
+            logger.info(f"Found {len(new_events)} events to process")
+
+            if not new_events:
+                logger.info("No new events to cluster")
+                result = {
+                    'clusters_created': 0,
+                    'clusters_updated': 0,
+                    'events_processed': 0
+                }
+            else:
+                # 使用DynamicClusterUpdater处理
+                stats = clusterer.process_new_pain_events(new_events)
+
+                result = {
+                    'clusters_created': stats['new_clusters_created'],
+                    'clusters_updated': stats['existing_clusters_updated'],
+                    'events_processed': stats['total_events_processed']
+                }
 
             self.stats["stages_completed"].append("cluster")
             self.stats["stage_results"]["cluster"] = result
 
             if self.enable_monitoring:
-                performance_monitor.end_stage("cluster", result.get('clusters_created', 0))
+                # 使用events_processed作为处理数量
+                performance_monitor.end_stage("cluster", result.get('events_processed', 0))
 
-            logger.info(f"✅ Stage 5 completed: Created {result.get('clusters_created', 0)} clusters")
+            logger.info(f"✅ Stage 5 completed:")
+            logger.info(f"   Events processed: {result.get('events_processed', 0)}")
+            logger.info(f"   New clusters: {result.get('clusters_created', 0)}")
+            logger.info(f"   Updated clusters: {result.get('clusters_updated', 0)}")
             return result
 
         except Exception as e:
@@ -483,6 +540,70 @@ class WiseCollectionPipeline:
             self.stats["stages_failed"].append("decision_shortlist")
             if self.enable_monitoring:
                 performance_monitor.end_stage("decision_shortlist", 0)
+            raise
+
+    def run_stage_lifecycle_cleanup(self, orphan_age_days: int = 14, cluster_inactivity_days: int = 90) -> Dict[str, Any]:
+        """阶段9: 生命周期清理
+
+        Args:
+            orphan_age_days: 删除多少天前的orphans (默认14天)
+            cluster_inactivity_days: 归档多少天无活动的clusters (默认90天)
+        """
+        logger.info("=" * 50)
+        logger.info("STAGE 9: Lifecycle Cleanup")
+        logger.info("=" * 50)
+
+        if self.enable_monitoring:
+            performance_monitor.start_stage("lifecycle_cleanup")
+
+        try:
+            # 导入cleanup函数
+            from scripts.lifecycle_cleanup import (
+                mark_orphan_events,
+                cleanup_old_orphans,
+                get_lifecycle_statistics
+            )
+
+            # Step 1: 标记orphans
+            logger.info("Step 1: Marking orphan events...")
+            marked_count = mark_orphan_events()
+            logger.info(f"   Marked {marked_count} events as orphans")
+
+            # Step 2: 清理旧orphans
+            logger.info(f"Step 2: Cleaning up orphans older than {orphan_age_days} days...")
+            deleted_count = cleanup_old_orphans(
+                db_path="data/wise_collection.db",
+                orphan_age_days=orphan_age_days
+            )
+            logger.info(f"   Deleted {deleted_count} old orphans")
+
+            # Step 3: 获取统计信息
+            stats = get_lifecycle_statistics()
+
+            result = {
+                'orphans_marked': marked_count,
+                'orphans_deleted': deleted_count,
+                'final_stats': stats
+            }
+
+            self.stats["stages_completed"].append("lifecycle_cleanup")
+            self.stats["stage_results"]["lifecycle_cleanup"] = result
+
+            if self.enable_monitoring:
+                performance_monitor.end_stage("lifecycle_cleanup", deleted_count)
+
+            logger.info("✅ Stage 9 completed:")
+            logger.info(f"   Active events: {stats['active_events']}")
+            logger.info(f"   Orphan events: {stats['orphan_events']}")
+            logger.info(f"   Retention rate: {stats['retention_rate']:.1f}%")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ Stage 9 failed: {e}")
+            self.stats["stages_failed"].append("lifecycle_cleanup")
+            if self.enable_monitoring:
+                performance_monitor.end_stage("lifecycle_cleanup", 0)
             raise
 
     def generate_final_report(
@@ -627,7 +748,8 @@ class WiseCollectionPipeline:
             ("cluster", lambda: self.run_stage_cluster(limit_events, process_all)),
             ("map_opportunities", lambda: self.run_stage_map_opportunities(limit_clusters, process_all, force_remap)),
             ("score", lambda: self.run_stage_score(limit_opportunities, process_all)),
-            ("shortlist", lambda: self.run_stage_decision_shortlist())
+            ("shortlist", lambda: self.run_stage_decision_shortlist()),
+            ("lifecycle_cleanup", lambda: self.run_stage_lifecycle_cleanup())
         ]
 
         for stage_name, stage_func in stages:
@@ -667,7 +789,8 @@ class WiseCollectionPipeline:
             "cluster": lambda: self.run_stage_cluster(kwargs.get("limit_events"), process_all),
             "map": lambda: self.run_stage_map_opportunities(kwargs.get("limit_clusters"), process_all, kwargs.get("force_remap", False)),
             "score": lambda: self.run_stage_score(kwargs.get("limit_opportunities"), process_all),
-            "shortlist": lambda: self.run_stage_decision_shortlist()
+            "shortlist": lambda: self.run_stage_decision_shortlist(),
+            "lifecycle_cleanup": lambda: self.run_stage_lifecycle_cleanup()
         }
 
         if stage_name not in stage_map:
@@ -914,7 +1037,7 @@ def main():
     parser = argparse.ArgumentParser(description="Wise Collection Multi-Source Pipeline")
 
     # 运行模式
-    parser.add_argument("--stage", choices=["fetch", "filter", "extract", "embed", "cluster", "map", "score", "shortlist", "all"],
+    parser.add_argument("--stage", choices=["fetch", "filter", "extract", "embed", "cluster", "map", "score", "shortlist", "lifecycle_cleanup", "all"],
                        default="all", help="Which stage to run (default: all)")
 
     # 数据源选择

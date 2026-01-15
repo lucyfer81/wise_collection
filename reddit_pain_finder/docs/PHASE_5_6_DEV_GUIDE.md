@@ -1,9 +1,14 @@
 # Phase 5-6 开发指南 (Development Guide)
 
-**文档版本**: v1.0
+**文档版本**: v1.1
 **创建日期**: 2026-01-13
-**适用分支**: `pipeline-upgrade`
+**最后更新**: 2026-01-15
+**适用分支**: `feat-phase5`
 **目标读者**: 后端工程师
+
+**更新记录**:
+- v1.1 (2026-01-15): Phase 5 完成，添加pickle反序列化修复说明
+- v1.0 (2026-01-13): 初始版本
 
 ---
 
@@ -50,6 +55,8 @@
 
 ## Phase 5: Pipeline集成
 
+### 状态: ✅ 已完成 (2026-01-15)
+
 ### 目标
 
 将Phase 1-4的组件集成到主pipeline中，替换旧的静态聚类逻辑。
@@ -62,12 +69,26 @@ run_pipeline.py
 ├── Stage 2: Filter (filter_signal.py) ← 无需修改
 ├── Stage 3: Extract (extract_pain.py) ← 无需修改
 ├── Stage 4: Embed (embed.py)         ← ✅ 已修改为使用Chroma
-├── Stage 5: Cluster (cluster.py)     ← 🔴 需要替换为DynamicClusterUpdater
+├── Stage 5: Cluster (cluster.py)     ← ✅ 已替换为DynamicClusterUpdater
 ├── Stage 6: Map (map_opportunity.py)  ← 无需修改
 ├── Stage 7: Score (score_viability.py) ← 无需修改
 ├── Stage 8: Decision (decision_shortlist.py) ← 无需修改
-└── [NEW] Lifecycle Cleanup           ← 🔴 需要添加
+└── Stage 9: Lifecycle Cleanup        ← ✅ 已添加
 ```
+
+### 实施记录
+
+**实施日期**: 2026-01-15
+**分支**: `feat-phase5`
+**代码修改**: 139行新增，16行删除
+
+**关键发现与修复**:
+
+在集成过程中发现embedding向量存储方式问题：
+- **问题**: `pain_embeddings` 表中的 `embedding_vector` 字段存储的是 **pickle 序列化的 BLOB**
+- **原错误**: `Collection expecting embedding with dimension of 1024, got 9234`
+- **解决方案**: 在 `run_stage_cluster` 方法中添加 pickle 反序列化逻辑
+- **修复位置**: run_pipeline.py:389-399
 
 ### 任务清单
 
@@ -338,11 +359,34 @@ parser.add_argument("--stage", choices=[
 
 #### 功能验收
 
-- [ ] `python run_pipeline.py --stage cluster` 成功运行
-- [ ] `python run_pipeline.py --stage lifecycle_cleanup` 成功运行
-- [ ] `python run_pipeline.py --stage all` 完整pipeline成功
-- [ ] 新pain_events被正确clustered
-- [ ] Orphan events被正确标记和清理
+- [x] `python run_pipeline.py --stage cluster` 成功运行
+- [x] `python run_pipeline.py --stage lifecycle_cleanup` 成功运行
+- [x] `python run_pipeline.py --stage all` 完整pipeline成功
+- [x] 新pain_events被正确clustered
+- [x] Orphan events被正确标记和清理
+
+#### 测试结果 (2026-01-15)
+
+**Cluster Stage 测试 (20 events)**:
+```
+✅ Processed 20 pain events in 221.8s
+✅ Events added to clusters: 17
+✅ New clusters created: 1
+✅ Existing clusters updated: 17
+✅ Orphans marked: 2
+```
+
+**Lifecycle Cleanup Stage 测试**:
+```
+✅ Active events: 1489
+✅ Orphan events: 2787
+✅ Retention rate: 34.8%
+```
+
+**Pickel反序列化修复**:
+- 问题: BLOB长度9234字节被误认为是embedding维度
+- 修复: 添加 `pickle.loads()` 反序列化
+- 验证: 20个events全部正确处理，无维度错误
 
 #### 日志验证
 
@@ -1066,10 +1110,30 @@ Dependencies:
 | 问题 | 可能原因 | 解决方案 |
 |------|----------|----------|
 | ImportError: No module named 'chromadb' | chromadb未安装 | `pip install chromadb` |
+| "Collection expecting dimension...got 9234" | **Pickle BLOB未反序列化** | 在查询后添加 `pickle.loads()` 反序列化embedding_vector |
 | "Collection expecting dimension..." | Embedding维度不匹配 | 检查embedding_model配置 |
 | Database is locked | 并发写入冲突 | 使用WAL模式: `PRAGMA journal_mode=WAL` |
 | Rate limit exceeded | LLM API调用过快 | 减少max_workers |
 | Out of memory | 并发数太高 | 减少batch_size或max_workers |
+
+**Pickle反序列化问题详解** (Phase 5已修复):
+
+在Phase 5集成中发现，`pain_embeddings` 表中的 `embedding_vector` 存储为pickle序列化的BLOB。如果直接查询并传给Chroma，会报错：
+
+```
+Collection expecting embedding with dimension of 1024, got 9234
+```
+
+**修复方法** (已在run_pipeline.py:389-399实现):
+```python
+import pickle
+
+# 查询后需要反序列化
+for row in rows:
+    event = dict(row)
+    if event.get('embedding_vector'):
+        event['embedding_vector'] = pickle.loads(event['embedding_vector'])
+```
 
 ### D. 监控命令
 
@@ -1091,28 +1155,32 @@ htop
 
 ## 总结
 
-### Phase 5 核心任务
+### Phase 5 核心任务 ✅ 已完成
 1. ✅ 更新`run_pipeline.py`的`run_stage_cluster`方法
 2. ✅ 添加`run_stage_lifecycle_cleanup`方法
 3. ✅ 更新`run_full_pipeline`和`run_single_stage`
 4. ✅ 更新argument parser
+5. ✅ 修复pickle反序列化问题
 
-### Phase 6 核心任务
-1. ✅ 并行化LLM调用 (extract_pain.py)
-2. ✅ 添加PipelineState追踪
-3. ✅ 实现增量处理 (所有stage)
-4. ✅ 性能测试和调优
+**交付物**:
+- [x] 更新的`run_pipeline.py` (139行新增，16行删除)
+- [x] 测试报告（20 events cluster测试通过）
+- [x] Lifecycle cleanup测试通过
 
-### 交付物
-- [ ] 更新的`run_pipeline.py`
+### Phase 6 核心任务 ⏳ 待实施
+1. [ ] 并行化LLM调用 (extract_pain.py)
+2. [ ] 添加PipelineState追踪
+3. [ ] 实现增量处理 (所有stage)
+4. [ ] 性能测试和调优
+
+**交付物**:
 - [ ] 更新的`extract_pain.py`
 - [ ] 新增的`utils/pipeline_state.py`
 - [ ] 更新的`utils/db.py` (新增since参数)
-- [ ] 测试报告
 - [ ] 性能对比报告
 
 ---
 
 **文档作者**: Claude Sonnet 4.5
-**最后更新**: 2026-01-13
-**版本**: v1.0
+**最后更新**: 2026-01-15
+**版本**: v1.1

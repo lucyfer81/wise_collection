@@ -134,6 +134,75 @@ class OpportunityMapper:
         except Exception as e:
             logger.error(f"Failed to analyze cluster characteristics: {e}")
 
+    def _create_llm_friendly_cluster_summary(self, cluster_data: Dict[str, Any]) -> Dict[str, Any]:
+        """创建适合LLM处理的紧凑聚类摘要
+
+        通过以下策略减少token使用：
+        1. 限制pain_events数量为前20个最具代表性的（按post_pain_score排序）
+        2. 截断长文本字段为200字符
+        3. 保留聚合统计数据
+        4. 移除冗余字段
+
+        Args:
+            cluster_data: 丰富后的聚类数据
+
+        Returns:
+            紧凑的聚类摘要，适合发送给LLM
+        """
+        # 提取pain_events并按post_pain_score排序
+        pain_events = cluster_data.get("pain_events", [])
+
+        # 按post_pain_score降序排序，保留最相关的
+        sorted_events = sorted(
+            pain_events,
+            key=lambda e: e.get("post_pain_score", 0),
+            reverse=True
+        )
+
+        # 只保留前20个
+        top_events = sorted_events[:20]
+
+        # 截断长文本字段
+        def truncate_field(value: str, max_length: int = 200) -> str:
+            """截断字段并添加省略号"""
+            if not value or len(value) <= max_length:
+                return value
+            return value[:max_length-3] + "..."
+
+        # 构建精简的pain_events
+        compact_events = []
+        for event in top_events:
+            compact_event = {
+                "problem": truncate_field(event.get("problem", ""), 200),
+                "context": truncate_field(event.get("context", ""), 200),
+                "current_workaround": truncate_field(event.get("current_workaround", ""), 200),
+                "emotional_signal": event.get("emotional_signal", ""),
+                "frequency_score": event.get("frequency_score", 5),
+                "post_pain_score": event.get("post_pain_score", 0),
+            }
+            compact_events.append(compact_event)
+
+        # 构建紧凑的聚类摘要
+        compact_summary = {
+            "cluster_id": cluster_data.get("cluster_id", 0),
+            "cluster_name": cluster_data.get("cluster_name", ""),
+            "cluster_description": truncate_field(cluster_data.get("cluster_description", ""), 500),
+            "cluster_size": cluster_data.get("cluster_size", 0),
+            "workflow_confidence": cluster_data.get("workflow_confidence", 0.0),
+
+            # 保留聚合统计数据
+            "subreddit_distribution": cluster_data.get("subreddit_distribution", {}),
+            "mentioned_tools": cluster_data.get("mentioned_tools", {}),
+            "emotional_signals": cluster_data.get("emotional_signals", {}),
+            "avg_frequency_score": cluster_data.get("avg_frequency_score", 0.0),
+            "total_pain_score": cluster_data.get("total_pain_score", 0),
+
+            # 精简的pain_events
+            "pain_events": compact_events,
+        }
+
+        return compact_summary
+
     def _map_opportunity_with_llm(self, cluster_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """使用LLM映射机会"""
         try:

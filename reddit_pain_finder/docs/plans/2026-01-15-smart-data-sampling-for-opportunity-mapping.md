@@ -595,11 +595,11 @@ git commit -m "docs: add results documentation for smart data sampling"
 
 ### Success Rate
 
-**Verification Run (Task 4):**
-- Processed 48 clusters successfully
+**Full Pipeline Run (2026-01-15 00:54 - 01:39):**
+- Processed 48 clusters successfully (all available clusters in database)
 - Created 48 opportunities
 - Viable opportunities: 48 (100% success rate)
-- No token limit errors after fix implementation
+- **Zero 400 errors after fix** - all clusters processed without token limit errors
 - Last token error: 2026-01-15 00:31:01
 - 31 clusters processed successfully after fix without any 400 errors
 

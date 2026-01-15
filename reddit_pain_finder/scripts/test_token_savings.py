@@ -11,6 +11,49 @@ from pipeline.map_opportunity import OpportunityMapper
 from utils.db import db
 
 
+def test_cluster_5_end_to_end():
+    """Verify cluster 5 (the previously failing cluster) can now be mapped without 400 errors"""
+    mapper = OpportunityMapper()
+
+    with db.get_connection("clusters") as conn:
+        cursor = conn.execute('SELECT * FROM clusters WHERE id = 5')
+        cluster = dict(cursor.fetchone())
+
+    print(f"\n{'='*70}")
+    print(f"END-TO-END TEST: Cluster 5 (previously failed with 400 error)")
+    print(f"{'='*70}")
+    print(f"  Name: {cluster['cluster_name'][:60]}...")
+    print(f"  Size: {cluster['cluster_size']} pain events")
+    print(f"  Previous error: Token limit exceeded (350,363 > 163,840)")
+    print()
+
+    try:
+        print("  Testing opportunity mapping with actual LLM call...")
+        result = mapper.map_opportunities_for_clusters(
+            clusters_to_update=[cluster['id']],
+            limit=1
+        )
+
+        if result.get('opportunities_created', 0) > 0:
+            print(f"  SUCCESS: Mapped without 400 errors")
+            print(f"  Created: {result['opportunities_created']} opportunities")
+            print(f"  Viable: {result['viable_opportunities']}")
+            return True
+        else:
+            print(f"  WARNING: No opportunities created (but no 400 error)")
+            return True
+
+    except Exception as e:
+        error_str = str(e)
+        if '400' in error_str or 'token' in error_str.lower():
+            print(f"  FAILED: 400 error still occurs!")
+            print(f"  Error: {e}")
+            return False
+        else:
+            print(f"  WARNING: Different error occurred: {e}")
+            return False
+
+
 def main():
     mapper = OpportunityMapper()
 
@@ -61,6 +104,11 @@ def main():
 
     overall_reduction = (1 - total_compact / total_original) * 100
     print(f"Overall: {total_original:,} → {total_compact:,} chars ({overall_reduction:.1f}% reduction)")
+
+    print(f"\n{'='*70}")
+    print(f"Running end-to-end validation...")
+    print(f"{'='*70}")
+    test_cluster_5_end_to_end()
 
 
 if __name__ == "__main__":

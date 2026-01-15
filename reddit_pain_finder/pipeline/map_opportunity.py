@@ -150,7 +150,7 @@ class OpportunityMapper:
             紧凑的聚类摘要，适合发送给LLM
         """
         # 提取pain_events并按post_pain_score排序
-        pain_events = cluster_data.get("pain_events", [])
+        pain_events = cluster_data.get("pain_events") or []
 
         # 按post_pain_score降序排序，保留最相关的
         sorted_events = sorted(

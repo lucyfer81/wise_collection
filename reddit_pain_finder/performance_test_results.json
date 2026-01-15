@@ -1,0 +1,57 @@
+{
+  "test_date": "2026-01-15 14:29:20",
+  "tests": {
+    "extract_parallel": {
+      "workers_3": {
+        "max_workers": 3,
+        "total_posts": 20,
+        "events_extracted": 1,
+        "elapsed_time": 52.64,
+        "time_per_post": 2.63,
+        "events_per_second": 0.38,
+        "errors": 0
+      },
+      "workers_5": {
+        "max_workers": 5,
+        "total_posts": 20,
+        "events_extracted": 2,
+        "elapsed_time": 56.78,
+        "time_per_post": 2.84,
+        "events_per_second": 0.35,
+        "errors": 0
+      },
+      "workers_8": {
+        "max_workers": 8,
+        "total_posts": 20,
+        "events_extracted": 3,
+        "elapsed_time": 52.86,
+        "time_per_post": 2.64,
+        "events_per_second": 0.38,
+        "errors": 0
+      }
+    },
+    "incremental": {
+      "first_run": {
+        "posts_processed": 30,
+        "events_extracted": 2,
+        "elapsed_time": 53.82,
+        "pipeline_state": "2026-01-15T14:32:56.945191"
+      },
+      "second_run": {
+        "posts_processed": 0,
+        "elapsed_time": 0
+      },
+      "incremental_mode_works": true
+    },
+    "wal_mode": {
+      "wal_mode": "wal",
+      "synchronous": 2,
+      "wal_enabled": true
+    }
+  },
+  "summary": {
+    "fastest_config": "workers_3",
+    "slowest_config": "workers_5",
+    "speedup_factor": 1.08
+  }
+}

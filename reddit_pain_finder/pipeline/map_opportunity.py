@@ -431,7 +431,12 @@ class OpportunityMapper:
 
             if not clusters:
                 logger.info("No clusters found for opportunity mapping")
-                return {"opportunities_identified": 0, "clusters_processed": 0}
+                return {
+                    "opportunities_identified": 0,
+                    "opportunities_created": 0,
+                    "viable_opportunities": 0,
+                    "clusters_processed": 0
+                }
 
             logger.info(f"Processing {len(clusters)} clusters for opportunity mapping")
 

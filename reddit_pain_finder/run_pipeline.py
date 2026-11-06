@@ -491,7 +491,7 @@ class WiseCollectionPipeline:
             if self.enable_monitoring:
                 performance_monitor.end_stage("map_opportunities", result.get('opportunities_created', 0))
 
-            logger.info(f"✅ Stage 6 completed: Mapped {result['opportunities_created']} opportunities")
+            logger.info(f"✅ Stage 6 completed: Mapped {result.get('opportunities_created', 0)} opportunities")
             return result
 
         except Exception as e:
